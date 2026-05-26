@@ -7,6 +7,8 @@ import { computeTechnicalAnalysis, normalizePriceChanges } from "@/lib/technical
 import { addNexusDecision } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {

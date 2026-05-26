@@ -492,19 +492,22 @@ async function aiFeedBatch(
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
   const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
-  const aiLimit = getAiClient() ? 24 : 0;
-
+  const cycle = Math.floor(Date.now() / 45_000);
+  const aiCap = getAiClient() ? 18 : 0;
   const aiMap = new Map<string, AgentSignal>();
-  if (aiLimit > 0) {
-    const prep = sorted.slice(0, aiLimit).map((token) => ({
+
+  if (aiCap > 0) {
+    const pool = sorted.slice(0, 36).map((token) => ({
       token,
       intel: token.intel ?? buildLocalTokenIntel(token),
     }));
-    for (let i = 0; i < prep.length; i += 6) {
-      const chunk = prep.slice(i, i + 6);
-      const chunkMap = await aiFeedBatch(chunk);
-      chunkMap.forEach((v, k) => aiMap.set(k, v));
-    }
+    const offset = (cycle % 3) * 6;
+    const rotated = [...pool.slice(offset), ...pool.slice(0, offset)].slice(0, aiCap);
+    const chunks: (typeof pool)[] = [];
+    for (let i = 0; i < rotated.length; i += 6) chunks.push(rotated.slice(i, i + 6));
+
+    const maps = await Promise.all(chunks.map((chunk) => aiFeedBatch(chunk)));
+    for (const m of maps) m.forEach((v, k) => aiMap.set(k, v));
   }
 
   return Promise.all(
