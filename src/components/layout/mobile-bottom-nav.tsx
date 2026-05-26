@@ -18,7 +18,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[90] border-t border-white/10 bg-[#050508]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[90] border-t border-white/10 bg-[#050508]/98 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-4px_24px_rgba(0,0,0,0.45)] backdrop-blur-xl md:hidden"
       aria-label="Main navigation"
     >
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1.5">

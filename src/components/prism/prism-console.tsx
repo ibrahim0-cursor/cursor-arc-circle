@@ -70,7 +70,7 @@ export function PrismConsole() {
       toast({
         type: "success",
         title: "Forecast generated",
-        message: `${data.prediction.probability}% probability · scrolling to report`,
+        message: `${data.prediction.probability}% probability`,
       });
       requestAnimationFrame(() => {
         document.getElementById("prism-forecast")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -89,24 +89,20 @@ export function PrismConsole() {
   const latest = predictions[0];
 
   return (
-    <div className="relative min-h-screen text-white">
+    <div className="relative min-h-screen text-white" data-prism-page>
       <MeshBackground variant="prism" />
-      <div className="relative mx-auto max-w-7xl px-4 py-6 pb-12 sm:px-6 sm:py-10">
-        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <Badge variant="prism">PRISM</Badge>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-              Macro Oracle
-            </h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base">
-              Live macro context + GDELT + news → clear probability &amp; Kelly size. Tap an event, hit Forecast.
-            </p>
-          </div>
+      <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10 sm:pb-12">
+        <div className="mb-4 sm:mb-8">
+          <Badge variant="prism">PRISM</Badge>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">Macro Oracle</h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75">
+            Pick an event → Generate Forecast. Live BTC/ETH macro on tap.
+          </p>
           <Button
             variant="prism"
             onClick={analyze}
             disabled={loading}
-            className="min-h-[48px] w-full shrink-0 text-base sm:w-auto"
+            className="mt-4 min-h-[52px] w-full text-base sm:mt-6 sm:w-auto"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
             Generate Forecast
@@ -114,100 +110,36 @@ export function PrismConsole() {
         </div>
 
         {market && (
-          <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            <MacroChip
-              label="BTC"
-              price={market.btcPrice}
-              change={market.btcChange24h}
-            />
-            <MacroChip label="ETH" price={market.ethPrice} change={market.ethChange24h} />
-            <MacroChip
-              label="Total cap"
-              price={market.totalMarketCapUsd}
-              change={market.marketCapChange24h}
-              compact
-            />
-            <div className="col-span-2 flex items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-100/80 sm:col-span-1">
-              CoinGecko · live
+          <div className="mb-4">
+            <div className="grid grid-cols-3 gap-2">
+              <MacroChip label="BTC" price={market.btcPrice} change={market.btcChange24h} />
+              <MacroChip label="ETH" price={market.ethPrice} change={market.ethChange24h} />
+              <MacroChip
+                label="Mkt cap"
+                price={market.totalMarketCapUsd}
+                change={market.marketCapChange24h}
+                compact
+              />
             </div>
+            <p className="mt-2 text-center text-[10px] text-violet-200/70">CoinGecko · live</p>
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-          <div className="space-y-4 sm:space-y-6">
-            <Card className="border-violet-400/20">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-base font-semibold sm:text-lg">Choose event</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {events.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    onClick={() => setSelected(event.id)}
-                    className={`w-full min-h-[52px] rounded-xl border px-4 py-3 text-left transition active:scale-[0.99] ${
-                      selected === event.id
-                        ? "border-violet-400/45 bg-violet-500/15"
-                        : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-white sm:text-base">{event.label}</span>
-                      <Badge variant="prism">{event.category}</Badge>
-                    </div>
-                  </button>
-                ))}
-                <textarea
-                  value={customEvent}
-                  onChange={(e) => setCustomEvent(e.target.value)}
-                  placeholder="Or type your own event…"
-                  className="min-h-[88px] w-full rounded-xl border border-white/12 bg-black/25 px-4 py-3 text-base text-white outline-none placeholder:text-white/35 focus:border-violet-400/45"
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Radar className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-base font-semibold sm:text-lg">Intel feed</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="max-h-[40vh] space-y-2 overflow-y-auto sm:max-h-none">
-                {(latestIntel?.gdelt ?? []).slice(0, 4).map((item, index) => (
-                  <IntelRow key={`g-${index}`} source={item.source} title={item.title} />
-                ))}
-                {(latestIntel?.news ?? []).slice(0, 3).map((item, index) => (
-                  <IntelRow key={`n-${index}`} source={item.source} title={item.title} />
-                ))}
-                {!latestIntel && (
-                  <p className="py-4 text-center text-sm text-white/55">
-                    Tap <strong className="text-violet-200">Generate Forecast</strong> to load GDELT + news.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div id="prism-forecast" className="scroll-mt-24 space-y-4 sm:space-y-6">
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_1.1fr] lg:gap-6">
+          <div id="prism-forecast" className="order-1 scroll-mt-28 space-y-4 sm:space-y-6 lg:order-2">
             <Card className="overflow-hidden border-violet-400/25">
               <CardContent className="p-0">
-                <div className="bg-gradient-to-br from-violet-500/25 via-fuchsia-500/10 to-transparent p-6 sm:p-8">
-                  <p className="text-xs font-medium uppercase tracking-widest text-violet-200/80">
-                    Probability
-                  </p>
-                  <div className="mt-3 flex items-end gap-2">
-                    <p className="text-6xl font-bold leading-none sm:text-7xl">{latest?.probability ?? "—"}</p>
-                    {latest && <p className="pb-2 text-2xl text-white/50">%</p>}
+                <div className="bg-gradient-to-br from-violet-500/25 via-fuchsia-500/10 to-transparent p-5 sm:p-8">
+                  <p className="text-xs font-medium uppercase tracking-widest text-violet-200/80">Probability</p>
+                  <div className="mt-2 flex items-end gap-2">
+                    <p className="text-5xl font-bold leading-none sm:text-7xl">{latest?.probability ?? "—"}</p>
+                    {latest && <p className="pb-2 text-xl text-white/50">%</p>}
                   </div>
-                  <p className="mt-4 text-base leading-relaxed text-white/85 sm:text-lg">
-                    {latest?.event ?? "Select an event to start."}
+                  <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-lg">
+                    {latest?.event ?? "Select an event below, then tap Generate Forecast."}
                   </p>
                   {latest && (
-                    <div className="mt-5 grid grid-cols-3 gap-2">
+                    <div className="mt-4 grid grid-cols-3 gap-2">
                       <MiniStat label="Confidence" value={`${latest.confidence}%`} />
                       <MiniStat label="Kelly" value={`${(latest.kellyFraction * 100).toFixed(1)}%`} />
                       <MiniStat label="Horizon" value={latest.horizon} />
@@ -215,9 +147,9 @@ export function PrismConsole() {
                   )}
                 </div>
                 {latest && (
-                  <div className="space-y-3 p-5 sm:p-8">
-                    <p className="nexus-lead">{latest.summary}</p>
-                    <p className="text-sm leading-relaxed text-white/70 sm:text-base">{latest.reasoning}</p>
+                  <div className="space-y-3 p-4 sm:p-8">
+                    <p className="nexus-lead text-sm sm:text-base">{latest.summary}</p>
+                    <p className="text-sm leading-relaxed text-white/70">{latest.reasoning}</p>
                     {latest.arcTxHash && (
                       <p className="text-xs text-white/45">Arc · {truncateHash(latest.arcTxHash, 10, 8)}</p>
                     )}
@@ -226,11 +158,11 @@ export function PrismConsole() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="max-lg:hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <Globe2 className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-base font-semibold sm:text-lg">History</h2>
+                  <h2 className="text-lg font-semibold">History</h2>
                 </div>
               </CardHeader>
               <CardContent className="max-h-[50vh] space-y-3 overflow-y-auto">
@@ -249,12 +181,90 @@ export function PrismConsole() {
                         <p className="font-medium text-white">{prediction.event}</p>
                         <Badge variant="prism">{prediction.probability}%</Badge>
                       </div>
-                      <p className="mt-2 text-sm text-white/60 line-clamp-2">{prediction.summary}</p>
+                      <p className="mt-2 line-clamp-2 text-sm text-white/60">{prediction.summary}</p>
                     </motion.div>
                   ))
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          <div className="order-2 space-y-4 lg:order-1">
+            <Card className="border-violet-400/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-violet-300" />
+                  <h2 className="text-base font-semibold">Choose event</h2>
+                </div>
+              </CardHeader>
+              <CardContent className="max-h-[45vh] space-y-2 overflow-y-auto lg:max-h-none">
+                {events.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => setSelected(event.id)}
+                    className={`w-full min-h-[56px] rounded-xl border px-4 py-3 text-left transition active:scale-[0.99] ${
+                      selected === event.id
+                        ? "border-violet-400/45 bg-violet-500/15"
+                        : "border-white/10 bg-white/[0.03]"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-white">{event.label}</span>
+                      <Badge variant="prism" className="!text-[9px]">
+                        {event.category}
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+                <textarea
+                  value={customEvent}
+                  onChange={(e) => setCustomEvent(e.target.value)}
+                  placeholder="Or type your own event…"
+                  className="min-h-[80px] w-full rounded-xl border border-white/12 bg-black/25 px-4 py-3 text-base text-white outline-none placeholder:text-white/35 focus:border-violet-400/45"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Radar className="h-5 w-5 text-violet-300" />
+                  <h2 className="text-base font-semibold">Intel feed</h2>
+                </div>
+              </CardHeader>
+              <CardContent className="max-h-[35vh] space-y-2 overflow-y-auto lg:max-h-[28vh]">
+                {(latestIntel?.gdelt ?? []).slice(0, 4).map((item, index) => (
+                  <IntelRow key={`g-${index}`} source={item.source} title={item.title} />
+                ))}
+                {(latestIntel?.news ?? []).slice(0, 3).map((item, index) => (
+                  <IntelRow key={`n-${index}`} source={item.source} title={item.title} />
+                ))}
+                {!latestIntel && (
+                  <p className="py-4 text-center text-sm text-white/55">
+                    Tap <strong className="text-violet-200">Generate Forecast</strong> for GDELT + news.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {predictions.length > 0 && (
+              <Card className="lg:hidden">
+                <CardHeader className="pb-2">
+                  <h2 className="text-base font-semibold">Recent forecasts</h2>
+                </CardHeader>
+                <CardContent className="max-h-[30vh] space-y-2 overflow-y-auto">
+                  {predictions.slice(0, 5).map((p) => (
+                    <div key={p.id} className="rounded-xl border border-white/10 bg-black/25 p-3">
+                      <div className="flex justify-between gap-2">
+                        <p className="text-sm font-medium text-white line-clamp-2">{p.event}</p>
+                        <Badge variant="prism">{p.probability}%</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -275,12 +285,14 @@ function MacroChip({
 }) {
   const up = change >= 0;
   return (
-    <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5">
-      <p className="text-[10px] uppercase tracking-wider text-white/45">{label}</p>
-      <p className="mt-0.5 text-sm font-bold text-white sm:text-base">
+    <div className="rounded-xl border border-white/10 bg-black/30 px-2.5 py-2.5 text-center sm:px-3">
+      <p className="text-[9px] uppercase tracking-wider text-white/45 sm:text-[10px]">{label}</p>
+      <p className="mt-0.5 text-xs font-bold text-white sm:text-base">
         {compact ? formatCompact(price) : `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
       </p>
-      <p className={`mt-0.5 flex items-center gap-0.5 text-xs font-medium ${up ? "text-emerald-300" : "text-rose-300"}`}>
+      <p
+        className={`mt-0.5 flex items-center justify-center gap-0.5 text-[11px] font-medium ${up ? "text-emerald-300" : "text-rose-300"}`}
+      >
         {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
         {formatPct(change)}
       </p>
@@ -320,9 +332,9 @@ function IntelRow({ source, title }: { source: string; title: string }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wider text-white/45">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-white">{value}</p>
+    <div className="rounded-xl border border-white/10 bg-black/30 px-2 py-2 text-center sm:px-3">
+      <p className="text-[9px] uppercase tracking-wider text-white/45">{label}</p>
+      <p className="mt-0.5 text-xs font-semibold text-white sm:text-sm">{value}</p>
     </div>
   );
 }

@@ -39,14 +39,22 @@ body {
   }
 }
 
-/* NEXUS phone easy mode */
+/* Mobile easy mode — NEXUS + PRISM + Home */
 @media (max-width: 1023px) {
-  [data-nexus-easy-mode] {
+  [data-nexus-easy-mode],
+  [data-prism-page] {
     font-size: 15px;
   }
 
   [data-nexus-easy-mode] .nexus-mobile-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  [data-nexus-easy-mode] .nexus-feed-scroll {
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   [data-nexus-easy-mode] .nexus-panel-body {
@@ -56,6 +64,18 @@ body {
 
   [data-nexus-easy-mode] [data-nexus-collapsible-trigger] {
     min-height: 52px;
+  }
+
+  [data-prism-page] .nexus-lead,
+  [data-prism-page] p {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-prism-page] h1 {
+    font-size: 1.75rem;
+    line-height: 1.2;
   }
 }
 

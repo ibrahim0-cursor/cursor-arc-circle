@@ -34,6 +34,7 @@ import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-b
 import { NexusWalletBar } from "@/components/nexus/nexus-wallet-bar";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
 import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-bar";
+import { NexusMobileTokenActions } from "@/components/nexus/nexus-mobile-token-actions";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
 import { useToast } from "@/components/ui/toast-provider";
@@ -359,8 +360,8 @@ export function NexusConsole() {
   }
 
   const feedPanel = (
-    <Card className="border-white/10">
-      <CardHeader>
+    <Card className="border-white/10 max-lg:border-0 max-lg:bg-transparent">
+      <CardHeader className="max-lg:px-0 max-lg:pb-2 max-lg:pt-0">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -387,24 +388,21 @@ export function NexusConsole() {
           </button>
         </div>
       </CardHeader>
-      <CardContent className="flex max-lg:max-h-[calc(100dvh-14rem)] max-lg:min-h-0 flex-col overflow-hidden p-3 lg:min-h-[min(85vh,920px)]">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:min-h-[min(85vh,920px)]">
         {activeTab === "live" ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-3">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <NexusTrendingFeed
-                selectedAddress={selectedToken?.tokenAddress}
-                onSelect={(t, opts) => handleTokenSelect(t, opts?.openChart ?? true)}
-                onTokensRefresh={handleFeedRefresh}
-                onOpenTrade={(tab) => {
-                  setTradeTab(tab);
-                  setMobilePanel("trade");
-                  scrollToMobileContent();
-                }}
-              />
-            </div>
-          </div>
+          <NexusTrendingFeed
+            className="h-full min-h-0"
+            selectedAddress={selectedToken?.tokenAddress}
+            onSelect={(t, opts) => handleTokenSelect(t, opts?.openChart ?? true)}
+            onTokensRefresh={handleFeedRefresh}
+            onOpenTrade={(tab) => {
+              setTradeTab(tab);
+              setMobilePanel("trade");
+              scrollToMobileContent();
+            }}
+          />
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
             <NexusMemoryList
               decisions={savedDecisions}
               selectedId={selectedSavedId}
@@ -450,10 +448,21 @@ export function NexusConsole() {
       <p className="text-sm text-white/55">Select a token from the feed to view chart &amp; analysis.</p>
     </div>
   ) : (
-    <div className="space-y-3 max-lg:pb-2">
-      <div className="hidden lg:block">
-        <NexusTokenStrip tokens={feedTokens} selected={selectedToken} onSelect={(t) => handleTokenSelect(t)} />
-      </div>
+    <div className="space-y-3 max-lg:pb-4">
+      <NexusTokenStrip
+        tokens={feedTokens}
+        selected={selectedToken}
+        onSelect={(t) => handleTokenSelect(t)}
+        mobileLimit={30}
+      />
+      <NexusMobileTokenActions
+        token={selectedToken}
+        onTradeTab={(tab) => {
+          setTradeTab(tab);
+          setMobilePanel("trade");
+          scrollToMobileContent();
+        }}
+      />
       <NexusTokenMetrics token={selectedToken} />
       <NexusTokenChart
         chainId={selectedToken.chainId}
@@ -484,9 +493,18 @@ export function NexusConsole() {
 
   const tradePanel = (
     <div className="space-y-3 max-lg:pb-4">
-      <div className="hidden lg:block">
-        <NexusTokenStrip tokens={feedTokens} selected={selectedToken} onSelect={(t) => handleTokenSelect(t)} />
-      </div>
+      <NexusTokenStrip
+        tokens={feedTokens}
+        selected={selectedToken}
+        onSelect={(t) => handleTokenSelect(t)}
+        mobileLimit={30}
+      />
+      {selectedToken && (
+        <NexusMobileTokenActions
+          token={selectedToken}
+          onTradeTab={(tab) => setTradeTab(tab)}
+        />
+      )}
       <NexusTradeHub
         token={selectedToken}
         activeTab={tradeTab}
@@ -503,7 +521,7 @@ export function NexusConsole() {
     <div className="relative min-h-screen text-white" data-nexus-page data-nexus-easy-mode>
       <MeshBackground variant="nexus" />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 py-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:py-8 lg:pb-8">
+      <div className="relative mx-auto max-w-[1400px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8">
         <div className="mb-3 hidden overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-4 sm:mb-8 sm:block sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
             <div className="max-w-2xl flex-1">
@@ -615,11 +633,11 @@ export function NexusConsole() {
             </button>
           </div>
         )}
-        <div className="mb-4">
+        <div className="mb-3 max-lg:hidden">
           <NexusIntegrationsBanner />
         </div>
 
-        <div id="nexus-mobile-content" className="nexus-mobile-panel scroll-mt-36 lg:hidden">
+        <div id="nexus-mobile-content" className="nexus-mobile-panel scroll-mt-36 max-lg:min-h-0 lg:hidden">
           {mobilePanel === "feed" && feedPanel}
           {mobilePanel === "chart" && chartPanel}
           {mobilePanel === "trade" && tradePanel}

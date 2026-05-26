@@ -16,12 +16,12 @@ import {
   TrendingUp,
   Waves,
 } from "lucide-react";
-import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { mergeFeedTokens } from "@/lib/token-security";
+import { cn } from "@/lib/utils";
 import type { TokenIntel } from "@/lib/storage";
 import type { AgentSignal } from "@/lib/storage";
 import type { TokenSecurityReport } from "@/lib/token-security";
@@ -50,7 +50,6 @@ export type TrendingMarketToken = {
 
 const REFRESH_MS = 45_000;
 const MAX_FEED = 120;
-const FEED_PREVIEW = 15;
 
 export function NexusTrendingFeed({
   selectedAddress,
@@ -58,12 +57,14 @@ export function NexusTrendingFeed({
   onTokensRefresh,
   onOpenTrade,
   showAgent = true,
+  className,
 }: {
   selectedAddress?: string;
   onSelect: (token: TrendingMarketToken, options?: { openChart?: boolean }) => void;
   onTokensRefresh?: (tokens: TrendingMarketToken[]) => void;
   onOpenTrade?: (tab: "buy" | "sell" | "agent") => void;
   showAgent?: boolean;
+  className?: string;
 }) {
   const [tokens, setTokens] = useState<TrendingMarketToken[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,21 +199,24 @@ export function NexusTrendingFeed({
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn("flex min-h-0 flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-300" />
-          <h3 className="text-sm font-medium text-white/80">
-            {tokens.length} tokens (max {MAX_FEED}) · cycle #{feedCycle} · {secondsLeft}s
+          <h3 className="text-xs font-medium text-white/80 sm:text-sm">
+            <span className="lg:hidden">{tokens.length} tokens · {secondsLeft}s</span>
+            <span className="hidden lg:inline">
+              {tokens.length} tokens (max {MAX_FEED}) · cycle #{feedCycle} · {secondsLeft}s
+            </span>
           </h3>
           {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           {showAgent && (
             <>
-              <Badge variant="buy">{counts.buy} BUY</Badge>
-              <Badge variant="sell">{counts.sell} SELL</Badge>
-              <Badge variant="hold">{counts.hold} HOLD</Badge>
+              <Badge variant="buy" className="!text-[9px]">{counts.buy} B</Badge>
+              <Badge variant="sell" className="!text-[9px]">{counts.sell} S</Badge>
+              <Badge variant="hold" className="!text-[9px]">{counts.hold} H</Badge>
             </>
           )}
           <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
@@ -231,8 +235,8 @@ export function NexusTrendingFeed({
         {refreshing && <span className="ml-1 text-cyan-300"> Updating…</span>}
       </p>
 
-      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
-      {tokens.slice(0, FEED_PREVIEW).map((token) => {
+      <div className="nexus-feed-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-2">
+      {tokens.map((token) => {
         const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
         const agent = token.agent;
         const sec = token.security;
@@ -260,7 +264,7 @@ export function NexusTrendingFeed({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base font-semibold max-lg:text-[15px]">{token.symbol}</span>
-                    <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[40px] !px-2.5 !py-1.5 max-lg:hidden" />
+                    <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[36px] !px-2 !py-1 !text-[10px] max-lg:!hidden" />
                     {agent && (
                       <Badge
                         variant={
@@ -345,64 +349,6 @@ export function NexusTrendingFeed({
           </motion.button>
         );
       })}
-      {tokens.length > FEED_PREVIEW && (
-        <NexusCollapsible
-          label={`${tokens.length - FEED_PREVIEW} more tokens`}
-          hint={`Top ${FEED_PREVIEW} shown · ${tokens.length} total in feed`}
-          icon={Flame}
-          variant="intel"
-        >
-          <div className="space-y-1.5">
-            {tokens.slice(FEED_PREVIEW).map((token) => {
-              const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
-              const agent = token.agent;
-              const sec = token.security;
-              return (
-                <motion.button
-                  key={`${token.chainId}:${token.tokenAddress}`}
-                  type="button"
-                  onClick={() => handleUserSelect(token)}
-                  className={`w-full rounded-xl border p-2.5 text-left transition ${
-                    selected
-                      ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
-                      : "border-white/10 bg-black/20 hover:border-white/20"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      {token.icon ? (
-                        <img src={token.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white/10" />
-                      ) : (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
-                          {token.symbol.slice(0, 2)}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold">{token.symbol}</span>
-                          <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[32px] !px-2 !py-1" />
-                          {agent && (
-                            <Badge variant={agent.action === "BUY" ? "buy" : agent.action === "SELL" ? "sell" : "hold"}>
-                              {agent.action}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-white/45">{token.name}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{formatUsd(token.priceUsd)}</p>
-                      <p className={`text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                        {formatPct(token.change24h)}
-                      </p>
-                    </div>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-        </NexusCollapsible>
-      )}
       </div>
     </div>
   );

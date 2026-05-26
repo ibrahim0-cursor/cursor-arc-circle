@@ -138,12 +138,12 @@ export function NexusTokenChatPanel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-3"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="flex max-h-[min(520px,85vh)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-violet-400/35 bg-[#0a0f1a] shadow-2xl"
+        className="flex h-[min(92dvh,100%)] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-violet-400/35 bg-[#0a0f1a] shadow-2xl sm:h-auto sm:max-h-[min(520px,85vh)] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={`Chat about ${token.symbol}`}
@@ -169,7 +169,7 @@ export function NexusTokenChatPanel({
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`max-w-[92%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+              className={`max-w-[92%] rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
                 m.role === "user" ? "ml-auto bg-violet-500/25 text-violet-50" : "bg-white/8 text-white/85"
               }`}
             >
