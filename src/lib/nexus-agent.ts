@@ -152,6 +152,12 @@ function buildReasoningFactors(
   return factors;
 }
 
+function normalizePct(n: number | undefined, fallback: number) {
+  if (n == null || Number.isNaN(n)) return fallback;
+  if (n > 0 && n <= 1) return Math.round(n * 100);
+  return Math.round(Math.min(100, Math.max(0, n)));
+}
+
 function scoreFactorEdge(factors: ReasoningFactor[]) {
   let bull = 0;
   let bear = 0;
@@ -320,8 +326,8 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
 
     return {
       action,
-      confidence: Math.min(100, Math.max(0, parsed.confidence ?? fallback.confidence)),
-      riskScore: Math.min(100, Math.max(0, parsed.riskScore ?? fallback.riskScore)),
+      confidence: normalizePct(parsed.confidence, fallback.confidence),
+      riskScore: normalizePct(parsed.riskScore, fallback.riskScore),
       reasoning: parsed.reasoning ?? fallback.reasoning,
       whyAction: parsed.whyAction ?? buildWhyAction(action, token, factors, edge),
       reasoningFactors: factors,
@@ -475,8 +481,8 @@ async function aiFeedBatch(
       const { edge } = scoreFactorEdge(factors);
       out.set(match.token.tokenAddress.toLowerCase(), {
         action: row.action ?? "HOLD",
-        confidence: Math.min(100, Math.max(0, row.confidence ?? 50)),
-        riskScore: Math.min(100, Math.max(0, row.riskScore ?? 50)),
+        confidence: normalizePct(row.confidence, 50),
+        riskScore: normalizePct(row.riskScore, 50),
         reasoning: row.reasoning ?? "",
         whyAction: row.whyAction ?? buildWhyAction(row.action ?? "HOLD", match.token, factors, edge),
         reasoningFactors: factors,
