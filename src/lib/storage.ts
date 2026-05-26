@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { getSupabase } from "./supabase";
 
 export type ReasoningFactor = {
   label: string;
@@ -84,11 +85,32 @@ async function writeJson<T>(file: string, data: T) {
 }
 
 export async function getNexusDecisions(limit = 50) {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("nexus_decisions")
+      .select("payload")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (!error && data?.length) {
+      return data.map((row) => row.payload as NexusDecision);
+    }
+    if (error) console.warn("Supabase nexus read:", error.message);
+  }
+
   const items = await readJson<NexusDecision[]>("nexus-decisions.json", []);
   return items.slice(0, limit);
 }
 
 export async function addNexusDecision(decision: NexusDecision) {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error } = await supabase.from("nexus_decisions").insert({ payload: decision });
+    if (error) console.warn("Supabase nexus insert:", error.message);
+    else return decision;
+  }
+
   const items = await readJson<NexusDecision[]>("nexus-decisions.json", []);
   items.unshift(decision);
   await writeJson("nexus-decisions.json", items.slice(0, 200));
@@ -96,11 +118,32 @@ export async function addNexusDecision(decision: NexusDecision) {
 }
 
 export async function getPrismPredictions(limit = 50) {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("prism_predictions")
+      .select("payload")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (!error && data?.length) {
+      return data.map((row) => row.payload as PrismPrediction);
+    }
+    if (error) console.warn("Supabase prism read:", error.message);
+  }
+
   const items = await readJson<PrismPrediction[]>("prism-predictions.json", []);
   return items.slice(0, limit);
 }
 
 export async function addPrismPrediction(prediction: PrismPrediction) {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error } = await supabase.from("prism_predictions").insert({ payload: prediction });
+    if (error) console.warn("Supabase prism insert:", error.message);
+    else return prediction;
+  }
+
   const items = await readJson<PrismPrediction[]>("prism-predictions.json", []);
   items.unshift(prediction);
   await writeJson("prism-predictions.json", items.slice(0, 200));

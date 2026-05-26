@@ -63,6 +63,17 @@ Required env vars for full NEXUS: `OPENAI_API_KEY`, `BIRDEYE_API_KEY`, `NEWS_API
 
 Optional: `ZEROX_API_KEY` for on-chain EVM swap execution
 
+### Supabase setup (required for Vercel persistence)
+
+1. Open [Supabase SQL Editor](https://supabase.com/dashboard/project/pjtkiktpdvhghkqwqpok/sql)
+2. Run the SQL in `supabase/schema.sql`
+3. Copy **anon public** key from Project Settings → API
+4. Set `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_ANON_KEY` in Vercel env vars
+
+### No OpenAI / Claude?
+
+The app runs fully in **heuristic mode** using DexScreener, Birdeye, GDELT, and NewsAPI — no paid AI keys needed.
+
 ## Repository
 
 [github.com/ibrahim0-cursor/cursor-arc-circle](https://github.com/ibrahim0-cursor/cursor-arc-circle)

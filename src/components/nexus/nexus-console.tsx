@@ -71,7 +71,8 @@ export function NexusConsole() {
                 Autonomous Trading Intelligence
               </h1>
               <p className="mt-3 text-white/60">
-                Contract addresses, live charts, mcap, sniper data, reasoning breakdown — connect wallet and swap.
+                Contract addresses, live charts, mcap, sniper data, reasoning breakdown — connect wallet and swap via 0x.
+                <span className="mt-1 block text-cyan-300/80">Market-intelligence mode — no paid ChatGPT or Claude required.</span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
