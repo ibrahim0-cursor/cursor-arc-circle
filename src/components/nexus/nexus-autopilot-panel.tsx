@@ -348,7 +348,7 @@ export function NexusAutopilotPanel({
             onClick={() => {
               persist({ ...config, enabled: false });
               pushLog("Cancelled by user", "info");
-              toast({ type: "info", title: "Autopilot cancelled" });
+              toast({ type: "success", title: "Autopilot cancelled", message: "Scheduled trades stopped" });
             }}
             className="inline-flex items-center gap-1 rounded-lg border border-rose-400/50 bg-black/30 px-3 py-1.5 text-xs font-bold text-rose-100"
           >

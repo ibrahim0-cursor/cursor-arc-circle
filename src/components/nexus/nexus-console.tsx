@@ -5,7 +5,6 @@ import { useAccount, useChainId } from "wagmi";
 import {
   Bot,
   Brain,
-  CheckCircle2,
   Database,
   Loader2,
   Radio,
@@ -98,8 +97,6 @@ export function NexusConsole() {
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"live" | "saved">("live");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
@@ -195,8 +192,6 @@ export function NexusConsole() {
 
   async function runScan() {
     setScanning(true);
-    setScanError(null);
-    setSuccessMsg(null);
     try {
       if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
       await ensureArcNetwork();
@@ -217,7 +212,6 @@ export function NexusConsole() {
       persistSavedScans(merged);
       if (merged[0]) setSelectedSavedId(merged[0].id);
       const count = data.count ?? decisions.length;
-      setSuccessMsg(`Agent Memory saved ${count} tokens`);
       setActiveTab("saved");
       setMobilePanel("feed");
       scrollToMobileContent();
@@ -229,7 +223,6 @@ export function NexusConsole() {
       await loadSaved();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Scan failed";
-      setScanError(msg);
       toast({ type: "error", title: "Memory scan failed", message: msg });
     } finally {
       setScanning(false);
@@ -248,8 +241,6 @@ export function NexusConsole() {
       return;
     }
     setLoading(true);
-    setScanError(null);
-    setSuccessMsg(null);
     try {
       await ensureArcNetwork();
       const fee = await payArcFee("ANALYZE", selectedToken.tokenAddress);
@@ -286,8 +277,6 @@ export function NexusConsole() {
             }
           : prev,
       );
-      const msg = data.message ?? `Report generated · ${agent.action} signal`;
-      setSuccessMsg(msg);
       setMobilePanel("chart");
       scrollToMobileContent();
       toast({
@@ -306,7 +295,6 @@ export function NexusConsole() {
       await loadSaved();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Analyze failed";
-      setScanError(msg);
       toast({ type: "error", title: "AI analyze failed", message: msg });
     } finally {
       setLoading(false);
@@ -349,15 +337,6 @@ export function NexusConsole() {
             onSelect={(t) => {
               setSelectedToken(t);
               scrollToMobileContent();
-              toast({
-                type: "info",
-                title: `${t.symbol} pinned`,
-                message: t.security?.honeypotRisk
-                  ? "High risk token — review security"
-                  : t.agent
-                    ? `Signal: ${t.agent.action}`
-                    : "Prices update without losing your pick",
-              });
             }}
             onTokensRefresh={handleFeedRefresh}
           />
@@ -405,7 +384,6 @@ export function NexusConsole() {
                 });
                 setMobilePanel("chart");
                 scrollToMobileContent();
-                toast({ type: "info", title: "Memory token opened", message: decision.symbol });
               }}
             />
           ))
@@ -419,10 +397,7 @@ export function NexusConsole() {
       <NexusTokenStrip
         tokens={feedTokens}
         selected={selectedToken}
-        onSelect={(t) => {
-          setSelectedToken(t);
-          toast({ type: "info", title: `${t.symbol}`, message: "Chart & analysis updated" });
-        }}
+        onSelect={(t) => setSelectedToken(t)}
       />
       {displayDecision && <NexusTokenDetail decision={displayDecision} />}
       <NexusTokenMetrics token={selectedToken} />
@@ -450,17 +425,11 @@ export function NexusConsole() {
       <NexusTokenStrip
         tokens={feedTokens}
         selected={selectedToken}
-        onSelect={(t) => {
-          setSelectedToken(t);
-          toast({ type: "info", title: `${t.symbol}`, message: "Ready to trade" });
-        }}
+        onSelect={(t) => setSelectedToken(t)}
       />
       <NexusTradeHub
         token={selectedToken}
-        onTradeComplete={() => {
-          setPortfolioKey((k) => k + 1);
-          toast({ type: "success", title: "Trade recorded", message: "Demo fill + Arc fee logged" });
-        }}
+        onTradeComplete={() => setPortfolioKey((k) => k + 1)}
       />
       <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
     </div>
@@ -548,18 +517,6 @@ export function NexusConsole() {
         <div className="mb-4">
           <NexusIntegrationsBanner />
         </div>
-
-        {successMsg && (
-          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {successMsg}
-          </div>
-        )}
-        {scanError && (
-          <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
-            {scanError}
-          </div>
-        )}
 
         <div id="nexus-mobile-content" className="scroll-mt-20 lg:hidden">
           {mobilePanel === "feed" && feedPanel}

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
 import { arcExplorerAddress, arcExplorerTx } from "@/lib/arc";
@@ -56,6 +57,7 @@ export function NexusTradeHub({
   onTradeComplete?: () => void;
 }) {
   const [tradeTab, setTradeTab] = useState<TradeTab>("buy");
+  const toast = useToast();
   const { address, isConnected } = useAccount();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
   const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
@@ -175,9 +177,16 @@ export function NexusTradeHub({
       if (!res.ok) throw new Error(data.error ?? "Demo trade failed");
 
       setLastTx({ hash: fee.txHash, block: fee.blockNumber });
+      toast({
+        type: "success",
+        title: side === "buy" ? "Buy executed" : "Sell executed",
+        message: quote?.label ?? `Demo ${side} recorded on Arc`,
+      });
       onTradeComplete?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Trade failed");
+      const msg = err instanceof Error ? err.message : "Trade failed";
+      setError(msg);
+      toast({ type: "error", title: `${side === "buy" ? "Buy" : "Sell"} failed`, message: msg });
     } finally {
       setLoading(false);
     }

@@ -18,6 +18,8 @@ export type ToastInput = {
   durationMs?: number;
 };
 
+/** User-action toasts only — avoid `info` for passive UI (token select, refresh). */
+
 type Toast = ToastInput & { id: number };
 
 const ToastContext = createContext<(input: ToastInput) => void>(() => {});
@@ -37,7 +39,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (input: ToastInput) => {
       const id = Date.now() + Math.floor(Math.random() * 1000);
       const entry: Toast = { type: "info", ...input, id };
-      setToasts((prev) => [...prev, entry].slice(-4));
+      setToasts((prev) => {
+        const dup = prev.some(
+          (t) => t.title === entry.title && t.message === entry.message && t.type === entry.type,
+        );
+        if (dup) return prev;
+        return [...prev, entry].slice(-3);
+      });
       const ms = input.durationMs ?? 5000;
       window.setTimeout(() => dismiss(id), ms);
     },
