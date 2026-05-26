@@ -25,7 +25,14 @@ export function buildLocalTokenIntel(token: TrendingToken): TokenIntel {
       buys > 2000 ? Math.min(15, Math.ceil(buys / 600)) : buys > 400 ? Math.ceil(buys / 900) : 0,
     whaleCount: token.liquidityUsd > 1_000_000 ? 5 : token.liquidityUsd > 250_000 ? 3 : 1,
     insiderCount: ratio > 2 && buys > 500 ? Math.min(5, Math.ceil(buys / 1200)) : 0,
-    holderCount: undefined,
+    holderCount:
+      token.marketCap && token.priceUsd > 0
+        ? Math.max(50, Math.round(token.marketCap / token.priceUsd / 80))
+        : buys + sells > 0
+          ? Math.max(20, Math.round((buys + sells) * 0.8))
+          : token.liquidityUsd > 100_000
+            ? Math.round(token.liquidityUsd / 25_000)
+            : undefined,
     top10HolderPercent: undefined,
     technical: {
       rsi: ta.rsi,

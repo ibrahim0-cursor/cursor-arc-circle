@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Shield, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ARC_TESTNET_ID } from "@/lib/arc-chain";
 import type { WalletScore } from "@/lib/wallet-score";
@@ -13,9 +13,14 @@ export function NexusWalletScoreButton() {
   const [score, setScore] = useState<WalletScore | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  async function loadScore() {
+  async function loadScore(toggle = false) {
     if (!address) return;
+    if (toggle && open) {
+      setOpen(false);
+      return;
+    }
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -34,9 +39,19 @@ export function NexusWalletScoreButton() {
   }
 
   useEffect(() => {
-    if (isConnected && address) loadScore();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, chainId]);
+    if (!open) return;
+    function onPointerDown(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [address]);
 
   if (!isConnected) {
     return (
@@ -48,17 +63,27 @@ export function NexusWalletScoreButton() {
   }
 
   return (
-    <div className="relative">
-      <Button variant="outline" size="sm" onClick={loadScore} disabled={loading}>
+    <div className="relative" ref={panelRef}>
+      <Button variant="outline" size="sm" onClick={() => loadScore(true)} disabled={loading}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
         Wallet Score {score ? `· ${score.grade}` : ""}
       </Button>
 
       {open && score && (
-        <div className="absolute right-0 top-full z-20 mt-2 w-72 rounded-2xl border border-white/15 bg-[#0a0a12] p-4 shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-cyan-400/25 bg-[#0a1018]/95 p-4 shadow-2xl backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <p className="font-medium">{score.label}</p>
-            <span className="text-2xl font-bold text-cyan-300">{score.grade}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-cyan-300">{score.grade}</span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-lg p-1 text-white/40 hover:bg-white/10 hover:text-white/70"
+                aria-label="Close wallet score"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           <p className="mt-1 text-sm text-white/55">Score {score.score}/100</p>
           <div className="mt-3 space-y-2">
@@ -72,13 +97,6 @@ export function NexusWalletScoreButton() {
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            className="mt-3 text-xs text-white/40 hover:text-white/60"
-            onClick={() => setOpen(false)}
-          >
-            Close
-          </button>
         </div>
       )}
     </div>

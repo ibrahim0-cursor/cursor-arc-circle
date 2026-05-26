@@ -9,7 +9,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { arcTestnet, ARC_TESTNET_ID } from "./arc-chain";
 
 export { arcTestnet, ARC_TESTNET_ID, ARC_FEE_USD } from "./arc-chain";
-export { isArcChain, arcExplorerTx } from "./arc-chain";
+export { isArcChain, arcExplorerTx, arcExplorerAddress } from "./arc-chain";
 
 export function getArcPublicClient() {
   return createPublicClient({

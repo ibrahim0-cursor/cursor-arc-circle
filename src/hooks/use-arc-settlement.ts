@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAccount, useChainId, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useSendTransaction, useSwitchChain } from "wagmi";
 import { encodePacked, keccak256, toHex } from "viem";
 import { arcTestnet, ARC_TESTNET_ID, ARC_FEE_USD } from "@/lib/arc-chain";
 
@@ -25,9 +25,9 @@ async function addArcToWallet() {
 export function useArcSettlement() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
+  const publicClient = usePublicClient({ chainId: ARC_TESTNET_ID });
   const { switchChainAsync } = useSwitchChain();
-  const { sendTransactionAsync, data: txHash, isPending } = useSendTransaction();
-  const { isLoading: confirming } = useWaitForTransactionReceipt({ hash: txHash });
+  const { sendTransactionAsync, isPending } = useSendTransaction();
 
   const onArc = chainId === ARC_TESTNET_ID;
 
@@ -45,7 +45,7 @@ export function useArcSettlement() {
     await new Promise((r) => setTimeout(r, 400));
   }, [chainId, isConnected, switchChainAsync]);
 
-  /** Records action on Arc testnet — gas paid in native USDC */
+  /** Records action on Arc testnet — waits for on-chain confirmation */
   const payArcFee = useCallback(
     async (action: string, payload: string) => {
       await ensureArcNetwork();
@@ -56,16 +56,35 @@ export function useArcSettlement() {
         encodePacked(["string", "string", "bytes32"], ["NEXUS_ARC_FEE", action, hash]),
       );
 
-      const tx = await sendTransactionAsync({
+      const txHash = await sendTransactionAsync({
         chainId: ARC_TESTNET_ID,
         to: address,
         value: BigInt(0),
         data,
       });
 
-      return { txHash: tx, payloadHash: hash, feeUsd: ARC_FEE_USD, chain: arcTestnet.name };
+      if (!publicClient) {
+        return { txHash, payloadHash: hash, feeUsd: ARC_FEE_USD, chain: arcTestnet.name };
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        timeout: 120_000,
+      });
+
+      if (receipt.status !== "success") {
+        throw new Error("Arc transaction failed on-chain. Check testnet.arcscan.app.");
+      }
+
+      return {
+        txHash,
+        payloadHash: hash,
+        feeUsd: ARC_FEE_USD,
+        chain: arcTestnet.name,
+        blockNumber: Number(receipt.blockNumber),
+      };
     },
-    [address, ensureArcNetwork, sendTransactionAsync],
+    [address, ensureArcNetwork, publicClient, sendTransactionAsync],
   );
 
   return {
@@ -74,7 +93,6 @@ export function useArcSettlement() {
     feeUsd: ARC_FEE_USD,
     payArcFee,
     ensureArcNetwork,
-    txHash,
-    isPending: isPending || confirming,
+    isPending,
   };
 }

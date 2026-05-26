@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
-import { ArrowDownUp, Loader2, RefreshCw } from "lucide-react";
+import { useAccount, useBalance } from "wagmi";
+import { ArrowDownUp, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
-import { arcExplorerTx } from "@/lib/arc";
-import { formatUsd } from "@/lib/utils";
+import { arcExplorerAddress, arcExplorerTx } from "@/lib/arc";
+import { ARC_TESTNET_ID } from "@/lib/arc-chain";
+import { formatUsd, truncateHash } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusDecision } from "@/lib/storage";
 
@@ -38,13 +36,17 @@ export function NexusDemoTradePanel({
 }) {
   const { address, isConnected } = useAccount();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
+  const { data: balance } = useBalance({
+    address,
+    chainId: ARC_TESTNET_ID,
+  });
 
   const trade = asTradeToken(token);
   const [side, setSide] = useState<"buy" | "sell" | "swap_to_usdc">("buy");
   const [amount, setAmount] = useState("10");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastTx, setLastTx] = useState<string | null>(null);
+  const [lastTx, setLastTx] = useState<{ hash: string; block?: number } | null>(null);
   const [positionTokens, setPositionTokens] = useState(0);
 
   useEffect(() => {
@@ -89,6 +91,10 @@ export function NexusDemoTradePanel({
       })
     : null;
 
+  const balanceLabel = balance
+    ? `${Number(balance.formatted).toFixed(2)} ${balance.symbol}`
+    : "—";
+
   async function executeDemoTrade() {
     if (!trade || !address) return;
     setLoading(true);
@@ -119,7 +125,7 @@ export function NexusDemoTradePanel({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Demo trade failed");
 
-      setLastTx(fee.txHash);
+      setLastTx({ hash: fee.txHash, block: fee.blockNumber });
       onTradeComplete?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Trade failed");
@@ -129,133 +135,117 @@ export function NexusDemoTradePanel({
   }
 
   return (
-    <Card className="border-cyan-400/25 bg-gradient-to-b from-cyan-400/[0.06] to-transparent">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ArrowDownUp className="h-5 w-5 text-cyan-300" />
-            <div>
-              <h2 className="text-lg font-medium">Demo Trading</h2>
-              <p className="text-xs text-white/45">Arc Testnet only · pay fees in USDC</p>
-            </div>
-          </div>
-          <WalletConnectButton />
+    <div className="overflow-hidden rounded-2xl border border-cyan-300/20 bg-white/[0.03] shadow-[0_0_40px_-12px_rgba(103,232,249,0.35)] backdrop-blur-xl">
+      <div className="flex items-center justify-between border-b border-cyan-300/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <ArrowDownUp className="h-4 w-4 text-cyan-200" />
+          <span className="text-sm font-medium text-cyan-50">Arc Swap</span>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        {address && (
+          <a
+            href={arcExplorerAddress(address)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-400/20"
+          >
+            {balanceLabel}
+            <ExternalLink className="h-3 w-3 opacity-70" />
+          </a>
+        )}
+      </div>
+
+      <div className="space-y-3 p-4">
         {!trade ? (
-          <p className="text-sm text-white/50">Select a trending token to demo trade.</p>
+          <p className="text-sm text-white/50">Select a token to swap on Arc.</p>
         ) : (
           <>
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/40">Token</p>
-                  <p className="mt-1 text-xl font-semibold">{trade.symbol}</p>
-                  <p className="text-xs text-white/45">
-                    {formatUsd(trade.priceUsd)} · live feed · settle on Arc
-                  </p>
-                </div>
-                <Badge variant="nexus">Arc</Badge>
-              </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-white">{trade.symbol}</span>
+              <span className="text-white/50">{formatUsd(trade.priceUsd)}</span>
             </div>
 
-            <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-xs text-cyan-100/80">
-              All trades execute on <strong>Arc Testnet</strong>. Gas and fees paid in{" "}
-              <strong>USDC</strong> (~${feeUsd}/tx). Get testnet USDC from the{" "}
-              <a
-                href="https://faucet.circle.com/"
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-white"
-              >
-                Circle faucet
-              </a>
-              .
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex gap-1.5">
               {(["buy", "sell", "swap_to_usdc"] as const).map((value) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setSide(value)}
                   disabled={value === "swap_to_usdc" && positionTokens <= 0}
-                  className={`rounded-xl border py-2.5 text-xs font-medium capitalize transition ${
+                  className={`flex-1 rounded-lg border py-1.5 text-[11px] font-medium capitalize transition ${
                     side === value
-                      ? value === "buy"
-                        ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
-                        : "border-rose-400/40 bg-rose-400/15 text-rose-200"
-                      : "border-white/10 bg-white/[0.03] text-white/60 disabled:opacity-40"
+                      ? "border-cyan-300/40 bg-cyan-400/15 text-cyan-100"
+                      : "border-white/10 bg-white/[0.02] text-white/55 disabled:opacity-40"
                   }`}
                 >
-                  {value === "swap_to_usdc" ? "→ Arc USDC" : value}
+                  {value === "swap_to_usdc" ? "→ USDC" : value}
                 </button>
               ))}
             </div>
 
             {side !== "swap_to_usdc" && (
-              <div>
-                <label className="text-xs uppercase tracking-[0.18em] text-white/40">
-                  {side === "buy" ? "Arc USDC amount" : "Token amount"}
-                </label>
-                <input
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-cyan-400/40"
-                />
-              </div>
-            )}
-
-            {positionTokens > 0 && (
-              <p className="text-xs text-cyan-200/70">
-                Open position: {positionTokens.toFixed(6)} {trade.symbol} on Arc
-              </p>
+              <input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full rounded-xl border border-cyan-300/15 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40"
+                placeholder={side === "buy" ? "USDC amount" : "Token amount"}
+              />
             )}
 
             {quote && (
-              <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-cyan-100/90">
-                {quote.label}
-                {"pnlUsd" in quote && quote.pnlUsd !== undefined && (
-                  <span className={`ml-2 ${quote.pnlUsd >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                    (P&L {formatUsd(quote.pnlUsd)})
-                  </span>
-                )}
+              <div className="rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-xs text-white/70">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate">{quote.label}</span>
+                  {"pnlUsd" in quote && quote.pnlUsd !== undefined && (
+                    <span className={quote.pnlUsd >= 0 ? "text-emerald-300" : "text-rose-300"}>
+                      {formatUsd(quote.pnlUsd)}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
+
+            <div className="flex items-center justify-between rounded-lg border border-cyan-300/10 bg-cyan-400/[0.04] px-3 py-2 text-[11px] text-cyan-100/75">
+              <span>Arc network fee</span>
+              <span className="font-medium text-cyan-200">~${feeUsd} USDC</span>
+            </div>
 
             {isConnected ? (
               <Button
                 variant="nexus"
-                className="w-full"
+                className="h-9 w-full text-sm"
                 onClick={executeDemoTrade}
                 disabled={loading || arcPending}
               >
                 {loading || arcPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="h-4 w-4" />
+                  `Confirm · ${side === "buy" ? "Buy" : side === "sell" ? "Sell" : "Swap"}`
                 )}
-                Pay Arc USDC & {side === "buy" ? "Buy" : side === "sell" ? "Sell" : "Swap to USDC"}
               </Button>
             ) : (
-              <p className="text-sm text-white/55">Connect on Arc Testnet to demo trade.</p>
+              <p className="text-center text-xs text-white/50">Connect on Arc Testnet</p>
             )}
 
-            {error && <p className="text-sm text-rose-300">{error}</p>}
+            {error && <p className="text-xs text-rose-300">{error}</p>}
+
             {lastTx && (
               <a
-                href={arcExplorerTx(lastTx)}
+                href={arcExplorerTx(lastTx.hash)}
                 target="_blank"
                 rel="noreferrer"
-                className="block text-xs text-emerald-300 hover:underline"
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/10 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-400/15"
               >
-                Arc USDC tx · {lastTx.slice(0, 14)}…
+                <ExternalLink className="h-3.5 w-3.5" />
+                View on Arc Scan · {truncateHash(lastTx.hash, 8, 6)}
               </a>
             )}
+
+            <p className="text-center text-[10px] text-white/35">
+              Demo fill is simulated · only the Arc USDC fee tx is on-chain
+            </p>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

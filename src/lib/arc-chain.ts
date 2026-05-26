@@ -32,3 +32,7 @@ export function isArcChain(chainId?: number) {
 export function arcExplorerTx(txHash: string) {
   return `https://testnet.arcscan.app/tx/${txHash}`;
 }
+
+export function arcExplorerAddress(address: string) {
+  return `https://testnet.arcscan.app/address/${address}`;
+}

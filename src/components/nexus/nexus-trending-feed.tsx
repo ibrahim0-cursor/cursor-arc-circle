@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Bot, Flame, Loader2, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -35,10 +35,13 @@ const REFRESH_MS = 45_000;
 export function NexusTrendingFeed({
   selectedAddress,
   onSelect,
+  onTokensRefresh,
   showAgent = true,
 }: {
   selectedAddress?: string;
   onSelect: (token: TrendingMarketToken) => void;
+  /** Called on every refresh so parent can update selected token prices in-place */
+  onTokensRefresh?: (tokens: TrendingMarketToken[]) => void;
   showAgent?: boolean;
 }) {
   const [tokens, setTokens] = useState<TrendingMarketToken[]>([]);
@@ -46,7 +49,20 @@ export function NexusTrendingFeed({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(REFRESH_MS / 1000);
   const [counts, setCounts] = useState({ buy: 0, sell: 0, hold: 0 });
+
+  const onSelectRef = useRef(onSelect);
+  const onRefreshRef = useRef(onTokensRefresh);
+  const didInitialSelect = useRef(false);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  useEffect(() => {
+    onRefreshRef.current = onTokensRefresh;
+  }, [onTokensRefresh]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -59,26 +75,40 @@ export function NexusTrendingFeed({
       setTokens(list);
       setUpdatedAt(data.updatedAt ?? new Date().toISOString());
       setCounts(data.counts ?? { buy: 0, sell: 0, hold: 0 });
-      if (list[0] && !selectedAddress) onSelect(list[0]);
+      setSecondsLeft(REFRESH_MS / 1000);
+      setError(null);
+      onRefreshRef.current?.(list);
+
+      if (!didInitialSelect.current && list[0]) {
+        didInitialSelect.current = true;
+        onSelectRef.current(list[0]);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Feed load failed");
+      if (!silent) setError(err instanceof Error ? err.message : "Feed load failed");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [onSelect, selectedAddress]);
+  }, []);
 
   useEffect(() => {
     load();
-    const interval = setInterval(() => load(true), REFRESH_MS);
-    return () => clearInterval(interval);
+    const refreshInterval = setInterval(() => load(true), REFRESH_MS);
+    return () => clearInterval(refreshInterval);
   }, [load]);
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setSecondsLeft((s) => (s <= 1 ? REFRESH_MS / 1000 : s - 1));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   if (loading && tokens.length === 0) {
     return (
       <div className="flex items-center justify-center gap-2 py-16 text-white/50">
         <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
-        NEXUS agent scanning DexScreener + Birdeye…
+        NEXUS agent scanning DexScreener…
       </div>
     );
   }
@@ -97,7 +127,7 @@ export function NexusTrendingFeed({
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-300" />
           <h3 className="text-sm font-medium text-white/80">
-            {tokens.length} tokens · auto-refresh 45s
+            {tokens.length} tokens · refresh in {secondsLeft}s
           </h3>
           {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />}
         </div>
@@ -117,7 +147,7 @@ export function NexusTrendingFeed({
 
       {updatedAt && (
         <p className="text-[11px] text-white/35">
-          Last updated {new Date(updatedAt).toLocaleTimeString()} · live like DexScreener
+          Last updated {new Date(updatedAt).toLocaleTimeString()} · selection kept on refresh
         </p>
       )}
 
@@ -195,8 +225,11 @@ export function NexusTrendingFeed({
             <div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-white/45">
               <span>Vol {formatCompact(token.volume24h)}</span>
               <span>Liq {formatCompact(token.liquidityUsd)}</span>
-              <span>Snipers {token.intel?.sniperCount ?? "—"}</span>
-              <span>Holders {token.intel?.holderCount ? formatCompact(token.intel.holderCount) : "—"}</span>
+              <span>Snipers {token.intel?.sniperCount ?? 0}</span>
+              <span>
+                Holders{" "}
+                {token.intel?.holderCount ? formatCompact(token.intel.holderCount) : "—"}
+              </span>
             </div>
           </motion.button>
         );

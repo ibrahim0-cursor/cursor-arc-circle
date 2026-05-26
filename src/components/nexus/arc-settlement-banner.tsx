@@ -27,9 +27,10 @@ export function ArcSettlementBanner({
               href={arcExplorerTx(txHash)}
               target="_blank"
               rel="noreferrer"
-              className="inline-block text-xs text-cyan-300 hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-cyan-300 hover:underline"
             >
-              Arc tx {truncateHash(txHash)} {arcBlockNumber ? `· block ${arcBlockNumber}` : ""}
+              View on testnet.arcscan.app · {truncateHash(txHash)}{" "}
+              {arcBlockNumber ? `· block ${arcBlockNumber}` : ""}
             </a>
           )}
         </div>

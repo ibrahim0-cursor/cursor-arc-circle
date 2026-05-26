@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { Briefcase, Loader2 } from "lucide-react";
+import { Briefcase, ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { formatUsd } from "@/lib/utils";
+import { formatUsd, truncateHash } from "@/lib/utils";
+import { arcExplorerTx } from "@/lib/arc";
 import { DEMO_TRADE_NETWORKS } from "@/lib/testnet-chains";
 import type { DemoPosition, DemoTradeRecord } from "@/lib/storage";
 
@@ -97,11 +98,24 @@ export function NexusPortfolio({ refreshKey }: { refreshKey?: number }) {
         {trades.length > 0 && (
           <div className="border-t border-white/10 pt-4">
             <p className="mb-2 text-xs uppercase tracking-wider text-white/40">Recent trades</p>
-            <div className="max-h-32 space-y-2 overflow-y-auto">
-              {trades.slice(0, 5).map((t) => (
-                <div key={t.id} className="flex justify-between text-xs text-white/55">
-                  <span className="capitalize">{t.side.replace("_", " ")} {t.symbol}</span>
-                  <span>{formatUsd(t.usdcAmount)}</span>
+            <div className="max-h-36 space-y-2 overflow-y-auto">
+              {trades.slice(0, 8).map((t) => (
+                <div key={t.id} className="flex items-center justify-between gap-2 text-xs text-white/55">
+                  <span className="capitalize">
+                    {t.side.replace("_", " ")} {t.symbol} · {formatUsd(t.usdcAmount)}
+                  </span>
+                  {t.arcFeeTxHash && (
+                    <a
+                      href={arcExplorerTx(t.arcFeeTxHash)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 text-emerald-300 hover:underline"
+                    >
+                      Arc Scan
+                      <ExternalLink className="h-3 w-3" />
+                      {truncateHash(t.arcFeeTxHash, 4, 4)}
+                    </a>
+                  )}
                 </div>
               ))}
             </div>

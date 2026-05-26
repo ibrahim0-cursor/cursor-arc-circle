@@ -97,6 +97,18 @@ export function NexusConsole() {
   const selectedSaved = savedDecisions.find((d) => d.id === selectedSavedId) ?? null;
   const displayDecision = activeTab === "saved" && selectedSaved ? selectedSaved : liveDecision;
 
+  const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
+    setSelectedToken((prev) => {
+      if (!prev) return prev;
+      const updated = tokens.find(
+        (t) =>
+          t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
+          t.chainId === prev.chainId,
+      );
+      return updated ?? prev;
+    });
+  }, []);
+
   async function runScan() {
     setScanning(true);
     setScanError(null);
@@ -276,7 +288,11 @@ export function NexusConsole() {
             </CardHeader>
             <CardContent className="max-h-[85vh] space-y-4 overflow-y-auto pr-1">
               {activeTab === "live" ? (
-                <NexusTrendingFeed selectedAddress={selectedToken?.tokenAddress} onSelect={setSelectedToken} />
+                <NexusTrendingFeed
+                  selectedAddress={selectedToken?.tokenAddress}
+                  onSelect={setSelectedToken}
+                  onTokensRefresh={handleFeedRefresh}
+                />
               ) : savedDecisions.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
                   <Bot className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
