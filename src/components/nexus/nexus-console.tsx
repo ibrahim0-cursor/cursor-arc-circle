@@ -388,7 +388,7 @@ export function NexusConsole() {
           </button>
         </div>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:min-h-[min(85vh,920px)]">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:max-h-[min(85vh,920px)] lg:min-h-0">
         {activeTab === "live" ? (
           <NexusTrendingFeed
             className="h-full min-h-0"
@@ -643,7 +643,7 @@ export function NexusConsole() {
           {mobilePanel === "trade" && tradePanel}
         </div>
 
-        <div className="hidden gap-4 lg:grid lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div className="hidden items-start gap-4 lg:grid lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
           {feedPanel}
           <div id="nexus-chart-panel" className="scroll-mt-24 space-y-3">
             {chartPanel}

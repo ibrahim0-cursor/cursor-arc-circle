@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bot,
   Flame,
+  ChevronDown,
   Loader2,
   RefreshCw,
   Shield,
@@ -50,6 +51,7 @@ export type TrendingMarketToken = {
 
 const REFRESH_MS = 45_000;
 const MAX_FEED = 120;
+const FEED_PREVIEW = 10;
 
 export function NexusTrendingFeed({
   selectedAddress,
@@ -74,6 +76,7 @@ export function NexusTrendingFeed({
   const [secondsLeft, setSecondsLeft] = useState(REFRESH_MS / 1000);
   const [counts, setCounts] = useState({ buy: 0, sell: 0, hold: 0 });
   const [feedCycle, setFeedCycle] = useState(0);
+  const [feedExpanded, setFeedExpanded] = useState(false);
 
   const onSelectRef = useRef(onSelect);
   const onRefreshRef = useRef(onTokensRefresh);
@@ -177,6 +180,128 @@ export function NexusTrendingFeed({
     onSelect(token, { openChart: true });
   }
 
+  const hiddenCount = Math.max(0, tokens.length - FEED_PREVIEW);
+  const showFeedToggle = hiddenCount > 0;
+  const visibleTokens = feedExpanded ? tokens : tokens.slice(0, FEED_PREVIEW);
+
+  function renderTokenRow(token: TrendingMarketToken) {
+    const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
+    const agent = token.agent;
+    const sec = token.security;
+
+    return (
+      <motion.button
+        key={`${token.chainId}:${token.tokenAddress}`}
+        type="button"
+        onClick={() => handleUserSelect(token)}
+        className={`w-full rounded-2xl border p-3 text-left transition active:scale-[0.99] max-lg:min-h-[72px] ${
+          selected
+            ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
+            : "border-white/10 bg-black/20 hover:border-white/20"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {token.icon ? (
+              <img src={token.icon} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-white/10 max-lg:h-11 max-lg:w-11" />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
+                {token.symbol.slice(0, 2)}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-base font-semibold max-lg:text-[15px]">{token.symbol}</span>
+                <NexusTokenChatButton
+                  token={token}
+                  onOpenTrade={onOpenTrade}
+                  className="!min-h-[32px] shrink-0 !px-2 !py-1 !text-[10px] max-lg:!text-[9px]"
+                />
+                {agent && (
+                  <Badge
+                    variant={
+                      agent.action === "BUY" ? "buy" : agent.action === "SELL" ? "sell" : "hold"
+                    }
+                  >
+                    {agent.action}
+                  </Badge>
+                )}
+                {sec && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                      sec.honeypotRisk || sec.scamRisk
+                        ? "bg-rose-500/20 text-rose-200"
+                        : sec.grade === "A" || sec.grade === "B"
+                          ? "bg-emerald-500/15 text-emerald-200"
+                          : "bg-amber-500/15 text-amber-200"
+                    }`}
+                  >
+                    {sec.honeypotRisk || sec.scamRisk ? (
+                      <ShieldAlert className="h-3 w-3" />
+                    ) : sec.grade === "A" || sec.grade === "B" ? (
+                      <ShieldCheck className="h-3 w-3" />
+                    ) : (
+                      <Shield className="h-3 w-3" />
+                    )}
+                    {sec.grade} · {sec.score}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-white/45">{token.name}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-medium">{formatUsd(token.priceUsd)}</p>
+            <p
+              className={`flex items-center justify-end gap-1 text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}
+            >
+              {token.change24h >= 0 ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {formatPct(token.change24h)}
+            </p>
+          </div>
+        </div>
+
+        {(sec?.honeypotRisk || sec?.scamRisk) && (
+          <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-[11px] text-rose-200">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            {sec.scamLabel ?? sec.label}
+          </div>
+        )}
+
+        {agent && (
+          <p className="mt-1.5 line-clamp-1 text-[11px] text-white/50 max-lg:text-xs">
+            <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
+            <span className="lg:hidden">{agent.confidence}% · {agent.action}</span>
+            <span className="hidden lg:inline">{agent.confidence}% · {agent.whyAction}</span>
+          </p>
+        )}
+
+        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] max-lg:text-xs lg:grid-cols-4 lg:gap-1 lg:text-[10px]">
+          <span className="flex items-center gap-1 text-white/55">
+            <Waves className="h-3 w-3 text-cyan-300/70" />
+            Vol {formatCompact(token.volume24h)}
+          </span>
+          <span className="flex items-center gap-1 text-white/55">
+            <BarChart3 className="h-3 w-3 text-violet-300/70" />
+            Liq {formatCompact(token.liquidityUsd)}
+          </span>
+          <span className="flex items-center gap-1 font-medium text-emerald-300">
+            <TrendingUp className="h-3 w-3" />
+            Buys {token.txns24h?.buys ?? "—"}
+          </span>
+          <span className="flex items-center gap-1 font-medium text-rose-300">
+            <TrendingDown className="h-3 w-3" />
+            Sells {token.txns24h?.sells ?? "—"}
+          </span>
+        </div>
+      </motion.button>
+    );
+  }
+
   if (loading && tokens.length === 0) {
     return (
       <div className="flex items-center justify-center gap-2 py-16 text-white/50">
@@ -235,125 +360,31 @@ export function NexusTrendingFeed({
         {refreshing && <span className="ml-1 text-cyan-300"> Updating…</span>}
       </p>
 
-      <div className="nexus-feed-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-2">
-      {tokens.map((token) => {
-        const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
-        const agent = token.agent;
-        const sec = token.security;
-
-        return (
-          <motion.button
-            key={`${token.chainId}:${token.tokenAddress}`}
-            type="button"
-            onClick={() => handleUserSelect(token)}
-            className={`w-full rounded-2xl border p-3 text-left transition active:scale-[0.99] max-lg:min-h-[72px] ${
-              selected
-                ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
-                : "border-white/10 bg-black/20 hover:border-white/20"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                {token.icon ? (
-                  <img src={token.icon} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-white/10 max-lg:h-11 max-lg:w-11" />
-                ) : (
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
-                    {token.symbol.slice(0, 2)}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base font-semibold max-lg:text-[15px]">{token.symbol}</span>
-                    <NexusTokenChatButton
-                      token={token}
-                      onOpenTrade={onOpenTrade}
-                      className="!min-h-[32px] shrink-0 !px-2 !py-1 !text-[10px] max-lg:!text-[9px]"
-                    />
-                    {agent && (
-                      <Badge
-                        variant={
-                          agent.action === "BUY" ? "buy" : agent.action === "SELL" ? "sell" : "hold"
-                        }
-                      >
-                        {agent.action}
-                      </Badge>
-                    )}
-                    {sec && (
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                          sec.honeypotRisk || sec.scamRisk
-                            ? "bg-rose-500/20 text-rose-200"
-                            : sec.grade === "A" || sec.grade === "B"
-                              ? "bg-emerald-500/15 text-emerald-200"
-                              : "bg-amber-500/15 text-amber-200"
-                        }`}
-                      >
-                        {sec.honeypotRisk || sec.scamRisk ? (
-                          <ShieldAlert className="h-3 w-3" />
-                        ) : sec.grade === "A" || sec.grade === "B" ? (
-                          <ShieldCheck className="h-3 w-3" />
-                        ) : (
-                          <Shield className="h-3 w-3" />
-                        )}
-                        {sec.grade} · {sec.score}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-white/45">{token.name}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-medium">{formatUsd(token.priceUsd)}</p>
-                <p
-                  className={`flex items-center justify-end gap-1 text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}
-                >
-                  {token.change24h >= 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  {formatPct(token.change24h)}
-                </p>
-              </div>
-            </div>
-
-            {(sec?.honeypotRisk || sec?.scamRisk) && (
-              <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-[11px] text-rose-200">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                {sec.scamLabel ?? sec.label}
-              </div>
-            )}
-
-            {agent && (
-              <p className="mt-1.5 line-clamp-1 text-[11px] text-white/50 max-lg:text-xs">
-                <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
-                <span className="lg:hidden">{agent.confidence}% · {agent.action}</span>
-                <span className="hidden lg:inline">{agent.confidence}% · {agent.whyAction}</span>
-              </p>
-            )}
-
-            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] max-lg:text-xs lg:grid-cols-4 lg:gap-1 lg:text-[10px]">
-              <span className="flex items-center gap-1 text-white/55">
-                <Waves className="h-3 w-3 text-cyan-300/70" />
-                Vol {formatCompact(token.volume24h)}
-              </span>
-              <span className="flex items-center gap-1 text-white/55">
-                <BarChart3 className="h-3 w-3 text-violet-300/70" />
-                Liq {formatCompact(token.liquidityUsd)}
-              </span>
-              <span className="flex items-center gap-1 font-medium text-emerald-300">
-                <TrendingUp className="h-3 w-3" />
-                Buys {token.txns24h?.buys ?? "—"}
-              </span>
-              <span className="flex items-center gap-1 font-medium text-rose-300">
-                <TrendingDown className="h-3 w-3" />
-                Sells {token.txns24h?.sells ?? "—"}
-              </span>
-            </div>
-          </motion.button>
-        );
-      })}
+      <div
+        className={cn(
+          "nexus-feed-scroll min-h-0 space-y-1.5 overscroll-contain pr-1",
+          feedExpanded
+            ? "flex-1 overflow-y-auto pb-2 lg:max-h-[min(72vh,760px)]"
+            : "overflow-hidden pb-1",
+        )}
+      >
+        {visibleTokens.map((token) => renderTokenRow(token))}
       </div>
+
+      {showFeedToggle && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-[44px] w-full gap-2 border-white/15 bg-white/[0.03] text-sm text-white/80 hover:bg-white/[0.06]"
+          onClick={() => setFeedExpanded((prev) => !prev)}
+        >
+          <ChevronDown
+            className={cn("h-4 w-4 shrink-0 transition-transform duration-200", feedExpanded && "rotate-180")}
+          />
+          {feedExpanded ? "Show less" : `Show ${hiddenCount} more`}
+        </Button>
+      )}
     </div>
   );
 }
