@@ -1,5 +1,6 @@
 import type { CryptoNewsItem } from "./crypto-news";
 import type { TrendingToken } from "./dexscreener";
+import { assessTokenScam } from "./scam-detection";
 import type { AgentSignal, TechnicalSnapshot, TokenIntel } from "./storage";
 
 export type NexusResearchReport = {
@@ -42,7 +43,13 @@ export function buildResearchReport(input: {
     watchLevels.push(`RSI ${ta.rsi.toFixed(0)} — ${ta.rsiSignal}`);
   }
 
+  const scam = assessTokenScam(token, intel);
   const risks: string[] = [];
+  if (scam.isScam) {
+    risks.unshift(
+      `${scam.label} — ${scam.flags.slice(0, 2).join("; ") || "DexScreener rug pattern"}. Do not hold.`,
+    );
+  }
   if ((snipers ?? 0) > 3) risks.push(`${snipers} sniper wallets flagged — exit liquidity risk on memecoins`);
   if ((top10 ?? 0) > 45) risks.push(`Top 10 holders control ~${top10?.toFixed(0)}% — concentration risk`);
   if (turnover > 8) risks.push(`Very high turnover (${turnover.toFixed(1)}x) — volatile, size positions small`);
@@ -70,9 +77,11 @@ export function buildResearchReport(input: {
     : "Technical bundle loading from DexScreener price action";
 
   const topFactor = agent.reasoningFactors?.[0];
-  const thesis = topFactor
-    ? `${token.symbol}: ${topFactor.label} — ${topFactor.detail} Combined with ${taSummary.toLowerCase()}, focus on ${agent.action === "BUY" ? "staged entries" : agent.action === "SELL" ? "taking profit or avoiding new size" : "waiting for a clearer edge"} rather than chasing the headline signal alone.`
-    : `${token.symbol} @ ${token.priceUsd}: ${agent.whyAction ?? agent.reasoning}`;
+  const thesis = scam.isScam
+    ? `AVOID ${token.symbol}: ${scam.flags.join(" · ") || scam.label}. Chart/on-chain pattern matches DexScreener rugs (crime dump, honeypot, or dev sell). ${taSummary}.`
+    : topFactor
+      ? `${token.symbol}: ${topFactor.label} — ${topFactor.detail} Combined with ${taSummary.toLowerCase()}, focus on ${agent.action === "BUY" ? "staged entries" : agent.action === "SELL" ? "taking profit or avoiding new size" : "waiting for a clearer edge"} rather than chasing the headline signal alone.`
+      : `${token.symbol} @ ${token.priceUsd}: ${agent.whyAction ?? agent.reasoning}`;
 
   return {
     symbol: token.symbol,

@@ -49,22 +49,31 @@ export function computeTechnicalAnalysis(
   const macdHistogram = h1 - h6 * 0.5;
   const macdSignal = macd > 1.5 ? "bullish" : macd < -1.5 ? "bearish" : "neutral";
 
+  const m5 = changes.m5 ?? h1 * 0.3;
+  const h1c = changes.h1 ?? h1;
+
   let trend: TechnicalAnalysis["trend"] = "sideways";
-  if (h24 > 15) trend = "strong_up";
-  else if (h24 > 3) trend = "up";
-  else if (h24 < -15) trend = "strong_down";
-  else if (h24 < -3) trend = "down";
+  if (m5 <= -30 || h1c <= -40) trend = "strong_down";
+  else if (h24 > 15 && m5 > -10 && h1c > -15) trend = "strong_up";
+  else if (h24 > 3 && m5 > -8) trend = "up";
+  else if (h24 < -15 || h6 < -25) trend = "strong_down";
+  else if (h24 < -3 || h1c < -12) trend = "down";
+  else if (h24 > 10 && (m5 < -15 || h1c < -20)) trend = "down";
 
   const trendLine =
-    trend === "strong_up"
-      ? "Breakout above 24h VWAP — momentum trend intact"
-      : trend === "up"
-        ? "Price above short-term EMA — mild uptrend"
-        : trend === "strong_down"
-          ? "Breakdown below support — bearish trend"
-          : trend === "down"
-            ? "Lower highs forming — downtrend pressure"
-            : "Range-bound — wait for MACD crossover";
+    m5 <= -30 || h1c <= -40
+      ? "Crime dump on 5m/1h — catastrophic sell-off (check DexScreener chart)"
+      : h24 > 10 && (m5 < -15 || h1c < -20)
+        ? "Pump-then-dump: +24h but collapsing intraday — rug pattern"
+        : trend === "strong_up"
+          ? "Breakout above 24h VWAP — momentum trend intact"
+          : trend === "up"
+            ? "Price above short-term EMA — mild uptrend"
+            : trend === "strong_down"
+              ? "Breakdown below support — bearish trend"
+              : trend === "down"
+                ? "Lower highs forming — downtrend pressure"
+                : "Range-bound — wait for MACD crossover";
 
   const support = priceUsd * (1 - Math.abs(h24) / 200 - 0.02);
   const resistance = priceUsd * (1 + Math.abs(h24) / 200 + 0.02);
@@ -77,6 +86,8 @@ export function computeTechnicalAnalysis(
   if (macdSignal === "bearish") score -= 15;
   if (rsiSignal === "oversold" && macdSignal === "bullish") score += 10;
   if (rsiSignal === "overbought" && macdSignal === "bearish") score -= 10;
+  if (m5 <= -25 || h1c <= -35) score -= 35;
+  else if (h24 > 15 && m5 < -10) score -= 28;
   if (trend === "strong_up" || trend === "up") score += 12;
   if (trend === "strong_down" || trend === "down") score -= 12;
   if (volumeTrend === "rising") score += 8;

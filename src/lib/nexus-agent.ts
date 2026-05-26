@@ -7,6 +7,8 @@ import { buildLocalTokenIntel } from "./token-intel-local";
 import { checkSwappable } from "./swappable";
 import { anchorDecisionPayload } from "./arc";
 import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
+import { assessTokenScam, applyScamAndSecurity } from "./scam-detection";
+import { fetchTokenByAddress } from "./dexscreener";
 
 
 function buildReasoningFactors(
@@ -206,9 +208,15 @@ function heuristicDecision(
 
   const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
   const flowRatio = (token.txns24h?.buys ?? intel.buy24h ?? 0) / Math.max(token.txns24h?.sells ?? intel.sell24h ?? 1, 1);
+  const m5 = token.priceChange?.m5 ?? 0;
+  const h1 = token.priceChange?.h1 ?? 0;
+  const crimeDump = m5 <= -25 || h1 <= -35;
+  const pumpDump = token.change24h > 8 && (m5 < -15 || h1 < -20);
 
   let action: NexusDecision["action"] = "HOLD";
-  if (edge > 28 && taScore >= 58 && token.liquidityUsd > 40_000 && flowRatio > 1.05) {
+  if (crimeDump || pumpDump) {
+    action = "SELL";
+  } else if (edge > 28 && taScore >= 58 && token.liquidityUsd > 40_000 && flowRatio > 1.05) {
     action = "BUY";
   } else if (edge < -22 || taScore < 42 || token.change24h < -18) {
     action = "SELL";
@@ -296,7 +304,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
         {
           role: "system",
           content:
-            "You are NEXUS, a professional crypto trading agent. Each token analysis MUST be unique — cite specific numbers from the payload (price, % change, liquidity, volume, RSI, MACD, news headlines). Never reuse the same confidence/risk for different tokens. Return JSON: action (BUY|SELL|HOLD), confidence (0-100), riskScore (0-100), reasoning (2-3 sentences with unique metrics), whyAction (one sentence naming this token's edge).",
+            "You are NEXUS, a professional crypto trading agent. Each token analysis MUST be unique — cite specific numbers from the payload (price, % change, liquidity, volume, RSI, MACD, news headlines). If 5m or 1h price change shows a crime dump or pump-then-dump while 24h is still positive, you MUST return SELL with confidence under 40 — never HOLD or BUY on obvious rugs/honeypots. Never reuse the same confidence/risk for different tokens. Return JSON: action (BUY|SELL|HOLD), confidence (0-100), riskScore (0-100), reasoning (2-3 sentences with unique metrics), whyAction (one sentence naming this token's edge).",
         },
         {
           role: "user",
@@ -341,7 +349,11 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
 export async function buildDecision(token: TrendingToken, arcFeeTxHash?: string): Promise<NexusDecision> {
   const swapCheck = checkSwappable(token);
   const intel = await enrichToken(token, true);
-  const core = await aiDecision(token, intel);
+  const { scoreTokenSecurity } = await import("./token-security");
+  const security = scoreTokenSecurity(token, intel);
+  const scam = assessTokenScam(token, intel, security);
+  const coreRaw = await aiDecision(token, intel);
+  const core = applyScamAndSecurity(token, intel, coreRaw, security, scam);
   const payload = JSON.stringify({ product: "NEXUS", token: token.tokenAddress, ...core });
   const anchor = await anchorDecisionPayload(payload);
 
@@ -372,21 +384,64 @@ export async function buildDecision(token: TrendingToken, arcFeeTxHash?: string)
   };
 }
 
+async function refreshTokenFromDex(token: TrendingToken): Promise<TrendingToken> {
+  const fresh = await fetchTokenByAddress(token.chainId, token.tokenAddress);
+  if (!fresh) return token;
+  return { ...token, ...fresh, intel: token.intel };
+}
+
+async function analyzeTokenForMemoryScan(token: TrendingToken) {
+  const { scoreTokenSecurity } = await import("./token-security");
+  const fresh = await refreshTokenFromDex(token);
+  const bundle = await buildDeepTokenIntel(fresh);
+  const intel = bundle.intel;
+  const security = scoreTokenSecurity(fresh, intel);
+  const scam = assessTokenScam(fresh, intel, security);
+  if (scam.isScam) {
+    security.scamRisk = true;
+    security.scamLabel = scam.label;
+    security.scamType = scam.scamType ?? undefined;
+    security.honeypotRisk = security.honeypotRisk || scam.severity >= 50;
+    security.label = scam.label;
+    security.flags = [...new Set([...security.flags, ...scam.flags])].slice(0, 8);
+  }
+  let signal = heuristicDecision(fresh, intel);
+  signal = applyScamAndSecurity(fresh, intel, signal, security, scam);
+  return { token: { ...fresh, intel }, intel, signal, security, scam };
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  fn: (item: T) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      results[i] = await fn(items[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
+}
+
 export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTxHash?: string) {
   const { filterTradableTokens } = await import("./token-filters");
   const raw = await fetchTrendingMarketTokens(Math.min(limit * 3, 60));
-  const tokens = filterTradableTokens(raw).slice(0, limit);
+  const tokens = filterTradableTokens(raw).slice(0, Math.min(limit, 15));
   if (tokens.length === 0) {
     throw new Error("No tradable tokens found (stablecoins excluded). Check DexScreener connection.");
   }
 
-  const analyzed = await analyzeTrendingFeedQuick(tokens);
+  const analyzed = await mapWithConcurrency(tokens, analyzeTokenForMemoryScan, 4);
   const anchor = arcFeeTxHash
     ? await anchorDecisionPayload(JSON.stringify({ product: "NEXUS", scan: Date.now(), count: tokens.length }))
     : { txHash: undefined as string | undefined, blockNumber: undefined as number | undefined };
 
   const decisions: NexusDecision[] = [];
-  for (const { token, intel, signal, security } of analyzed) {
+  for (const { token, intel, signal } of analyzed) {
     const swapCheck = checkSwappable(token);
     const decision: NexusDecision = {
       id: randomUUID(),
@@ -426,7 +481,7 @@ export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTx
     tokens,
     decisions,
     count: decisions.length,
-    criteria: "arc-settlement|dexscreener|ta|no-stablecoins|fast-scan",
+    criteria: "arc-settlement|dexscreener|birdeye|scam-check|ta|no-stablecoins",
   };
 }
 
@@ -462,8 +517,11 @@ export async function analyzeTokenSignal(
   deep = false,
 ): Promise<AgentSignal> {
   const enriched = intel ?? (await enrichToken(token));
-  if (deep) return aiDecision(token, enriched);
-  return heuristicDecision(token, enriched);
+  const { scoreTokenSecurity } = await import("./token-security");
+  const security = scoreTokenSecurity(token, enriched);
+  const scam = assessTokenScam(token, enriched, security);
+  const raw = deep ? await aiDecision(token, enriched) : heuristicDecision(token, enriched);
+  return applyScamAndSecurity(token, enriched, raw, security, scam);
 }
 
 async function aiFeedBatch(
@@ -542,18 +600,14 @@ function finalizeFeedSignal(
   signal: AgentSignal,
   security: ReturnType<typeof import("./token-security").scoreTokenSecurity>,
 ) {
-  if (security.honeypotRisk && signal.action === "BUY") {
-    const factors = buildReasoningFactors(token, intel, "HOLD");
-    return {
-      ...signal,
-      action: "HOLD" as const,
-      confidence: Math.min(signal.confidence, 44),
-      whyAction: `Security block: ${security.label}. ${signal.whyAction}`,
-      riskScore: Math.max(signal.riskScore, 76),
-      reasoningFactors: factors,
-    };
+  const scam = assessTokenScam(token, intel, security);
+  if (scam.isScam) {
+    security.scamRisk = true;
+    security.scamLabel = scam.label;
+    security.scamType = scam.scamType ?? undefined;
+    if (scam.severity >= 50) security.honeypotRisk = true;
   }
-  return signal;
+  return applyScamAndSecurity(token, intel, signal, security, scam);
 }
 
 /** Fast path: heuristic + security only (no Groq batch) — loads in under 15s on Vercel */

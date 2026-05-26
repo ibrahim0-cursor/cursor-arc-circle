@@ -7,10 +7,16 @@ export type TokenSecurityReport = {
   label: string;
   honeypotRisk: boolean;
   flags: string[];
+  scamRisk?: boolean;
+  scamLabel?: string;
+  scamType?: string;
 };
 
 export function scoreTokenSecurity(
-  token: Pick<TrendingToken, "liquidityUsd" | "volume24h" | "change24h" | "priceUsd">,
+  token: Pick<
+    TrendingToken,
+    "liquidityUsd" | "volume24h" | "change24h" | "priceUsd" | "priceChange" | "txns24h"
+  >,
   intel?: TokenIntel,
 ): TokenSecurityReport {
   const flags: string[] = [];
@@ -62,6 +68,16 @@ export function scoreTokenSecurity(
   if (token.change24h < -40) {
     score -= 10;
     flags.push("Heavy 24h dump");
+  }
+
+  const m5 = token.priceChange?.m5 ?? 0;
+  const h1 = token.priceChange?.h1 ?? 0;
+  if (m5 <= -30 || h1 <= -40) {
+    score -= 28;
+    flags.push(`Intraday dump ${m5.toFixed(0)}% (5m) / ${h1.toFixed(0)}% (1h)`);
+  } else if (token.change24h > 8 && (m5 < -15 || h1 < -25)) {
+    score -= 22;
+    flags.push("Pump-then-dump on chart (positive 24h, collapsing 5m/1h)");
   }
 
   score = Math.max(0, Math.min(100, score));

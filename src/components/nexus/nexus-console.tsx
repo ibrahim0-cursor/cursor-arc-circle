@@ -241,7 +241,7 @@ export function NexusConsole() {
       setActionBanner({
         type: "success",
         title: "Memory scan complete",
-        message: `${count} tokens saved with Arc fee. Open Memory tab — tap any row for full report.`,
+        message: `${count} tokens scanned (DexScreener + Birdeye + scam check). Rugs flagged SELL — open Memory.`,
       });
       toast({
         type: "success",
@@ -466,6 +466,7 @@ export function NexusConsole() {
         onTradeComplete={() => setPortfolioKey((k) => k + 1)}
       />
       <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
+      <NexusAbSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
     </div>
   );
 
@@ -591,10 +592,6 @@ export function NexusConsole() {
             {chartPanel}
             {tradePanel}
           </div>
-        </div>
-
-        <div className="mt-4 lg:mt-6">
-          <NexusAbSwap tokens={feedTokens} />
         </div>
 
         <NexusMobileDock active={mobilePanel} onChange={handleMobilePanel} />

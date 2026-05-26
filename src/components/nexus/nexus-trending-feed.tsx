@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Waves,
 } from "lucide-react";
+import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export type TrendingMarketToken = {
 
 const REFRESH_MS = 45_000;
 const MAX_FEED = 120;
+const FEED_PREVIEW = 15;
 
 export function NexusTrendingFeed({
   selectedAddress,
@@ -226,7 +228,7 @@ export function NexusTrendingFeed({
       </p>
 
       <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
-      {tokens.map((token) => {
+      {tokens.slice(0, FEED_PREVIEW).map((token) => {
         const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
         const agent = token.agent;
         const sec = token.security;
@@ -267,14 +269,14 @@ export function NexusTrendingFeed({
                     {sec && (
                       <span
                         className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                          sec.honeypotRisk
+                          sec.honeypotRisk || sec.scamRisk
                             ? "bg-rose-500/20 text-rose-200"
                             : sec.grade === "A" || sec.grade === "B"
                               ? "bg-emerald-500/15 text-emerald-200"
                               : "bg-amber-500/15 text-amber-200"
                         }`}
                       >
-                        {sec.honeypotRisk ? (
+                        {sec.honeypotRisk || sec.scamRisk ? (
                           <ShieldAlert className="h-3 w-3" />
                         ) : sec.grade === "A" || sec.grade === "B" ? (
                           <ShieldCheck className="h-3 w-3" />
@@ -303,10 +305,10 @@ export function NexusTrendingFeed({
               </div>
             </div>
 
-            {sec?.honeypotRisk && (
+            {(sec?.honeypotRisk || sec?.scamRisk) && (
               <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-[11px] text-rose-200">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                {sec.label}
+                {sec.scamLabel ?? sec.label}
               </div>
             )}
 
@@ -338,6 +340,64 @@ export function NexusTrendingFeed({
           </motion.button>
         );
       })}
+      {tokens.length > FEED_PREVIEW && (
+        <NexusCollapsible
+          label={`${tokens.length - FEED_PREVIEW} more tokens`}
+          hint={`Top ${FEED_PREVIEW} shown · ${tokens.length} total in feed`}
+          icon={Flame}
+          variant="intel"
+        >
+          <div className="space-y-1.5">
+            {tokens.slice(FEED_PREVIEW).map((token) => {
+              const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
+              const agent = token.agent;
+              const sec = token.security;
+              return (
+                <motion.button
+                  key={`${token.chainId}:${token.tokenAddress}`}
+                  type="button"
+                  onClick={() => handleUserSelect(token)}
+                  className={`w-full rounded-xl border p-2.5 text-left transition ${
+                    selected
+                      ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
+                      : "border-white/10 bg-black/20 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      {token.icon ? (
+                        <img src={token.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white/10" />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
+                          {token.symbol.slice(0, 2)}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold">{token.symbol}</span>
+                          <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[32px] !px-2 !py-1" />
+                          {agent && (
+                            <Badge variant={agent.action === "BUY" ? "buy" : agent.action === "SELL" ? "sell" : "hold"}>
+                              {agent.action}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-white/45">{token.name}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{formatUsd(token.priceUsd)}</p>
+                      <p className={`text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                        {formatPct(token.change24h)}
+                      </p>
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </NexusCollapsible>
+      )}
       </div>
     </div>
   );

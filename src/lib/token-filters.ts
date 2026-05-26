@@ -20,13 +20,26 @@ const STABLE_SYMBOLS = new Set([
   "fdusd",
   "usde",
   "crvusd",
+  "susdai",
+  "susde",
+  "usd0",
+  "usds",
 ]);
 
-const STABLE_NAME_HINTS = ["usd coin", "tether", "dai stable", "paypal usd", "eur coin"];
+const STABLE_NAME_HINTS = [
+  "usd coin",
+  "tether",
+  "dai stable",
+  "paypal usd",
+  "eur coin",
+  "synthetic usd",
+  "stablecoin",
+];
 
 export function isStablecoin(symbol: string, name?: string): boolean {
   const sym = symbol.trim().toLowerCase().replace(/^\$/, "");
   if (STABLE_SYMBOLS.has(sym)) return true;
+  if (/^s?usd[a-z0-9]{0,6}$/i.test(sym)) return true;
   if (/^usd[a-z0-9]{0,4}$/i.test(sym) && sym.length <= 6) return true;
   const n = (name ?? "").toLowerCase();
   return STABLE_NAME_HINTS.some((h) => n.includes(h));

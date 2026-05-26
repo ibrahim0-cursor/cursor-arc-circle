@@ -1,6 +1,7 @@
 "use client";
 
-import { Database, ExternalLink, History, Shield, Users } from "lucide-react";
+import { AlertTriangle, Database, ExternalLink, History, Shield, Users } from "lucide-react";
+import { isStablecoin } from "@/lib/token-filters";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { arcExplorerTx } from "@/lib/arc";
@@ -11,6 +12,14 @@ function topFactor(decision: NexusDecision) {
   const f = decision.reasoningFactors?.[0];
   if (!f) return decision.whyAction?.slice(0, 80) ?? "Scan snapshot";
   return `${f.label}: ${f.detail.slice(0, 60)}`;
+}
+
+function isScamSnapshot(decision: NexusDecision) {
+  return (
+    decision.reasoningFactors?.some((f) => f.label === "Scam check") ||
+    (decision.action === "SELL" && decision.riskScore >= 78) ||
+    decision.whyAction?.toLowerCase().includes("scam alert")
+  );
 }
 
 export function NexusMemoryList({
@@ -37,20 +46,23 @@ export function NexusMemoryList({
     );
   }
 
+  const visible = decisions.filter((d) => !isStablecoin(d.symbol, d.name));
+
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2.5 text-xs text-cyan-100/90">
         <p className="flex items-center gap-1.5 font-semibold">
           <History className="h-3.5 w-3.5" />
-          {decisions.length} archived snapshots
+          {visible.length} archived snapshots
         </p>
         <p className="mt-1 text-white/55">
-          Tap a row to reload chart + full report. Compare holder/whale data vs today&apos;s live feed.
+          DexScreener + Birdeye + scam check per token. Rugs show SELL / scam badge — not blind HOLD.
         </p>
       </div>
 
       <div className="space-y-1.5">
-        {decisions.map((decision) => {
+        {visible.map((decision) => {
+          const scam = isScamSnapshot(decision);
           const selected = selectedId === decision.id;
           return (
             <button
@@ -87,6 +99,12 @@ export function NexusMemoryList({
                       >
                         {decision.action}
                       </Badge>
+                      {scam && (
+                        <span className="inline-flex items-center gap-0.5 rounded bg-rose-500/25 px-1.5 py-0.5 text-[9px] font-bold text-rose-200">
+                          <AlertTriangle className="h-3 w-3" />
+                          SCAM
+                        </span>
+                      )}
                       <span className="text-[10px] text-white/40">
                         {formatDistanceToNow(new Date(decision.timestamp), { addSuffix: true })}
                       </span>
