@@ -1,0 +1,41 @@
+{
+  "name": "cursor-arc-circle",
+  "description": "ARC CIRCLE — NEXUS trading agent + PRISM macro oracle for Agora Hackathon",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
+    "@rainbow-me/rainbowkit": "^2.2.11",
+    "@tanstack/react-query": "^5.100.14",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.3.0",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.16.0",
+    "next": "16.2.6",
+    "openai": "^6.39.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "viem": "^2.51.0",
+    "wagmi": "^2.19.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
