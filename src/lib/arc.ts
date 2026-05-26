@@ -1,24 +1,15 @@
 import {
   createPublicClient,
-  createWalletClient,
   encodePacked,
   http,
   keccak256,
-  parseEther,
   toHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { arcTestnet, ARC_TESTNET_ID } from "./arc-chain";
 
-export const arcTestnet = {
-  id: 5042002,
-  name: "Arc Testnet",
-  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: [process.env.ARC_RPC_URL ?? "https://rpc.testnet.arc.network"],
-    },
-  },
-} as const;
+export { arcTestnet, ARC_TESTNET_ID, ARC_FEE_USD } from "./arc-chain";
+export { isArcChain, arcExplorerTx } from "./arc-chain";
 
 export function getArcPublicClient() {
   return createPublicClient({
@@ -39,20 +30,34 @@ export async function getArcStatus() {
       chainId,
       blockNumber: Number(blockNumber),
       rpcUrl: arcTestnet.rpcUrls.default.http[0],
+      feeCurrency: "USDC",
+      estimatedFeeUsd: 0.01,
+      network: "Arc Testnet",
     };
   } catch (error) {
     return {
       connected: false,
-      chainId: arcTestnet.id,
+      chainId: ARC_TESTNET_ID,
       blockNumber: 0,
       rpcUrl: arcTestnet.rpcUrls.default.http[0],
+      feeCurrency: "USDC",
+      estimatedFeeUsd: 0.01,
+      network: "Arc Testnet",
       error: error instanceof Error ? error.message : "Arc RPC unavailable",
     };
   }
 }
 
-export async function anchorDecisionPayload(payload: string) {
+export function buildArcAnchorData(payload: string) {
   const hash = keccak256(toHex(payload));
+  return {
+    hash,
+    data: keccak256(encodePacked(["string", "bytes32"], ["NEXUS_PRISM_ANCHOR", hash])),
+  };
+}
+
+export async function anchorDecisionPayload(payload: string) {
+  const { hash, data } = buildArcAnchorData(payload);
   const privateKey = process.env.ARC_AGENT_PRIVATE_KEY;
 
   if (!privateKey) {
@@ -62,10 +67,13 @@ export async function anchorDecisionPayload(payload: string) {
       txHash: undefined as string | undefined,
       blockNumber: undefined as number | undefined,
       mode: "hash-only" as const,
+      settlement: "Arc Testnet",
+      feePaidIn: "USDC",
     };
   }
 
   try {
+    const { createWalletClient } = await import("viem");
     const account = privateKeyToAccount(privateKey as `0x${string}`);
     const walletClient = createWalletClient({
       account,
@@ -73,13 +81,12 @@ export async function anchorDecisionPayload(payload: string) {
       transport: http(arcTestnet.rpcUrls.default.http[0]),
     });
     const publicClient = getArcPublicClient();
-    const data = encodePacked(["string", "bytes32"], ["NEXUS_PRISM_ANCHOR", hash]);
 
     const txHash = await walletClient.sendTransaction({
       account,
       to: account.address,
-      value: parseEther("0"),
-      data: keccak256(data),
+      value: BigInt(0),
+      data,
     });
 
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
@@ -89,6 +96,8 @@ export async function anchorDecisionPayload(payload: string) {
       txHash,
       blockNumber: Number(receipt.blockNumber),
       mode: "onchain" as const,
+      settlement: "Arc Testnet",
+      feePaidIn: "USDC",
     };
   } catch (error) {
     return {
@@ -97,6 +106,8 @@ export async function anchorDecisionPayload(payload: string) {
       txHash: undefined,
       blockNumber: undefined,
       mode: "hash-only" as const,
+      settlement: "Arc Testnet",
+      feePaidIn: "USDC",
       error: error instanceof Error ? error.message : "Arc anchor failed",
     };
   }

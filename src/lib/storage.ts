@@ -44,6 +44,9 @@ export type NexusDecision = {
   intel: TokenIntel;
   arcTxHash?: string;
   arcBlockNumber?: number;
+  arcFeeTxHash?: string;
+  settlementNetwork?: string;
+  feeCurrency?: string;
   volume24h?: number;
   liquidityUsd?: number;
   swappable?: boolean;

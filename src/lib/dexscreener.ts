@@ -1,11 +1,6 @@
-import {
-  SWAP_CRITERIA,
-  WALLET_SWAP_CHAINS,
-  checkSwappable,
-  filterSwappableTokens,
-  type WalletSwapChain,
-} from "./swappable";
+import { WALLET_SWAP_CHAINS, SWAP_CRITERIA, checkSwappable, filterSwappableTokens, type WalletSwapChain } from "./swappable";
 import { isEvmChain } from "./swap";
+import { ARC_TESTNET_ID } from "./arc-chain";
 
 export type TrendingToken = {
   symbol: string;

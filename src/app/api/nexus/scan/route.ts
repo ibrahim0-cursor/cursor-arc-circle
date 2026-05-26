@@ -7,11 +7,12 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       walletChainId?: number;
       chain?: string;
+      arcFeeTxHash?: string;
     };
     const preferredChain =
       body.chain ?? (body.walletChainId ? chainIdFromWallet(body.walletChainId) : undefined);
 
-    const result = await runNexusScan(6, preferredChain);
+    const result = await runNexusScan(6, preferredChain, body.arcFeeTxHash);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

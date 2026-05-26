@@ -8,10 +8,15 @@ export async function POST(request: Request) {
       symbol?: string;
       walletChainId?: number;
       chain?: string;
+      arcFeeTxHash?: string;
     };
     const preferredChain =
       body.chain ?? (body.walletChainId ? chainIdFromWallet(body.walletChainId) : undefined);
-    const decision = await runNexusDecisionForSymbol(body.symbol ?? "ETH", preferredChain);
+    const decision = await runNexusDecisionForSymbol(
+      body.symbol ?? "ETH",
+      preferredChain,
+      body.arcFeeTxHash,
+    );
     return NextResponse.json(decision);
   } catch (error) {
     return NextResponse.json(

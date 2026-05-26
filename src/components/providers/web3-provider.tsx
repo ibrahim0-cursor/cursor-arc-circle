@@ -4,11 +4,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { base, mainnet, arbitrum } from "wagmi/chains";
 import { injected } from "wagmi/connectors";
+import { arcTestnet } from "@/lib/arc-chain";
 
+/** Arc Testnet first — Agora hackathon requires USDC fees on Arc */
 const config = createConfig({
-  chains: [base, mainnet, arbitrum],
+  chains: [arcTestnet, base, mainnet, arbitrum],
   connectors: [injected({ shimDisconnect: true })],
   transports: {
+    [arcTestnet.id]: http(arcTestnet.rpcUrls.default.http[0]),
     [base.id]: http(
       process.env.NEXT_PUBLIC_ALCHEMY_BASE_RPC ??
         "https://base-mainnet.g.alchemy.com/v2/demo",

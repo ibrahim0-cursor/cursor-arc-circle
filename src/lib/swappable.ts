@@ -1,4 +1,5 @@
 import { isAddress } from "viem";
+import { ARC_TESTNET_ID } from "./arc-chain";
 import { evmChainId, isEvmChain } from "./swap";
 import type { TrendingToken } from "./dexscreener";
 
@@ -20,7 +21,8 @@ export type SwappableCheck = {
   reasons: string[];
 };
 
-export function chainIdFromWallet(chainId?: number): WalletSwapChain | undefined {
+export function chainIdFromWallet(chainId?: number): WalletSwapChain | "arc" | undefined {
+  if (chainId === ARC_TESTNET_ID) return "arc";
   if (chainId === 8453) return "base";
   if (chainId === 1) return "ethereum";
   if (chainId === 42161) return "arbitrum";
@@ -43,6 +45,11 @@ export function checkSwappable(token: TrendingToken, preferredChain?: string): S
   if (!WALLET_SWAP_CHAINS.includes(token.chainId as WalletSwapChain)) {
     reasons.push(`Chain ${token.chainId} not supported for wallet swap`);
     return { ok: false, reasons };
+  }
+
+  if (preferredChain === "arc") {
+    reasons.push("Wallet on Arc — scan Base/Ethereum swappable tokens; fees settle on Arc");
+    return { ok: true, reasons };
   }
 
   if (preferredChain && token.chainId !== preferredChain) {

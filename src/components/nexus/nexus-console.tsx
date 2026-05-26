@@ -11,6 +11,9 @@ import { MeshBackground } from "@/components/layout/mesh-background";
 import { NexusDecisionCard, NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { NexusSwapPanel } from "@/components/nexus/nexus-swap-panel";
+import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
+import { useArcSettlement } from "@/hooks/use-arc-settlement";
+import { isArcChain } from "@/lib/arc-chain";
 import { SWAP_CRITERIA, chainIdFromWallet } from "@/lib/swappable";
 import type { NexusDecision } from "@/lib/storage";
 
@@ -18,6 +21,8 @@ export function NexusConsole() {
   const { isConnected } = useAccount();
   const walletChainId = useChainId();
   const walletChain = chainIdFromWallet(walletChainId);
+  const { payArcFee, ensureArcNetwork, isPending: arcFeePending, feeUsd } = useArcSettlement();
+  const [lastArcFeeTx, setLastArcFeeTx] = useState<string | null>(null);
 
   const [decisions, setDecisions] = useState<NexusDecision[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -43,11 +48,17 @@ export function NexusConsole() {
     setScanning(true);
     setScanError(null);
     try {
+      if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
+      await ensureArcNetwork();
+      const fee = await payArcFee("SCAN", `scan-${Date.now()}`);
+      setLastArcFeeTx(fee.txHash);
+
       const res = await fetch("/api/nexus/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           walletChainId: isConnected ? walletChainId : undefined,
+          arcFeeTxHash: fee.txHash,
         }),
       });
       const data = await res.json();
@@ -64,11 +75,17 @@ export function NexusConsole() {
     setLoading(true);
     setScanError(null);
     try {
+      if (!isConnected) throw new Error("Connect wallet on Arc Testnet");
+      await ensureArcNetwork();
+      const fee = await payArcFee("DECIDE", `decide-${Date.now()}`);
+      setLastArcFeeTx(fee.txHash);
+
       const res = await fetch("/api/nexus/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           walletChainId: isConnected ? walletChainId : undefined,
+          arcFeeTxHash: fee.txHash,
         }),
       });
       if (!res.ok) {
@@ -103,23 +120,23 @@ export function NexusConsole() {
                 Autonomous Trading Intelligence
               </h1>
               <p className="mt-3 text-white/60">
-                Only tokens you can <strong className="text-white">buy & sell from your wallet</strong> via 0x —
-                EVM chains with real liquidity.
+                Circle Agora hackathon build — agent signals with{" "}
+                <strong className="text-white">USDC fees on Arc Testnet</strong> (~${feeUsd}/action).
                 <span className="mt-1 block text-cyan-300/80">
-                  {isConnected && walletChain
-                    ? `Scanning ${walletChain} for wallet-swappable pairs`
-                    : "Connect wallet to scan your chain · Base · Ethereum · Arbitrum"}
+                  {isConnected && isArcChain(walletChainId)
+                    ? "Arc Testnet connected · fees paid in USDC"
+                    : "Connect MetaMask → Arc Testnet to scan & settle on-chain"}
                 </span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <WalletConnectButton />
-              <Button variant="outline" onClick={runScan} disabled={scanning}>
-                {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              <Button variant="outline" onClick={runScan} disabled={scanning || arcFeePending}>
+                {scanning || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Scan
               </Button>
-              <Button variant="nexus" onClick={runDecision} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              <Button variant="nexus" onClick={runDecision} disabled={loading || arcFeePending}>
+                {loading || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 Run Agent
               </Button>
             </div>
@@ -148,9 +165,12 @@ export function NexusConsole() {
             <CriteriaPill label={`Liquidity ≥ $${SWAP_CRITERIA.minLiquidityUsd / 1000}K`} />
             <CriteriaPill label={`Volume ≥ $${SWAP_CRITERIA.minVolume24h / 1000}K`} />
             <CriteriaPill label="EVM contract only" />
-            <CriteriaPill label="0x swap routable" />
+            <CriteriaPill label="Fees in USDC on Arc" />
+            <CriteriaPill label="Circle × Agora" />
           </div>
         </div>
+
+        <ArcSettlementBanner txHash={lastArcFeeTx ?? selected?.arcTxHash} arcBlockNumber={selected?.arcBlockNumber} />
 
         {scanError && (
           <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">

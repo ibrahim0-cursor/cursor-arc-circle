@@ -227,7 +227,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
   }
 }
 
-async function buildDecision(token: TrendingToken): Promise<NexusDecision> {
+async function buildDecision(token: TrendingToken, arcFeeTxHash?: string): Promise<NexusDecision> {
   const swapCheck = checkSwappable(token);
   const intel = await enrichToken(token);
   const core = await aiDecision(token, intel);
@@ -252,13 +252,18 @@ async function buildDecision(token: TrendingToken): Promise<NexusDecision> {
     swappable: swapCheck.ok,
     swapCriteriaMet: swapCheck.reasons,
     ...core,
-    arcTxHash: anchor.txHash,
+    arcTxHash: anchor.txHash ?? arcFeeTxHash,
     arcBlockNumber: anchor.blockNumber,
+    arcFeeTxHash,
+    settlementNetwork: "Arc Testnet",
+    feeCurrency: "USDC",
   };
 }
 
-export async function runNexusScan(limit = 6, preferredChain?: string) {
-  const tokens = await fetchSwappableTokens(limit, preferredChain);
+export async function runNexusScan(limit = 6, preferredChain?: string, arcFeeTxHash?: string) {
+  // Arc wallet: show cross-chain swappable tokens; fees always settle on Arc
+  const scanChain = preferredChain === "arc" ? undefined : preferredChain;
+  const tokens = await fetchSwappableTokens(limit, scanChain);
   if (tokens.length === 0) {
     throw new Error(
       preferredChain
@@ -269,15 +274,19 @@ export async function runNexusScan(limit = 6, preferredChain?: string) {
 
   const decisions: NexusDecision[] = [];
   for (const token of tokens) {
-    const decision = await buildDecision(token);
+    const decision = await buildDecision(token, arcFeeTxHash);
     await addNexusDecision(decision);
     decisions.push(decision);
   }
 
-  return { tokens, decisions, criteria: preferredChain ?? "base|ethereum|arbitrum" };
+  return { tokens, decisions, criteria: preferredChain ?? "arc-settlement|base|ethereum" };
 }
 
-export async function runNexusDecisionForSymbol(symbol: string, preferredChain?: string) {
+export async function runNexusDecisionForSymbol(
+  symbol: string,
+  preferredChain?: string,
+  arcFeeTxHash?: string,
+) {
   const tokens = await fetchSwappableTokens(24, preferredChain);
   const token =
     tokens.find((item) => item.symbol.toLowerCase() === symbol.toLowerCase()) ?? tokens[0];
@@ -285,7 +294,7 @@ export async function runNexusDecisionForSymbol(symbol: string, preferredChain?:
     throw new Error("No swappable tokens available for your wallet chain");
   }
 
-  const decision = await buildDecision(token);
+  const decision = await buildDecision(token, arcFeeTxHash);
   await addNexusDecision(decision);
   return decision;
 }

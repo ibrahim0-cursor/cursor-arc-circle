@@ -7,6 +7,7 @@ import { ArrowDownUp, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { jupiterSwapUrl, zeroXSwapUrl } from "@/lib/dexscreener";
 import { evmChainId, isEvmChain } from "@/lib/swap";
 import { chainIdFromWallet } from "@/lib/swappable";
@@ -16,9 +17,11 @@ export function NexusSwapPanel({ decision }: { decision: NexusDecision | null })
   const { address, isConnected } = useAccount();
   const walletChainId = useChainId();
   const walletChain = chainIdFromWallet(walletChainId);
+  const { payArcFee, ensureArcNetwork, isPending: arcFeePending, feeUsd } = useArcSettlement();
   const [amount, setAmount] = useState("25");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [loading, setLoading] = useState(false);
+  const [arcFeeTx, setArcFeeTx] = useState<string | null>(null);
   const [quote, setQuote] = useState<{
     demo?: boolean;
     message?: string;
@@ -35,6 +38,10 @@ export function NexusSwapPanel({ decision }: { decision: NexusDecision | null })
     setLoading(true);
     setError(null);
     try {
+      await ensureArcNetwork();
+      const fee = await payArcFee("SWAP", `${decision.token}-${side}-${amount}`);
+      setArcFeeTx(fee.txHash);
+
       const res = await fetch("/api/nexus/swap/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,9 +156,13 @@ export function NexusSwapPanel({ decision }: { decision: NexusDecision | null })
 
             {isConnected && !chainMismatch ? (
               <div className="space-y-2">
-                <Button variant="nexus" className="w-full" onClick={getQuote} disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Get Swap Quote
+                <p className="text-xs text-cyan-200/70">
+                  Swap quotes require a ~${feeUsd} USDC fee on Arc Testnet first.
+                  {arcFeeTx && <span className="block text-emerald-300/80">Arc fee paid · {arcFeeTx.slice(0, 10)}…</span>}
+                </p>
+                <Button variant="nexus" className="w-full" onClick={getQuote} disabled={loading || arcFeePending}>
+                  {loading || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Pay Arc Fee & Get Quote
                 </Button>
                 {quote && !quote.demo && (
                   <Button variant="outline" className="w-full" onClick={executeSwap} disabled={isPending || confirming}>

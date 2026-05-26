@@ -52,7 +52,7 @@ export function LandingHero() {
           {
             icon: Shield,
             title: "Arc + Circle settlement",
-            copy: "Every agent decision is anchored on Arc testnet with Circle wallet primitives for USDC-native flows.",
+            copy: "Every agent action pays USDC fees on Arc testnet — sub-second finality with Circle wallet primitives.",
           },
           {
             icon: BrainCircuit,
