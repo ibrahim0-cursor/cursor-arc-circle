@@ -158,14 +158,14 @@ export function PrismConsole() {
               </CardContent>
             </Card>
 
-            <Card className="max-lg:hidden">
+            <Card className="border-violet-400/20">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <Globe2 className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-lg font-semibold">History</h2>
+                  <h2 className="text-base font-semibold sm:text-lg">History</h2>
                 </div>
               </CardHeader>
-              <CardContent className="max-h-[50vh] space-y-3 overflow-y-auto">
+              <CardContent className="max-h-[36vh] space-y-3 overflow-y-auto sm:max-h-[50vh]">
                 {predictions.length === 0 ? (
                   <p className="text-sm text-white/55">No forecasts yet.</p>
                 ) : (

@@ -66,9 +66,9 @@ Optional: `ZEROX_API_KEY` for on-chain EVM swap execution
 ### Supabase setup (required for Vercel persistence)
 
 1. Open [Supabase SQL Editor](https://supabase.com/dashboard/project/pjtkiktpdvhghkqwqpok/sql)
-2. Run the SQL in `supabase/schema.sql`
-3. Copy **anon public** key from Project Settings → API
-4. Set `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_ANON_KEY` in Vercel env vars
+2. Run the SQL in `supabase/schema.sql` (includes `demo_portfolios` for mobile demo trades)
+3. In Vercel, set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SECRET_KEY`
+4. Verify: `npm run health` — `demoPortfolio.tableOk` should be `true`
 
 ### No OpenAI / Claude?
 

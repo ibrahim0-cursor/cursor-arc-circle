@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { getArcStatus } from "@/lib/arc";
 import { getCircleStatus } from "@/lib/circle";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { probeDemoPortfolioTable } from "@/lib/supabase-health";
 import { hasBirdeyeKey, birdeyeFetchJson } from "@/lib/birdeye-client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const [arc, circle] = await Promise.all([getArcStatus(), getCircleStatus()]);
+  const [arc, circle, demoPortfolio] = await Promise.all([
+    getArcStatus(),
+    getCircleStatus(),
+    probeDemoPortfolioTable(),
+  ]);
 
   let birdeyeProbe: { ok: boolean; error?: string } = { ok: false, error: "no key" };
   if (hasBirdeyeKey()) {
@@ -26,6 +31,7 @@ export async function GET() {
     arc,
     circle,
     supabase: isSupabaseConfigured(),
+    demoPortfolio,
     birdeye: hasBirdeyeKey(),
     birdeyeProbe,
     zeroX: Boolean(process.env.ZEROX_API_KEY),

@@ -264,7 +264,11 @@ export function NexusTrendingFeed({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base font-semibold max-lg:text-[15px]">{token.symbol}</span>
-                    <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[36px] !px-2 !py-1 !text-[10px] max-lg:!hidden" />
+                    <NexusTokenChatButton
+                      token={token}
+                      onOpenTrade={onOpenTrade}
+                      className="!min-h-[32px] shrink-0 !px-2 !py-1 !text-[10px] max-lg:!text-[9px]"
+                    />
                     {agent && (
                       <Badge
                         variant={

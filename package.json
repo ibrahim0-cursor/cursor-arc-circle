@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "health": "node scripts/health-check.mjs",
+    "health:local": "node scripts/health-check.mjs http://localhost:3000"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
