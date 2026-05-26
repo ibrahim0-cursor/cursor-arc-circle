@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
 import { Bot, CheckCircle2, Loader2, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
@@ -118,7 +118,13 @@ export function NexusConsole() {
         },
       };
     });
+    setPortfolioKey((k) => k + 1);
   }, []);
+
+  const livePrices = useMemo(() => {
+    if (!selectedToken?.tokenAddress || selectedToken.priceUsd <= 0) return {};
+    return { [selectedToken.tokenAddress.toLowerCase()]: selectedToken.priceUsd };
+  }, [selectedToken?.tokenAddress, selectedToken?.priceUsd]);
 
   useEffect(() => {
     if (!selectedToken?.chainId || !selectedToken?.tokenAddress) return;
@@ -394,7 +400,7 @@ export function NexusConsole() {
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
+          <div className="space-y-3">
             <NexusTokenChart chainId={selectedToken?.chainId} pairAddress={selectedToken?.pairAddress} />
             {displayDecision && <NexusTokenDetail decision={displayDecision} />}
             <NexusTAPanel technical={displayDecision?.technical ?? selectedToken?.intel?.technical} priceUsd={selectedToken?.priceUsd} />
@@ -406,7 +412,7 @@ export function NexusConsole() {
               volume24h={selectedToken?.volume24h}
             />
             <NexusDemoTradePanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
-            <NexusPortfolio refreshKey={portfolioKey} />
+            <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
           </div>
         </div>
       </div>

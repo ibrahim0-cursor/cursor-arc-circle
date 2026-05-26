@@ -155,3 +155,35 @@ export function trendingToDemoToken(token: TrendingToken) {
     settlement: "Arc Testnet USDC",
   };
 }
+
+export type MarkedPosition = DemoPosition & {
+  markPriceUsd: number;
+  currentValueUsd: number;
+  unrealizedPnlUsd: number;
+  unrealizedPnlPct: number;
+};
+
+/** Refresh open positions with live DexScreener mark prices for real P&L */
+export async function markPositionsToMarket(
+  positions: DemoPosition[],
+  priceLookup: (chainId: string, tokenAddress: string) => Promise<number | null>,
+): Promise<MarkedPosition[]> {
+  return Promise.all(
+    positions.map(async (p) => {
+      const live = await priceLookup(p.sourceChain, p.tokenAddress);
+      const markPriceUsd = live && live > 0 ? live : p.priceUsd;
+      const currentValueUsd = p.tokenAmount * markPriceUsd;
+      const unrealizedPnlUsd = currentValueUsd - p.usdcSpent;
+      const unrealizedPnlPct =
+        p.usdcSpent > 0 ? (unrealizedPnlUsd / p.usdcSpent) * 100 : 0;
+
+      return {
+        ...p,
+        markPriceUsd,
+        currentValueUsd,
+        unrealizedPnlUsd,
+        unrealizedPnlPct,
+      };
+    }),
+  );
+}

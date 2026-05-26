@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
-import { ArrowDownUp, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowDownUp, ExternalLink, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
 import { arcExplorerAddress, arcExplorerTx } from "@/lib/arc";
 import { ARC_TESTNET_ID } from "@/lib/arc-chain";
-import { formatUsd, truncateHash } from "@/lib/utils";
+import { formatPct, formatUsd, truncateHash } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
-import type { NexusDecision } from "@/lib/storage";
+import type { NexusDecision, DemoPosition } from "@/lib/storage";
 
 type TradeToken = TrendingMarketToken | NexusDecision | null;
 
@@ -36,10 +36,7 @@ export function NexusDemoTradePanel({
 }) {
   const { address, isConnected } = useAccount();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
-  const { data: balance } = useBalance({
-    address,
-    chainId: ARC_TESTNET_ID,
-  });
+  const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
 
   const trade = asTradeToken(token);
   const [side, setSide] = useState<"buy" | "sell" | "swap_to_usdc">("buy");
@@ -47,47 +44,42 @@ export function NexusDemoTradePanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<{ hash: string; block?: number } | null>(null);
-  const [positionTokens, setPositionTokens] = useState(0);
+  const [position, setPosition] = useState<DemoPosition | null>(null);
 
   useEffect(() => {
     async function loadPosition() {
       if (!address || !trade) return;
-      const res = await fetch(`/api/nexus/demo/portfolio?wallet=${address}`);
+      const res = await fetch(`/api/nexus/demo/portfolio?wallet=${address}&t=${Date.now()}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       const pos = (data.positions ?? []).find(
-        (p: { tokenAddress: string; tradeNetwork: string }) =>
+        (p: DemoPosition) =>
           p.tokenAddress.toLowerCase() === trade.tokenAddress.toLowerCase() &&
           p.tradeNetwork === TRADE_NETWORK,
       );
-      setPositionTokens(pos?.tokenAmount ?? 0);
+      setPosition(pos ?? null);
     }
     loadPosition();
-  }, [address, trade, lastTx]);
+  }, [address, trade?.tokenAddress, lastTx, trade?.priceUsd]);
+
+  const livePrice = trade?.priceUsd ?? 0;
+  const unrealizedPnl =
+    position && livePrice > 0
+      ? position.tokenAmount * livePrice - position.usdcSpent
+      : null;
+  const unrealizedPct =
+    position && position.usdcSpent > 0 && unrealizedPnl != null
+      ? (unrealizedPnl / position.usdcSpent) * 100
+      : null;
 
   const quote = trade
     ? buildDemoQuote({
         side,
         usdcAmount: side === "buy" ? Number(amount) : undefined,
         tokenAmount: side === "sell" ? Number(amount) : undefined,
-        priceUsd: trade.priceUsd,
-        position:
-          positionTokens > 0
-            ? {
-                id: "",
-                wallet: address ?? "",
-                symbol: trade.symbol,
-                tokenAddress: trade.tokenAddress,
-                sourceChain: trade.chainId,
-                tradeNetwork: TRADE_NETWORK,
-                tokenAmount: positionTokens,
-                avgEntryUsd: trade.priceUsd,
-                usdcSpent: positionTokens * trade.priceUsd,
-                priceUsd: trade.priceUsd,
-                createdAt: "",
-                updatedAt: "",
-                arcFeeTxHashes: [],
-              }
-            : null,
+        priceUsd: livePrice,
+        position,
       })
     : null;
 
@@ -103,7 +95,7 @@ export function NexusDemoTradePanel({
       await ensureArcNetwork();
       const fee = await payArcFee(
         side.toUpperCase(),
-        `${trade.tokenAddress}-${TRADE_NETWORK}-${side}-${amount}`,
+        `${trade.tokenAddress}-${TRADE_NETWORK}-${side}-${amount}-${Date.now()}`,
       );
 
       const res = await fetch("/api/nexus/demo/trade", {
@@ -118,7 +110,7 @@ export function NexusDemoTradePanel({
           tradeNetwork: TRADE_NETWORK,
           usdcAmount: side === "buy" ? Number(amount) : undefined,
           tokenAmount: side === "sell" ? Number(amount) : undefined,
-          priceUsd: trade.priceUsd,
+          priceUsd: livePrice,
           arcFeeTxHash: fee.txHash,
         }),
       });
@@ -161,8 +153,31 @@ export function NexusDemoTradePanel({
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="font-semibold text-white">{trade.symbol}</span>
-              <span className="text-white/50">{formatUsd(trade.priceUsd)}</span>
+              <span className="text-white/50">{formatUsd(livePrice)} live</span>
             </div>
+
+            {position && position.tokenAmount > 0 && unrealizedPnl != null && (
+              <div
+                className={`flex items-center justify-between rounded-lg border px-3 py-2 text-xs ${
+                  unrealizedPnl >= 0
+                    ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
+                    : "border-rose-400/25 bg-rose-400/10 text-rose-200"
+                }`}
+              >
+                <span>
+                  {position.tokenAmount.toFixed(4)} {trade.symbol} · entry {formatUsd(position.avgEntryUsd)}
+                </span>
+                <span className="flex items-center gap-1 font-medium">
+                  {unrealizedPnl >= 0 ? (
+                    <TrendingUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <TrendingDown className="h-3.5 w-3.5" />
+                  )}
+                  {formatUsd(unrealizedPnl)}
+                  {unrealizedPct != null && ` (${formatPct(unrealizedPct)})`}
+                </span>
+              </div>
+            )}
 
             <div className="flex gap-1.5">
               {(["buy", "sell", "swap_to_usdc"] as const).map((value) => (
@@ -170,7 +185,7 @@ export function NexusDemoTradePanel({
                   key={value}
                   type="button"
                   onClick={() => setSide(value)}
-                  disabled={value === "swap_to_usdc" && positionTokens <= 0}
+                  disabled={value === "swap_to_usdc" && (!position || position.tokenAmount <= 0)}
                   className={`flex-1 rounded-lg border py-1.5 text-[11px] font-medium capitalize transition ${
                     side === value
                       ? "border-cyan-300/40 bg-cyan-400/15 text-cyan-100"
@@ -197,7 +212,7 @@ export function NexusDemoTradePanel({
                   <span className="truncate">{quote.label}</span>
                   {"pnlUsd" in quote && quote.pnlUsd !== undefined && (
                     <span className={quote.pnlUsd >= 0 ? "text-emerald-300" : "text-rose-300"}>
-                      {formatUsd(quote.pnlUsd)}
+                      P&L {formatUsd(quote.pnlUsd)}
                     </span>
                   )}
                 </div>
@@ -205,7 +220,7 @@ export function NexusDemoTradePanel({
             )}
 
             <div className="flex items-center justify-between rounded-lg border border-cyan-300/10 bg-cyan-400/[0.04] px-3 py-2 text-[11px] text-cyan-100/75">
-              <span>Arc network fee</span>
+              <span>Arc fee</span>
               <span className="font-medium text-cyan-200">~${feeUsd} USDC</span>
             </div>
 
@@ -236,13 +251,9 @@ export function NexusDemoTradePanel({
                 className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/10 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-400/15"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                View on Arc Scan · {truncateHash(lastTx.hash, 8, 6)}
+                Arc Scan · {truncateHash(lastTx.hash, 8, 6)}
               </a>
             )}
-
-            <p className="text-center text-[10px] text-white/35">
-              Demo fill is simulated · only the Arc USDC fee tx is on-chain
-            </p>
           </>
         )}
       </div>
