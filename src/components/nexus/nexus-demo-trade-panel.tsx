@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount } from "wagmi";
 import { ArrowDownUp, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +9,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
-import {
-  DEMO_TRADE_NETWORKS,
-  mirrorTestnetForSource,
-  type DemoTradeNetworkId,
-} from "@/lib/testnet-chains";
 import { arcExplorerTx } from "@/lib/arc";
 import { formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -32,6 +27,8 @@ function asTradeToken(token: TradeToken) {
   };
 }
 
+const TRADE_NETWORK = "arc" as const;
+
 export function NexusDemoTradePanel({
   token,
   onTradeComplete,
@@ -40,25 +37,15 @@ export function NexusDemoTradePanel({
   onTradeComplete?: () => void;
 }) {
   const { address, isConnected } = useAccount();
-  const { switchChainAsync } = useSwitchChain();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
 
   const trade = asTradeToken(token);
-  const defaultNetwork = trade
-    ? (mirrorTestnetForSource(trade.chainId) as DemoTradeNetworkId)
-    : "arc";
-
-  const [tradeNetwork, setTradeNetwork] = useState<DemoTradeNetworkId>(defaultNetwork);
   const [side, setSide] = useState<"buy" | "sell" | "swap_to_usdc">("buy");
-  const [amount, setAmount] = useState("50");
+  const [amount, setAmount] = useState("10");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
   const [positionTokens, setPositionTokens] = useState(0);
-
-  useEffect(() => {
-    if (trade) setTradeNetwork(mirrorTestnetForSource(trade.chainId) as DemoTradeNetworkId);
-  }, [trade?.tokenAddress, trade?.chainId]);
 
   useEffect(() => {
     async function loadPosition() {
@@ -68,12 +55,12 @@ export function NexusDemoTradePanel({
       const pos = (data.positions ?? []).find(
         (p: { tokenAddress: string; tradeNetwork: string }) =>
           p.tokenAddress.toLowerCase() === trade.tokenAddress.toLowerCase() &&
-          p.tradeNetwork === tradeNetwork,
+          p.tradeNetwork === TRADE_NETWORK,
       );
       setPositionTokens(pos?.tokenAmount ?? 0);
     }
     loadPosition();
-  }, [address, trade, tradeNetwork, lastTx]);
+  }, [address, trade, lastTx]);
 
   const quote = trade
     ? buildDemoQuote({
@@ -89,7 +76,7 @@ export function NexusDemoTradePanel({
                 symbol: trade.symbol,
                 tokenAddress: trade.tokenAddress,
                 sourceChain: trade.chainId,
-                tradeNetwork,
+                tradeNetwork: TRADE_NETWORK,
                 tokenAmount: positionTokens,
                 avgEntryUsd: trade.priceUsd,
                 usdcSpent: positionTokens * trade.priceUsd,
@@ -110,13 +97,8 @@ export function NexusDemoTradePanel({
       await ensureArcNetwork();
       const fee = await payArcFee(
         side.toUpperCase(),
-        `${trade.tokenAddress}-${tradeNetwork}-${side}-${amount}`,
+        `${trade.tokenAddress}-${TRADE_NETWORK}-${side}-${amount}`,
       );
-
-      const network = DEMO_TRADE_NETWORKS.find((n) => n.id === tradeNetwork)!;
-      if (side !== "buy") {
-        await switchChainAsync({ chainId: network.chainId }).catch(() => undefined);
-      }
 
       const res = await fetch("/api/nexus/demo/trade", {
         method: "POST",
@@ -127,7 +109,7 @@ export function NexusDemoTradePanel({
           symbol: trade.symbol,
           tokenAddress: trade.tokenAddress,
           sourceChain: trade.chainId,
-          tradeNetwork,
+          tradeNetwork: TRADE_NETWORK,
           usdcAmount: side === "buy" ? Number(amount) : undefined,
           tokenAmount: side === "sell" ? Number(amount) : undefined,
           priceUsd: trade.priceUsd,
@@ -146,8 +128,6 @@ export function NexusDemoTradePanel({
     }
   }
 
-  const networkMeta = DEMO_TRADE_NETWORKS.find((n) => n.id === tradeNetwork);
-
   return (
     <Card className="border-cyan-400/25 bg-gradient-to-b from-cyan-400/[0.06] to-transparent">
       <CardHeader>
@@ -156,7 +136,7 @@ export function NexusDemoTradePanel({
             <ArrowDownUp className="h-5 w-5 text-cyan-300" />
             <div>
               <h2 className="text-lg font-medium">Demo Trading</h2>
-              <p className="text-xs text-white/45">Live prices · testnet execution · Arc USDC fees</p>
+              <p className="text-xs text-white/45">Arc Testnet only · pay fees in USDC</p>
             </div>
           </div>
           <WalletConnectButton />
@@ -172,34 +152,26 @@ export function NexusDemoTradePanel({
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-white/40">Token</p>
                   <p className="mt-1 text-xl font-semibold">{trade.symbol}</p>
-                  <p className="text-xs text-white/45">{formatUsd(trade.priceUsd)} · {trade.chainId} feed</p>
+                  <p className="text-xs text-white/45">
+                    {formatUsd(trade.priceUsd)} · live feed · settle on Arc
+                  </p>
                 </div>
-                <Badge variant="nexus">Demo</Badge>
+                <Badge variant="nexus">Arc</Badge>
               </div>
             </div>
 
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-white/40">Trade network (testnet)</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {DEMO_TRADE_NETWORKS.map((network) => (
-                  <button
-                    key={network.id}
-                    type="button"
-                    onClick={() => setTradeNetwork(network.id)}
-                    className={`rounded-xl border py-2 text-xs font-medium transition ${
-                      tradeNetwork === network.id
-                        ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-100"
-                        : "border-white/10 bg-white/[0.03] text-white/55"
-                    }`}
-                  >
-                    {network.short}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-[11px] text-white/40">
-                Suggested: <strong className="text-white/60">{networkMeta?.label}</strong> mirrors {trade.chainId} ·
-                all fees paid in Arc USDC (~${feeUsd})
-              </p>
+            <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-xs text-cyan-100/80">
+              All trades execute on <strong>Arc Testnet</strong>. Gas and fees paid in{" "}
+              <strong>USDC</strong> (~${feeUsd}/tx). Get testnet USDC from the{" "}
+              <a
+                href="https://faucet.circle.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-white"
+              >
+                Circle faucet
+              </a>
+              .
             </div>
 
             <div className="grid grid-cols-3 gap-2">
@@ -225,7 +197,7 @@ export function NexusDemoTradePanel({
             {side !== "swap_to_usdc" && (
               <div>
                 <label className="text-xs uppercase tracking-[0.18em] text-white/40">
-                  {side === "buy" ? "Demo USDC amount" : "Token amount"}
+                  {side === "buy" ? "Arc USDC amount" : "Token amount"}
                 </label>
                 <input
                   value={amount}
@@ -237,7 +209,7 @@ export function NexusDemoTradePanel({
 
             {positionTokens > 0 && (
               <p className="text-xs text-cyan-200/70">
-                Open position: {positionTokens.toFixed(6)} {trade.symbol} on {networkMeta?.short}
+                Open position: {positionTokens.toFixed(6)} {trade.symbol} on Arc
               </p>
             )}
 
@@ -264,7 +236,7 @@ export function NexusDemoTradePanel({
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                Pay Arc USDC Fee & {side === "buy" ? "Buy" : side === "sell" ? "Sell" : "Swap to USDC"}
+                Pay Arc USDC & {side === "buy" ? "Buy" : side === "sell" ? "Sell" : "Swap to USDC"}
               </Button>
             ) : (
               <p className="text-sm text-white/55">Connect on Arc Testnet to demo trade.</p>
@@ -278,7 +250,7 @@ export function NexusDemoTradePanel({
                 rel="noreferrer"
                 className="block text-xs text-emerald-300 hover:underline"
               >
-                Arc fee tx · {lastTx.slice(0, 14)}…
+                Arc USDC tx · {lastTx.slice(0, 14)}…
               </a>
             )}
           </>

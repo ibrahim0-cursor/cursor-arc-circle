@@ -5,6 +5,23 @@ import { useAccount, useChainId, useSendTransaction, useSwitchChain, useWaitForT
 import { encodePacked, keccak256, toHex } from "viem";
 import { arcTestnet, ARC_TESTNET_ID, ARC_FEE_USD } from "@/lib/arc-chain";
 
+async function addArcToWallet() {
+  const eth = (window as Window & { ethereum?: { request: (args: unknown) => Promise<unknown> } }).ethereum;
+  if (!eth) return;
+  await eth.request({
+    method: "wallet_addEthereumChain",
+    params: [
+      {
+        chainId: `0x${ARC_TESTNET_ID.toString(16)}`,
+        chainName: arcTestnet.name,
+        nativeCurrency: arcTestnet.nativeCurrency,
+        rpcUrls: arcTestnet.rpcUrls.default.http,
+        blockExplorerUrls: [arcTestnet.blockExplorers.default.url],
+      },
+    ],
+  });
+}
+
 export function useArcSettlement() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -16,12 +33,19 @@ export function useArcSettlement() {
 
   const ensureArcNetwork = useCallback(async () => {
     if (!isConnected) throw new Error("Connect wallet first");
-    if (chainId !== ARC_TESTNET_ID) {
+    if (chainId === ARC_TESTNET_ID) return;
+
+    try {
+      await switchChainAsync({ chainId: ARC_TESTNET_ID });
+    } catch {
+      await addArcToWallet();
       await switchChainAsync({ chainId: ARC_TESTNET_ID });
     }
+
+    await new Promise((r) => setTimeout(r, 400));
   }, [chainId, isConnected, switchChainAsync]);
 
-  /** Pays ~$0.01 USDC gas on Arc testnet to record agent action on-chain */
+  /** Records action on Arc testnet — gas paid in native USDC */
   const payArcFee = useCallback(
     async (action: string, payload: string) => {
       await ensureArcNetwork();
@@ -29,10 +53,7 @@ export function useArcSettlement() {
 
       const hash = keccak256(toHex(payload));
       const data = keccak256(
-        encodePacked(
-          ["string", "string", "bytes32"],
-          ["NEXUS_ARC_FEE", action, hash],
-        ),
+        encodePacked(["string", "string", "bytes32"], ["NEXUS_ARC_FEE", action, hash]),
       );
 
       const tx = await sendTransactionAsync({

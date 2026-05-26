@@ -71,25 +71,46 @@ export type PrismPrediction = {
   arcTxHash?: string;
 };
 
-const dataDir = path.join(process.cwd(), ".data");
+/** In-memory fallback for Vercel serverless (read-only FS) */
+const memoryStore = new Map<string, unknown>();
+
+function getDataDir() {
+  if (process.env.VERCEL) return path.join("/tmp", "arc-circle-data");
+  return path.join(process.cwd(), ".data");
+}
 
 async function ensureDataDir() {
-  await mkdir(dataDir, { recursive: true });
+  const dataDir = getDataDir();
+  try {
+    await mkdir(dataDir, { recursive: true });
+  } catch {
+    // ignore — memory store still works
+  }
+  return dataDir;
 }
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
+  if (memoryStore.has(file)) return memoryStore.get(file) as T;
+
   try {
-    await ensureDataDir();
+    const dataDir = await ensureDataDir();
     const raw = await readFile(path.join(dataDir, file), "utf8");
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw) as T;
+    memoryStore.set(file, parsed);
+    return parsed;
   } catch {
     return fallback;
   }
 }
 
 async function writeJson<T>(file: string, data: T) {
-  await ensureDataDir();
-  await writeFile(path.join(dataDir, file), JSON.stringify(data, null, 2), "utf8");
+  memoryStore.set(file, data);
+  try {
+    const dataDir = await ensureDataDir();
+    await writeFile(path.join(dataDir, file), JSON.stringify(data, null, 2), "utf8");
+  } catch {
+    // Vercel: keep in memory for this lambda instance
+  }
 }
 
 export async function getNexusDecisions(limit = 50) {

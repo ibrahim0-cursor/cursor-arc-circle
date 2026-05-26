@@ -9,6 +9,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/nexus", label: "NEXUS" },
   { href: "/prism", label: "PRISM" },
+  { href: "https://faucet.circle.com/", label: "Faucet", external: true },
 ];
 
 export function Navbar() {
@@ -28,20 +29,32 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "rounded-xl px-4 py-2 text-sm transition-colors",
-                pathname === link.href
-                  ? "bg-white/10 text-white"
-                  : "text-white/60 hover:bg-white/5 hover:text-white",
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {links.map((link) =>
+            "external" in link && link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl px-4 py-2 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "rounded-xl px-4 py-2 text-sm transition-colors",
+                  pathname === link.href
+                    ? "bg-white/10 text-white"
+                    : "text-white/60 hover:bg-white/5 hover:text-white",
+                )}
+              >
+                {link.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="flex items-center gap-2">

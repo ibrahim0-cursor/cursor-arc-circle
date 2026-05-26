@@ -136,8 +136,8 @@ export function NexusConsole() {
                 swap to <strong className="text-white">Arc USDC</strong> on testnet (~${feeUsd}/tx).
                 <span className="mt-1 block text-cyan-300/80">
                   {isConnected && isArcChain(walletChainId)
-                    ? "Arc Testnet · demo trade on Arc / Sepolia / Base / Arbitrum testnets"
-                    : "Connect MetaMask on Arc Testnet to start demo trading"}
+                    ? "Arc Testnet connected · all fees paid in USDC"
+                    : "Connect MetaMask on Arc Testnet · get USDC from Faucet tab"}
                 </span>
               </p>
             </div>
@@ -157,8 +157,8 @@ export function NexusConsole() {
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
               { icon: Zap, label: "Live trending feed", sub: "DexScreener + Birdeye intel" },
-              { icon: FlaskConical, label: "Testnet demo trades", sub: "Arc · Sepolia · Base · Arb" },
-              { icon: Sparkles, label: "Settle in Arc USDC", sub: "Fees + swap back to USDC" },
+              { icon: FlaskConical, label: "Arc Testnet demo", sub: "Buy · sell · swap to USDC" },
+              { icon: Sparkles, label: "Arc USDC fees", sub: "Every tx settles on Arc" },
             ].map((item) => (
               <div
                 key={item.label}
@@ -174,10 +174,9 @@ export function NexusConsole() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-2 text-[11px] text-white/45">
-            <CriteriaPill label="Testnet only" />
+            <CriteriaPill label="Arc Testnet only" />
             <CriteriaPill label="Fees in Arc USDC" />
             <CriteriaPill label="Circle × Agora" />
-            <CriteriaPill label={`Live mcap from Birdeye`} />
           </div>
         </div>
 

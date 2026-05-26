@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Flame, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
-import { mirrorTestnetForSource, DEMO_TRADE_NETWORKS } from "@/lib/testnet-chains";
 import type { TokenIntel } from "@/lib/storage";
 
 export type TrendingMarketToken = {
@@ -37,22 +36,29 @@ export function NexusTrendingFeed({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       setLoading(true);
       try {
         const res = await fetch("/api/nexus/trending");
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Failed to load trending");
-        setTokens(data.tokens ?? []);
-        if (data.tokens?.[0] && !selectedAddress) onSelect(data.tokens[0]);
+        if (cancelled) return;
+        const list = (data.tokens ?? []) as TrendingMarketToken[];
+        setTokens(list);
+        if (list[0] && !selectedAddress) onSelect(list[0]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Trending load failed");
+        if (!cancelled) setError(err instanceof Error ? err.message : "Trending load failed");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
-  }, [onSelect, selectedAddress]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (
@@ -76,15 +82,14 @@ export function NexusTrendingFeed({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-300" />
-          <h3 className="text-sm font-medium text-white/80">Trending · live market data</h3>
+          <h3 className="text-sm font-medium text-white/80">
+            {tokens.length} trending · trade on Arc
+          </h3>
         </div>
-        <Badge variant="nexus">Testnet demo</Badge>
+        <Badge variant="nexus">Arc USDC</Badge>
       </div>
 
       {tokens.map((token) => {
-        const network = DEMO_TRADE_NETWORKS.find(
-          (n) => n.id === (token.suggestedNetwork ?? mirrorTestnetForSource(token.chainId)),
-        );
         const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
 
         return (
@@ -112,11 +117,8 @@ export function NexusTrendingFeed({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{token.symbol}</span>
-                    <Badge variant="default" className="normal-case tracking-normal border border-white/20 text-[10px]">
-                      {token.chainId} feed
-                    </Badge>
                     <Badge variant="nexus" className="normal-case tracking-normal text-[10px]">
-                      Demo on {network?.short ?? "Arc"}
+                      Trade on Arc
                     </Badge>
                   </div>
                   <p className="text-xs text-white/45">{token.name}</p>
@@ -124,8 +126,14 @@ export function NexusTrendingFeed({
               </div>
               <div className="text-right">
                 <p className="font-medium">{formatUsd(token.priceUsd)}</p>
-                <p className={`flex items-center justify-end gap-1 text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                  {token.change24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <p
+                  className={`flex items-center justify-end gap-1 text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}
+                >
+                  {token.change24h >= 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
                   {formatPct(token.change24h)}
                 </p>
               </div>
@@ -135,7 +143,9 @@ export function NexusTrendingFeed({
               <span>Vol {formatCompact(token.volume24h)}</span>
               <span>Liq {formatCompact(token.liquidityUsd)}</span>
               <span>
-                {token.intel?.holderCount ? `${formatCompact(token.intel.holderCount)} holders` : "Birdeye intel"}
+                {token.intel?.holderCount
+                  ? `${formatCompact(token.intel.holderCount)} holders`
+                  : "DexScreener"}
               </span>
             </div>
           </motion.button>

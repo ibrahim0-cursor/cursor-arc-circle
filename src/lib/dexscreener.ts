@@ -81,7 +81,7 @@ async function loadPair(chainId: string, tokenAddress: string) {
   );
   const pool = withQuote.length ? withQuote : data;
   const best = pool.sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
-  if (!best?.priceUsd) return null;
+  if (!best || Number(best.priceUsd ?? 0) <= 0) return null;
   return mapPair(best);
 }
 
@@ -139,40 +139,72 @@ export async function fetchSwappableTokens(limit = 8, preferredChain?: string) {
 
 /** Trending tokens for demo trading — live DexScreener + optional Birdeye intel */
 export async function fetchTrendingMarketTokens(limit = 12) {
-  const res = await fetch("https://api.dexscreener.com/token-boosts/top/v1", {
-    next: { revalidate: 30 },
-  });
-  if (!res.ok) throw new Error("DexScreener boosts unavailable");
-
-  const boosts = (await res.json()) as Array<{ chainId: string; tokenAddress: string }>;
-  const evmBoosts = boosts.filter(
-    (b) =>
-      isEvmChain(b.chainId) &&
-      WALLET_SWAP_CHAINS.includes(b.chainId as WalletSwapChain),
-  );
-
   const tokens: TrendingToken[] = [];
-  for (const boost of evmBoosts.slice(0, limit * 2)) {
-    const pair = await loadPair(boost.chainId, boost.tokenAddress);
-    if (!pair || pair.priceUsd <= 0) continue;
-    tokens.push({ ...pair, demoTradeable: true });
+  const seen = new Set<string>();
+
+  function addToken(token: TrendingToken | null) {
+    if (!token || token.priceUsd <= 0) return;
+    const key = `${token.chainId}:${token.tokenAddress}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    tokens.push({ ...token, demoTradeable: true, suggestedNetwork: "arc" });
   }
 
-  const unique = Array.from(
-    new Map(tokens.map((t) => [`${t.chainId}:${t.tokenAddress}`, t])).values(),
-  )
-    .sort((a, b) => b.volume24h - a.volume24h)
+  const [boostsRes, searchResults] = await Promise.all([
+    fetch("https://api.dexscreener.com/token-boosts/top/v1", { next: { revalidate: 30 } }),
+    Promise.all(
+      WALLET_SWAP_CHAINS.map(async (chain) => {
+        const res = await fetch(
+          `https://api.dexscreener.com/latest/dex/search?q=${chain}`,
+          { next: { revalidate: 30 } },
+        );
+        if (!res.ok) return [] as DexPair[];
+        const json = (await res.json()) as { pairs?: DexPair[] };
+        return (json.pairs ?? []).filter((p) => p.chainId === chain);
+      }),
+    ),
+  ]);
+
+  if (boostsRes.ok) {
+    const boosts = (await boostsRes.json()) as Array<{ chainId: string; tokenAddress: string }>;
+    const evmBoosts = boosts.filter(
+      (b) =>
+        isEvmChain(b.chainId) &&
+        WALLET_SWAP_CHAINS.includes(b.chainId as WalletSwapChain),
+    );
+
+    const boostPairs = await Promise.all(
+      evmBoosts.slice(0, 30).map((b) => loadPair(b.chainId, b.tokenAddress)),
+    );
+    boostPairs.forEach(addToken);
+  }
+
+  for (const pairs of searchResults) {
+    for (const pair of pairs.slice(0, 15)) {
+      addToken(mapPair(pair));
+    }
+  }
+
+  const sorted = tokens
+    .sort((a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd)
     .slice(0, limit);
 
   const enriched = await Promise.all(
-    unique.map(async (token) => {
-      const { intel } = await fetchTokenIntel(token.tokenAddress, birdeyeChainFor(token.chainId));
-      return {
-        ...token,
-        marketCap: intel.marketCap ?? token.marketCap,
-        fdv: intel.fdv ?? token.fdv,
-        intel,
-      };
+    sorted.map(async (token) => {
+      try {
+        const { intel } = await fetchTokenIntel(
+          token.tokenAddress,
+          birdeyeChainFor(token.chainId),
+        );
+        return {
+          ...token,
+          marketCap: intel.marketCap ?? token.marketCap,
+          fdv: intel.fdv ?? token.fdv,
+          intel,
+        };
+      } catch {
+        return token;
+      }
     }),
   );
 
