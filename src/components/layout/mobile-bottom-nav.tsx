@@ -14,6 +14,8 @@ const tabs = [
 export function MobileBottomNav() {
   const pathname = usePathname();
 
+  if (pathname === "/nexus") return null;
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-[90] border-t border-white/10 bg-[#050508]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"

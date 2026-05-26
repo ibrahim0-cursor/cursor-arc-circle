@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MeshBackground } from "@/components/layout/mesh-background";
 import { formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
+import { useToast } from "@/components/ui/toast-provider";
 
 type EventOption = {
   id: string;
@@ -26,6 +27,7 @@ type GlobalMarket = {
 };
 
 export function PrismConsole() {
+  const toast = useToast();
   const [events, setEvents] = useState<EventOption[]>([]);
   const [selected, setSelected] = useState<string>("fed-cut-june");
   const [customEvent, setCustomEvent] = useState("");
@@ -62,8 +64,23 @@ export function PrismConsole() {
         body: JSON.stringify({ eventId: selected, customEvent }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Forecast failed");
       setLatestIntel(data.intelligence);
       setPredictions((prev) => [data.prediction, ...prev]);
+      toast({
+        type: "success",
+        title: "Forecast generated",
+        message: `${data.prediction.probability}% probability · scrolling to report`,
+      });
+      requestAnimationFrame(() => {
+        document.getElementById("prism-forecast")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } catch (err) {
+      toast({
+        type: "error",
+        title: "Forecast failed",
+        message: err instanceof Error ? err.message : "Try again",
+      });
     } finally {
       setLoading(false);
     }
@@ -175,7 +192,7 @@ export function PrismConsole() {
             </Card>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
+          <div id="prism-forecast" className="scroll-mt-24 space-y-4 sm:space-y-6">
             <Card className="overflow-hidden border-violet-400/25">
               <CardContent className="p-0">
                 <div className="bg-gradient-to-br from-violet-500/25 via-fuchsia-500/10 to-transparent p-6 sm:p-8">

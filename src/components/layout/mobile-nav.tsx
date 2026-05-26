@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Droplets, Home, LineChart, Menu, X, Zap } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -17,19 +17,26 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
     <div className="md:hidden">
       <button
         type="button"
         aria-label="Open menu"
         onClick={() => setOpen(true)}
-        className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white"
+        className="rounded-xl border-2 border-cyan-400/40 bg-cyan-500/15 p-2.5 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.25)]"
       >
         <Menu className="h-5 w-5" />
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[120]">
           <button
             type="button"
             aria-label="Close menu"

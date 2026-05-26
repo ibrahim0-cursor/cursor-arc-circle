@@ -20,15 +20,16 @@ import { NexusDecisionCard, NexusTokenDetail } from "@/components/nexus/nexus-de
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
 import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
-import { NexusDemoTradePanel } from "@/components/nexus/nexus-demo-trade-panel";
+import { NexusTradeHub } from "@/components/nexus/nexus-demo-trade-panel";
 import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
+import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
 import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
-import { NexusWalletScoreButton } from "@/components/nexus/nexus-wallet-score";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
 import { NexusWalletBar } from "@/components/nexus/nexus-wallet-bar";
-import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
+import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
+import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import type { NexusDecision } from "@/lib/storage";
 
@@ -84,6 +85,7 @@ function tokenToDecision(token: TrendingMarketToken): NexusDecision | null {
 }
 
 export function NexusConsole() {
+  const toast = useToast();
   const { isConnected } = useAccount();
   const walletChainId = useChainId();
   const { payArcFee, ensureArcNetwork, isPending: arcFeePending, feeUsd } = useArcSettlement();
@@ -99,6 +101,8 @@ export function NexusConsole() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"live" | "saved">("live");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
+  const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
+  const [heroCompact, setHeroCompact] = useState(true);
 
   const loadSaved = useCallback(async () => {
     const res = await fetch(`/api/nexus/decisions?t=${Date.now()}`);
@@ -129,7 +133,22 @@ export function NexusConsole() {
     }
   }, [activeTab, savedDecisions, selectedSavedId]);
 
+  const scrollToMobileContent = useCallback(() => {
+    requestAnimationFrame(() => {
+      document.getElementById("nexus-mobile-content")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const handleMobilePanel = useCallback(
+    (panel: NexusMobilePanel) => {
+      setMobilePanel(panel);
+      scrollToMobileContent();
+    },
+    [scrollToMobileContent],
+  );
+
   const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
+    setFeedTokens(tokens);
     setSelectedToken((prev) => {
       const match = prev
         ? tokens.find(
@@ -204,20 +223,37 @@ export function NexusConsole() {
       setSavedDecisions(merged);
       persistSavedScans(merged);
       if (merged[0]) setSelectedSavedId(merged[0].id);
-      setSuccessMsg(
-        `Agent Memory saved ${data.count ?? decisions.length} tokens — open Agent Memory tab`,
-      );
+      const count = data.count ?? decisions.length;
+      setSuccessMsg(`Agent Memory saved ${count} tokens`);
       setActiveTab("saved");
+      setMobilePanel("feed");
+      scrollToMobileContent();
+      toast({
+        type: "success",
+        title: "Memory scan complete",
+        message: `${count} tokens saved — view in Memory tab`,
+      });
       await loadSaved();
     } catch (err) {
-      setScanError(err instanceof Error ? err.message : "Scan failed");
+      const msg = err instanceof Error ? err.message : "Scan failed";
+      setScanError(msg);
+      toast({ type: "error", title: "Memory scan failed", message: msg });
     } finally {
       setScanning(false);
     }
   }
 
   async function runDeepAnalyze() {
-    if (!selectedToken || !isConnected) return;
+    if (!selectedToken) {
+      toast({ type: "error", title: "Select a token", message: "Pick a token from Live Feed first" });
+      setMobilePanel("feed");
+      scrollToMobileContent();
+      return;
+    }
+    if (!isConnected) {
+      toast({ type: "error", title: "Connect wallet", message: "Connect on Arc Testnet to run AI analyze" });
+      return;
+    }
     setLoading(true);
     setScanError(null);
     setSuccessMsg(null);
@@ -257,7 +293,15 @@ export function NexusConsole() {
             }
           : prev,
       );
-      setSuccessMsg(data.message ?? `AI Analyze: ${agent.action} · saved to Arc`);
+      const msg = data.message ?? `Report generated · ${agent.action} signal`;
+      setSuccessMsg(msg);
+      setMobilePanel("chart");
+      scrollToMobileContent();
+      toast({
+        type: "success",
+        title: "AI report generated",
+        message: `${agent.action} · ${agent.confidence}% confidence — view chart panel`,
+      });
       if (data.saved && data.agent) {
         const saved = data.agent as NexusDecision;
         setSavedDecisions((prev) => {
@@ -268,7 +312,9 @@ export function NexusConsole() {
       }
       await loadSaved();
     } catch (err) {
-      setScanError(err instanceof Error ? err.message : "Analyze failed");
+      const msg = err instanceof Error ? err.message : "Analyze failed";
+      setScanError(msg);
+      toast({ type: "error", title: "AI analyze failed", message: msg });
     } finally {
       setLoading(false);
     }
@@ -310,6 +356,12 @@ export function NexusConsole() {
             onSelect={(t) => {
               setSelectedToken(t);
               setMobilePanel("chart");
+              scrollToMobileContent();
+              toast({
+                type: "info",
+                title: `${t.symbol} selected`,
+                message: t.agent ? `Agent: ${t.agent.action}` : "Opening analysis",
+              });
             }}
             onTokensRefresh={handleFeedRefresh}
           />
@@ -356,6 +408,8 @@ export function NexusConsole() {
                   },
                 });
                 setMobilePanel("chart");
+                scrollToMobileContent();
+                toast({ type: "info", title: "Memory token opened", message: decision.symbol });
               }}
             />
           ))
@@ -366,10 +420,20 @@ export function NexusConsole() {
 
   const chartPanel = (
     <div className="space-y-3">
+      <NexusTokenStrip
+        tokens={feedTokens}
+        selected={selectedToken}
+        onSelect={(t) => {
+          setSelectedToken(t);
+          toast({ type: "info", title: `${t.symbol}`, message: "Chart & analysis updated" });
+        }}
+      />
       {displayDecision && <NexusTokenDetail decision={displayDecision} />}
+      <NexusTokenMetrics token={selectedToken} />
       <NexusTokenChart
         chainId={selectedToken?.chainId}
         pairAddress={selectedToken?.pairAddress}
+        tokenAddress={selectedToken?.tokenAddress}
         symbol={selectedToken?.symbol}
       />
       <NexusTAPanel technical={displayDecision?.technical ?? selectedToken?.intel?.technical} priceUsd={selectedToken?.priceUsd} />
@@ -387,40 +451,54 @@ export function NexusConsole() {
 
   const tradePanel = (
     <div className="space-y-3">
-      <NexusDemoTradePanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
+      <NexusTokenStrip
+        tokens={feedTokens}
+        selected={selectedToken}
+        onSelect={(t) => {
+          setSelectedToken(t);
+          toast({ type: "info", title: `${t.symbol}`, message: "Ready to trade" });
+        }}
+      />
+      <NexusTradeHub
+        token={selectedToken}
+        onTradeComplete={() => {
+          setPortfolioKey((k) => k + 1);
+          toast({ type: "success", title: "Trade recorded", message: "Demo fill + Arc fee logged" });
+        }}
+      />
       <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
     </div>
   );
 
-  const agentPanel = (
-    <div className="space-y-3">
-      <NexusAutopilotPanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
-    </div>
-  );
-
   return (
-    <div className="relative min-h-screen text-white">
+    <div className="relative min-h-screen text-white" data-nexus-page>
       <MeshBackground variant="nexus" />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 py-6 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:py-10 lg:pb-10">
-        <div className="mb-8 overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-6 sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-6">
-            <div className="max-w-2xl">
+      <div className="relative mx-auto max-w-[1400px] px-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:py-10 lg:pb-10">
+        <div className="mb-4 overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-4 sm:mb-8 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
+            <div className="max-w-2xl flex-1">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Badge variant="nexus">NEXUS AI Agent</Badge>
                 <Badge variant="default" className="border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
                   RSI · MACD · Whales
                 </Badge>
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">Crypto Intelligence</h1>
-              <p className="mt-3 text-base leading-relaxed text-white/80">
-                Live feed with <strong className="font-semibold text-white">RSI, MACD, trend lines</strong>, sniper/whale/insider
-                detection, and AI <strong className="font-semibold text-white">BUY · SELL · HOLD</strong> signals. Arc USDC fees (~$
-                {feeUsd}/tx).
-              </p>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">Crypto Intelligence</h1>
+              <button
+                type="button"
+                className="mt-2 text-xs font-medium text-cyan-300/80 lg:hidden"
+                onClick={() => setHeroCompact((v) => !v)}
+              >
+                {heroCompact ? "Show details ▾" : "Hide details ▴"}
+              </button>
+              {!heroCompact && (
+                <p className="mt-2 text-sm leading-relaxed text-white/80 sm:mt-3 sm:text-base">
+                  Live feed with RSI, MACD, whales, and AI BUY · SELL · HOLD. Arc fees ~${feeUsd}/tx.
+                </p>
+              )}
             </div>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <NexusWalletScoreButton />
               <Button
                 variant="outline"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
@@ -450,7 +528,7 @@ export function NexusConsole() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 hidden gap-3 sm:mt-6 sm:grid sm:grid-cols-3">
             {[
               { icon: Zap, label: "20 tokens · 45s refresh", sub: "DexScreener live like the real feed" },
               { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
@@ -487,11 +565,10 @@ export function NexusConsole() {
           </div>
         )}
 
-        <div className="lg:hidden">
+        <div id="nexus-mobile-content" className="scroll-mt-20 lg:hidden">
           {mobilePanel === "feed" && feedPanel}
           {mobilePanel === "chart" && chartPanel}
           {mobilePanel === "trade" && tradePanel}
-          {mobilePanel === "agent" && agentPanel}
         </div>
 
         <div className="hidden gap-4 lg:grid lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -499,11 +576,10 @@ export function NexusConsole() {
           <div className="space-y-3">
             {chartPanel}
             {tradePanel}
-            {agentPanel}
           </div>
         </div>
 
-        <NexusMobileDock active={mobilePanel} onChange={setMobilePanel} />
+        <NexusMobileDock active={mobilePanel} onChange={handleMobilePanel} />
       </div>
     </div>
   );

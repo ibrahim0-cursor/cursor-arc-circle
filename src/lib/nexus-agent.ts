@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { getAiClient, getAiModel } from "./ai-client";
 import { fetchCryptoNewsHeadlines } from "./crypto-news";
 import { fetchTrendingMarketTokens, fetchSwappableTokens, type TrendingToken } from "./dexscreener";
+import { buildDeepTokenIntel } from "./deep-token-analysis";
 import { buildLocalTokenIntel } from "./token-intel-local";
 import { checkSwappable } from "./swappable";
 import { anchorDecisionPayload } from "./arc";
@@ -119,6 +120,35 @@ function buildReasoningFactors(
     });
   }
 
+  if (token.fdv && token.fdv > 0) {
+    factors.push({
+      label: "FDV",
+      detail: `$${token.fdv >= 1e6 ? `${(token.fdv / 1e6).toFixed(2)}M` : `${(token.fdv / 1e3).toFixed(0)}K`} fully diluted valuation`,
+      impact: token.fdv < 500_000 ? "bearish" : token.fdv > 5_000_000 ? "bullish" : "neutral",
+      weight: 12,
+    });
+  }
+
+  if (token.liquidityUsd > 0 && token.volume24h > 0) {
+    const turnover = token.volume24h / token.liquidityUsd;
+    factors.push({
+      label: "24h Turnover",
+      detail: `${turnover.toFixed(2)}× volume vs liquidity (higher = more active)`,
+      impact: turnover > 1.5 ? "bullish" : turnover < 0.3 ? "bearish" : "neutral",
+      weight: 14,
+    });
+  }
+
+  if (intel.sell24h && intel.buy24h) {
+    const ratio = intel.buy24h / Math.max(intel.sell24h, 1);
+    factors.push({
+      label: "On-chain Flow",
+      detail: `${intel.buy24h} buys vs ${intel.sell24h} sells (24h)`,
+      impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
+      weight: 16,
+    });
+  }
+
   return factors;
 }
 
@@ -204,7 +234,12 @@ function heuristicDecision(
   };
 }
 
-async function enrichToken(token: TrendingToken) {
+async function enrichToken(token: TrendingToken, deep = true) {
+  if (token.intel?.technical && !deep) return token.intel;
+  if (deep) {
+    const bundle = await buildDeepTokenIntel(token);
+    return bundle.intel;
+  }
   return token.intel ?? buildLocalTokenIntel(token);
 }
 
@@ -214,7 +249,8 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
 
   if (!client) return fallback;
 
-  const headlines = await fetchCryptoNewsHeadlines(token.symbol, 4);
+  const bundle = await buildDeepTokenIntel(token);
+  const intelMerged = { ...intel, ...bundle.intel };
 
   try {
     const completion = await client.chat.completions.create({
@@ -225,11 +261,17 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
         {
           role: "system",
           content:
-            'You are NEXUS trading agent. Return JSON: action (BUY|SELL|HOLD), confidence (0-100), riskScore (0-100), reasoning (2 sentences), whyAction (1 sentence explaining the action plainly).',
+            "You are NEXUS, a professional crypto trading agent. Analyze like a desk trader: news, mcap, FDV, liquidity, turnover, buy/sell flow, RSI, MACD, trend. Return JSON: action (BUY|SELL|HOLD), confidence (0-100), riskScore (0-100), reasoning (2-3 sentences citing metrics), whyAction (one clear sentence for the user).",
         },
         {
           role: "user",
-          content: JSON.stringify({ token, intel, headlines }),
+          content: JSON.stringify({
+            token,
+            intel: intelMerged,
+            turnoverRatio: bundle.turnoverRatio,
+            buySellRatio: bundle.buySellRatio,
+            headlines: bundle.news,
+          }),
         },
       ],
     });
@@ -244,7 +286,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
     };
 
     const action = parsed.action ?? fallback.action;
-    const factors = buildReasoningFactors(token, intel, action);
+    const factors = buildReasoningFactors(token, intelMerged, action);
 
     return {
       action,
@@ -262,7 +304,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
 
 export async function buildDecision(token: TrendingToken, arcFeeTxHash?: string): Promise<NexusDecision> {
   const swapCheck = checkSwappable(token);
-  const intel = await enrichToken(token);
+  const intel = await enrichToken(token, true);
   const core = await aiDecision(token, intel);
   const payload = JSON.stringify({ product: "NEXUS", token: token.tokenAddress, ...core });
   const anchor = await anchorDecisionPayload(payload);
@@ -348,9 +390,11 @@ export async function analyzeTokenSignal(
 
 /** Batch analyze trending tokens for live agent feed (fast — no Birdeye) */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
-  return tokens.map((token) => {
-    const intel = token.intel ?? buildLocalTokenIntel(token);
-    const signal = heuristicDecision(token, intel);
-    return { token: { ...token, intel }, intel, signal };
-  });
+  return Promise.all(
+    tokens.map(async (token) => {
+      const intel = token.intel ?? buildLocalTokenIntel(token);
+      const signal = heuristicDecision(token, intel);
+      return { token: { ...token, intel }, intel, signal };
+    }),
+  );
 }

@@ -11,10 +11,15 @@ export const AUTOPILOT_INTERVALS: Record<
   "1w": { label: "1 week", ms: 7 * 24 * 60 * 60_000, icon: "📆" },
 };
 
+export type AutopilotAmountMode = "percent" | "custom_usdc" | "custom_token";
+
 export type AutopilotConfig = {
   enabled: boolean;
   interval: AutopilotInterval;
   percent: number;
+  amountMode: AutopilotAmountMode;
+  customUsdc: string;
+  customToken: string;
   mode: "follow_agent" | "buy_only" | "sell_only";
   minConfidence: number;
   tokenKey?: string;
@@ -33,6 +38,9 @@ export function defaultAutopilot(): AutopilotConfig {
     enabled: false,
     interval: "15m",
     percent: 25,
+    amountMode: "percent",
+    customUsdc: "10",
+    customToken: "",
     mode: "follow_agent",
     minConfidence: 55,
   };

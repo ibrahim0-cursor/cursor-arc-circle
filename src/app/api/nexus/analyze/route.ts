@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { analyzeTokenSignal, buildDecision } from "@/lib/nexus-agent";
-import { fetchTokenIntel, mergeBirdeyeIntel, hasBirdeyeKey } from "@/lib/birdeye";
-import { buildLocalTokenIntel } from "@/lib/token-intel-local";
+import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
 import { computeTechnicalAnalysis, normalizePriceChanges } from "@/lib/technical-analysis";
 import { addNexusDecision } from "@/lib/storage";
 
@@ -47,16 +46,13 @@ export async function POST(request: Request) {
       });
     }
 
-    const localIntel = buildLocalTokenIntel(token);
-    const birdeyeIntel = hasBirdeyeKey()
-      ? (await fetchTokenIntel(token.tokenAddress, token.chainId)).intel
-      : {};
-    const enrichedIntel = mergeBirdeyeIntel(localIntel, birdeyeIntel);
-    const agent = await analyzeTokenSignal(token, enrichedIntel, body.deep ?? false);
+    const bundle = await buildDeepTokenIntel(token);
+    const agent = await analyzeTokenSignal(token, bundle.intel, body.deep ?? false);
 
     return NextResponse.json({
       token,
-      intel: enrichedIntel,
+      intel: bundle.intel,
+      news: bundle.news.slice(0, 4),
       agent,
       technical: ta,
       mode: body.deep ? "deep" : "quick",

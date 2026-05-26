@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
-import { ArrowDownUp, ExternalLink, Loader2, Percent, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  ArrowDownUp,
+  Bot,
+  ExternalLink,
+  Loader2,
+  Percent,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { Button } from "@/components/ui/button";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
@@ -35,19 +44,22 @@ function formatAmount(n: number) {
   return n.toFixed(6);
 }
 
-export function NexusDemoTradePanel({
+type TradeTab = "buy" | "sell" | "autopilot";
+
+export function NexusTradeHub({
   token,
   onTradeComplete,
 }: {
   token: TradeToken;
   onTradeComplete?: () => void;
 }) {
+  const [tradeTab, setTradeTab] = useState<TradeTab>("buy");
   const { address, isConnected } = useAccount();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
   const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
 
   const trade = asTradeToken(token);
-  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const side = tradeTab === "sell" ? "sell" : "buy";
   const [amount, setAmount] = useState("25");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +120,7 @@ export function NexusDemoTradePanel({
   }
 
   function applyBuyPreset(usdc: number) {
-    setSide("buy");
+    setTradeTab("buy");
     setAmount(String(usdc));
   }
 
@@ -163,33 +175,69 @@ export function NexusDemoTradePanel({
     }
   }
 
-  const balanceLabel = balance
-    ? `${Number(balance.formatted).toFixed(2)} ${balance.symbol}`
-    : "—";
+  const marketToken =
+    token && "tokenAddress" in token
+      ? (token as TrendingMarketToken)
+      : token && "token" in token
+        ? ({
+            symbol: token.symbol,
+            tokenAddress: token.token,
+            chainId: token.chainId,
+            priceUsd: token.priceUsd,
+            pairAddress: token.pairAddress ?? "",
+            name: token.name ?? token.symbol,
+            change24h: token.change24h,
+            volume24h: token.volume24h ?? 0,
+            liquidityUsd: token.liquidityUsd ?? 0,
+            url: token.dexUrl ?? "",
+          } as TrendingMarketToken)
+        : null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-cyan-300/25 bg-white/[0.04] shadow-[0_0_32px_-8px_rgba(103,232,249,0.4)] backdrop-blur-xl">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-300/15 px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div className="border-b border-cyan-300/15 px-4 py-3">
+        <div className="mb-3 flex items-center gap-2">
           <ArrowDownUp className="h-5 w-5 text-cyan-200" />
-          <span className="text-base font-semibold text-cyan-50">Trade on Arc</span>
+          <span className="text-base font-semibold text-cyan-50">Arc Trade · Agent</span>
         </div>
-        {address && (
-          <a
-            href={arcExplorerAddress(address)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-cyan-300/30 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100"
-          >
-            {balanceLabel}
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        )}
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              { id: "buy" as const, label: "Buy", icon: TrendingUp },
+              { id: "sell" as const, label: "Sell", icon: TrendingDown },
+              { id: "autopilot" as const, label: "Autopilot", icon: Bot },
+            ] as const
+          ).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTradeTab(id)}
+              className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl border text-sm font-bold transition active:scale-[0.98] ${
+                tradeTab === id
+                  ? id === "autopilot"
+                    ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                    : id === "buy"
+                      ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100"
+                      : "border-rose-400/50 bg-rose-500/20 text-rose-100"
+                  : "border-white/12 bg-white/[0.03] text-white/65"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-4 p-4">
         {!trade ? (
           <p className="text-center text-sm text-white/60">Select a token from the feed to trade.</p>
+        ) : tradeTab === "autopilot" ? (
+          <NexusAutopilotPanel
+            token={marketToken}
+            onTradeComplete={onTradeComplete}
+            embedded
+          />
         ) : (
           <>
             <div className="flex items-center justify-between rounded-xl bg-black/25 px-3 py-2.5">
@@ -217,31 +265,6 @@ export function NexusDemoTradePanel({
                 </div>
               </div>
             )}
-
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  { value: "buy" as const, label: "Buy", icon: TrendingUp },
-                  { value: "sell" as const, label: "Sell", icon: TrendingDown },
-                ] as const
-              ).map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setSide(value)}
-                  className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl border text-sm font-bold transition active:scale-[0.98] ${
-                    side === value
-                      ? value === "buy"
-                        ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100 shadow-[0_0_20px_rgba(52,211,153,0.15)]"
-                        : "border-rose-400/50 bg-rose-500/20 text-rose-100 shadow-[0_0_20px_rgba(251,113,133,0.15)]"
-                      : "border-white/12 bg-white/[0.03] text-white/65"
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  {label}
-                </button>
-              ))}
-            </div>
 
             {side === "buy" && (
               <div>
@@ -341,3 +364,6 @@ export function NexusDemoTradePanel({
     </div>
   );
 }
+
+/** @deprecated use NexusTradeHub */
+export const NexusDemoTradePanel = NexusTradeHub;

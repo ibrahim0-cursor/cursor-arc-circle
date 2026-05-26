@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,9 +33,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
       <body className="min-h-full bg-[#050508] antialiased">
-        <Navbar />
-        <main className="pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
-        <MobileBottomNav />
+        <AppProviders>
+          <Navbar />
+          <main className="pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 [&:has([data-nexus-page])]:pb-0">
+            {children}
+          </main>
+          <MobileBottomNav />
+        </AppProviders>
       </body>
     </html>
   );
