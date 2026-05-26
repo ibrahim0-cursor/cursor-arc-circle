@@ -5,6 +5,8 @@ import { useAccount, useBalance } from "wagmi";
 import {
   ArrowDownUp,
   Bot,
+  Coins,
+  DollarSign,
   ExternalLink,
   Loader2,
   Percent,
@@ -122,6 +124,12 @@ export function NexusTradeHub({
   function applyBuyPreset(usdc: number) {
     setTradeTab("buy");
     setAmount(String(usdc));
+  }
+
+  function applySellUsdcReceive(targetUsdc: number) {
+    if (livePrice <= 0) return;
+    const tokens = Math.min(tokenBalance, targetUsdc / livePrice);
+    setAmount(formatAmount(tokens));
   }
 
   async function executeDemoTrade() {
@@ -268,14 +276,17 @@ export function NexusTradeHub({
 
             {side === "buy" && (
               <div>
-                <p className="nexus-caption mb-2">Quick USDC</p>
+                <p className="nexus-caption mb-2 flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-emerald-300" />
+                  Quick spend (USDC)
+                </p>
                 <div className="grid grid-cols-4 gap-2">
                   {BUY_PRESETS.map((v) => (
                     <button
                       key={v}
                       type="button"
                       onClick={() => applyBuyPreset(v)}
-                      className="min-h-[40px] rounded-lg border border-white/12 bg-white/5 text-sm font-medium text-white/90 active:bg-white/15"
+                      className="min-h-[40px] rounded-lg border border-emerald-400/20 bg-emerald-500/10 text-sm font-medium text-emerald-100 active:bg-emerald-500/20"
                     >
                       ${v}
                     </button>
@@ -284,9 +295,39 @@ export function NexusTradeHub({
               </div>
             )}
 
+            {side === "sell" && (
+              <div>
+                <p className="nexus-caption mb-2 flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-rose-300" />
+                  Quick receive (USDC)
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {BUY_PRESETS.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => applySellUsdcReceive(v)}
+                      className="min-h-[40px] rounded-lg border border-rose-400/20 bg-rose-500/10 text-sm font-medium text-rose-100 active:bg-rose-500/20"
+                    >
+                      ${v}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[11px] text-white/45">
+                  Sets {trade.symbol} amount to receive ~USDC above (wallet balance capped).
+                </p>
+              </div>
+            )}
+
             <p className="nexus-caption flex items-center gap-1.5">
-              <Percent className="h-3.5 w-3.5 text-violet-300" />
-              {side === "buy" ? "Amount (USDC)" : `Amount (${trade.symbol})`} · 25 / 50 / 75 / MAX
+              {side === "buy" ? (
+                <DollarSign className="h-3.5 w-3.5 text-emerald-300" />
+              ) : (
+                <Coins className="h-3.5 w-3.5 text-rose-300" />
+              )}
+              {side === "buy"
+                ? "Spend USDC"
+                : `Sell ${trade.symbol} or use USDC presets · % of holdings`}
             </p>
             <input
               inputMode="decimal"
@@ -307,6 +348,12 @@ export function NexusTradeHub({
                 </button>
               ))}
             </div>
+
+            {side === "sell" && amountNum > 0 && livePrice > 0 && (
+              <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-100">
+                Receive ≈ {formatUsd(amountNum * livePrice)} USDC
+              </p>
+            )}
 
             {quote && (
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-white/85">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { analyzeTokenSignal, buildDecision } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
+import { scoreTokenSecurity } from "@/lib/token-security";
 import { computeTechnicalAnalysis, normalizePriceChanges } from "@/lib/technical-analysis";
 import { addNexusDecision } from "@/lib/storage";
 
@@ -48,15 +49,17 @@ export async function POST(request: Request) {
 
     const bundle = await buildDeepTokenIntel(token);
     const agent = await analyzeTokenSignal(token, bundle.intel, body.deep ?? false);
+    const security = scoreTokenSecurity(token, bundle.intel);
 
     return NextResponse.json({
       token,
       intel: bundle.intel,
       news: bundle.news.slice(0, 4),
       agent,
+      security,
       technical: ta,
       mode: body.deep ? "deep" : "quick",
-      message: `${agent.action} · confidence ${agent.confidence}% · TA score ${ta.score}/100`,
+      message: `${agent.action} · confidence ${agent.confidence}% · security ${security.grade}`,
     });
   } catch (error) {
     return NextResponse.json(

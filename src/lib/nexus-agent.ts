@@ -390,11 +390,22 @@ export async function analyzeTokenSignal(
 
 /** Batch analyze trending tokens for live agent feed (fast — no Birdeye) */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
+  const { scoreTokenSecurity } = await import("./token-security");
   return Promise.all(
     tokens.map(async (token) => {
       const intel = token.intel ?? buildLocalTokenIntel(token);
-      const signal = heuristicDecision(token, intel);
-      return { token: { ...token, intel }, intel, signal };
+      let signal = heuristicDecision(token, intel);
+      const security = scoreTokenSecurity(token, intel);
+      if (security.honeypotRisk && signal.action === "BUY") {
+        signal = {
+          ...signal,
+          action: "HOLD",
+          confidence: Math.min(signal.confidence, 45),
+          whyAction: `Security block: ${security.label}. ${signal.whyAction}`,
+          riskScore: Math.max(signal.riskScore, 75),
+        };
+      }
+      return { token: { ...token, intel }, intel, signal, security };
     }),
   );
 }

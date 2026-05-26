@@ -31,6 +31,7 @@ import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
+import { mergeFeedTokens } from "@/lib/token-security";
 import type { NexusDecision } from "@/lib/storage";
 
 const AGENT_MEMORY_KEY = "nexus-agent-memory";
@@ -148,27 +149,19 @@ export function NexusConsole() {
   );
 
   const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
-    setFeedTokens(tokens);
+    setFeedTokens((prev) => mergeFeedTokens(prev, tokens, 120));
     setSelectedToken((prev) => {
-      const match = prev
-        ? tokens.find(
-            (t) =>
-              t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
-              t.chainId === prev.chainId,
-          )
-        : null;
-      const next = match ?? tokens[0] ?? prev;
-      if (!next) return prev;
+      if (!prev) return tokens[0] ?? null;
+      const match = tokens.find(
+        (t) =>
+          t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
+          t.chainId === prev.chainId,
+      );
+      if (!match) return prev;
       return {
-        ...next,
-        intel: {
-          ...next.intel,
-          holderCount: prev?.intel?.holderCount ?? next.intel?.holderCount,
-          sniperCount: prev?.intel?.sniperCount ?? next.intel?.sniperCount,
-          whaleCount: prev?.intel?.whaleCount ?? next.intel?.whaleCount,
-          insiderCount: prev?.intel?.insiderCount ?? next.intel?.insiderCount,
-          top10HolderPercent: prev?.intel?.top10HolderPercent ?? next.intel?.top10HolderPercent,
-        },
+        ...match,
+        security: match.security ?? prev.security,
+        intel: { ...match.intel, ...prev.intel },
       };
     });
     setPortfolioKey((k) => k + 1);
@@ -355,12 +348,15 @@ export function NexusConsole() {
             selectedAddress={selectedToken?.tokenAddress}
             onSelect={(t) => {
               setSelectedToken(t);
-              setMobilePanel("chart");
               scrollToMobileContent();
               toast({
                 type: "info",
-                title: `${t.symbol} selected`,
-                message: t.agent ? `Agent: ${t.agent.action}` : "Opening analysis",
+                title: `${t.symbol} pinned`,
+                message: t.security?.honeypotRisk
+                  ? "High risk token — review security"
+                  : t.agent
+                    ? `Signal: ${t.agent.action}`
+                    : "Prices update without losing your pick",
               });
             }}
             onTokensRefresh={handleFeedRefresh}

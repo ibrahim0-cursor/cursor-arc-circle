@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(Number(searchParams.get("limit") ?? 20), 24);
+    const limit = Math.min(Number(searchParams.get("limit") ?? 100), 120);
 
     let tokens = await fetchTrendingMarketTokens(limit);
     tokens = await Promise.all(
@@ -20,10 +20,11 @@ export async function GET(request: Request) {
     );
     const analyzed = await analyzeTrendingFeed(tokens);
 
-    const feed = analyzed.map(({ token, intel, signal }) => ({
+    const feed = analyzed.map(({ token, intel, signal, security }) => ({
       ...trendingToDemoToken(token),
       intel,
       agent: signal,
+      security,
       updatedAt: new Date().toISOString(),
     }));
 

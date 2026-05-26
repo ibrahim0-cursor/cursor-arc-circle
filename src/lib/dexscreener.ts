@@ -161,7 +161,7 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
 }
 
 /** Trending tokens for demo trading — live DexScreener, rotated queries each ~45s */
-export async function fetchTrendingMarketTokens(limit = 20) {
+export async function fetchTrendingMarketTokens(limit = 100) {
   const tokens: TrendingToken[] = [];
   const seen = new Set<string>();
   const cycle = Math.floor(Date.now() / 45_000);
@@ -195,7 +195,7 @@ export async function fetchTrendingMarketTokens(limit = 20) {
   ];
 
   for (const network of paprikaNetworksForCycle(cycle)) {
-    const paprikaTokens = await fetchDexPaprikaTopTokens(network, 10);
+    const paprikaTokens = await fetchDexPaprikaTopTokens(network, 20);
     for (const t of paprikaTokens) {
       const pair = t.pairAddress ? t : await loadPair(t.chainId, t.tokenAddress);
       addToken(pair ?? t);
