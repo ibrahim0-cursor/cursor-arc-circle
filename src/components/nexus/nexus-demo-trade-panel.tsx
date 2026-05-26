@@ -2,15 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
-import {
-  ArrowDownUp,
-  ArrowRightLeft,
-  ExternalLink,
-  Loader2,
-  Percent,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowDownUp, ExternalLink, Loader2, Percent, TrendingDown, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
@@ -55,7 +47,7 @@ export function NexusDemoTradePanel({
   const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
 
   const trade = asTradeToken(token);
-  const [side, setSide] = useState<"buy" | "sell" | "swap_to_usdc">("buy");
+  const [side, setSide] = useState<"buy" | "sell">("buy");
   const [amount, setAmount] = useState("25");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,9 +105,6 @@ export function NexusDemoTradePanel({
       setAmount(formatAmount((tokenBalance * pct) / 100));
       return;
     }
-    if (side === "swap_to_usdc" && pct === 100) {
-      setAmount(formatAmount(tokenBalance));
-    }
   }
 
   function applyBuyPreset(usdc: number) {
@@ -157,7 +146,7 @@ export function NexusDemoTradePanel({
           sourceChain: trade.chainId,
           tradeNetwork: TRADE_NETWORK,
           usdcAmount: side === "buy" ? amountNum : undefined,
-          tokenAmount: side === "sell" || side === "swap_to_usdc" ? amountNum : undefined,
+          tokenAmount: side === "sell" ? amountNum : undefined,
           priceUsd: livePrice,
           arcFeeTxHash: fee.txHash,
         }),
@@ -229,33 +218,26 @@ export function NexusDemoTradePanel({
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {(
                 [
                   { value: "buy" as const, label: "Buy", icon: TrendingUp },
                   { value: "sell" as const, label: "Sell", icon: TrendingDown },
-                  { value: "swap_to_usdc" as const, label: "Max USDC", icon: ArrowRightLeft },
                 ] as const
               ).map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => {
-                    setSide(value);
-                    if (value === "swap_to_usdc") setAmount(formatAmount(tokenBalance));
-                  }}
-                  disabled={value === "swap_to_usdc" && tokenBalance <= 0}
-                  className={`flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border text-sm font-semibold transition active:scale-[0.98] ${
+                  onClick={() => setSide(value)}
+                  className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl border text-sm font-bold transition active:scale-[0.98] ${
                     side === value
                       ? value === "buy"
-                        ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100"
-                        : value === "sell"
-                          ? "border-rose-400/50 bg-rose-500/20 text-rose-100"
-                          : "border-cyan-400/50 bg-cyan-500/20 text-cyan-100"
+                        ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100 shadow-[0_0_20px_rgba(52,211,153,0.15)]"
+                        : "border-rose-400/50 bg-rose-500/20 text-rose-100 shadow-[0_0_20px_rgba(251,113,133,0.15)]"
                       : "border-white/12 bg-white/[0.03] text-white/65"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-5 w-5" />
                   {label}
                 </button>
               ))}
@@ -279,39 +261,29 @@ export function NexusDemoTradePanel({
               </div>
             )}
 
-            {side !== "swap_to_usdc" && (
-              <>
-                <p className="nexus-caption flex items-center gap-1.5">
-                  <Percent className="h-3.5 w-3.5 text-violet-300" />
-                  {side === "buy" ? "Amount (USDC)" : `Amount (${trade.symbol})`} · tap % of balance
-                </p>
-                <input
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full min-h-[48px] rounded-xl border border-cyan-300/20 bg-black/30 px-4 text-lg font-medium text-white outline-none focus:border-cyan-300/50"
-                  placeholder="0"
-                />
-                <div className="grid grid-cols-4 gap-2">
-                  {PCT_OPTIONS.map((pct) => (
-                    <button
-                      key={pct}
-                      type="button"
-                      onClick={() => applyPct(pct)}
-                      className="min-h-[44px] rounded-xl border border-violet-400/25 bg-violet-500/10 text-sm font-bold text-violet-100 active:bg-violet-500/25"
-                    >
-                      {pct === 100 ? "MAX" : `${pct}%`}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {side === "swap_to_usdc" && (
-              <p className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">
-                Sells your full position ({tokenBalance.toFixed(4)} {trade.symbol}) for Arc USDC.
-              </p>
-            )}
+            <p className="nexus-caption flex items-center gap-1.5">
+              <Percent className="h-3.5 w-3.5 text-violet-300" />
+              {side === "buy" ? "Amount (USDC)" : `Amount (${trade.symbol})`} · 25 / 50 / 75 / MAX
+            </p>
+            <input
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full min-h-[48px] rounded-xl border border-cyan-300/20 bg-black/30 px-4 text-lg font-medium text-white outline-none focus:border-cyan-300/50"
+              placeholder="0"
+            />
+            <div className="grid grid-cols-4 gap-2">
+              {PCT_OPTIONS.map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => applyPct(pct)}
+                  className="min-h-[44px] rounded-xl border border-violet-400/25 bg-violet-500/10 text-sm font-bold text-violet-100 transition active:scale-95 active:bg-violet-500/25"
+                >
+                  {pct === 100 ? "MAX" : `${pct}%`}
+                </button>
+              ))}
+            </div>
 
             {quote && (
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-white/85">
@@ -339,7 +311,7 @@ export function NexusDemoTradePanel({
                 {loading || arcPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  `Confirm ${side === "buy" ? "Buy" : side === "sell" ? "Sell" : "Swap to USDC"}`
+                  `Confirm ${side === "buy" ? "Buy" : "Sell"}`
                 )}
               </Button>
             ) : (

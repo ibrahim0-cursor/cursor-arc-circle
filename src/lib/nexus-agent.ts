@@ -1,16 +1,12 @@
-import OpenAI from "openai";
 import { randomUUID } from "crypto";
+import { getAiClient, getAiModel } from "./ai-client";
+import { fetchCryptoNewsHeadlines } from "./crypto-news";
 import { fetchTrendingMarketTokens, fetchSwappableTokens, type TrendingToken } from "./dexscreener";
 import { buildLocalTokenIntel } from "./token-intel-local";
 import { checkSwappable } from "./swappable";
 import { anchorDecisionPayload } from "./arc";
 import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
 
-function getOpenAI() {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-  return new OpenAI({ apiKey: key });
-}
 
 function buildReasoningFactors(
   token: TrendingToken,
@@ -213,14 +209,16 @@ async function enrichToken(token: TrendingToken) {
 }
 
 async function aiDecision(token: TrendingToken, intel: TokenIntel) {
-  const client = getOpenAI();
+  const client = getAiClient();
   const fallback = heuristicDecision(token, intel);
 
   if (!client) return fallback;
 
+  const headlines = await fetchCryptoNewsHeadlines(token.symbol, 4);
+
   try {
     const completion = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      model: getAiModel(),
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
@@ -231,7 +229,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
         },
         {
           role: "user",
-          content: JSON.stringify({ token, intel }),
+          content: JSON.stringify({ token, intel, headlines }),
         },
       ],
     });

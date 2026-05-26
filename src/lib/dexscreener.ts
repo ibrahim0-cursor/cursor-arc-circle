@@ -1,6 +1,10 @@
 import { WALLET_SWAP_CHAINS, SWAP_CRITERIA, checkSwappable, filterSwappableTokens, type WalletSwapChain } from "./swappable";
 import { isEvmChain } from "./swap";
 import { buildLocalTokenIntel } from "./token-intel-local";
+import {
+  fetchDexPaprikaTopTokens,
+  paprikaNetworksForCycle,
+} from "./dexpaprika";
 import type { TokenIntel } from "./storage";
 
 export type TrendingToken = {
@@ -189,6 +193,14 @@ export async function fetchTrendingMarketTokens(limit = 20) {
       ),
     ),
   ];
+
+  for (const network of paprikaNetworksForCycle(cycle)) {
+    const paprikaTokens = await fetchDexPaprikaTopTokens(network, 10);
+    for (const t of paprikaTokens) {
+      const pair = t.pairAddress ? t : await loadPair(t.chainId, t.tokenAddress);
+      addToken(pair ?? t);
+    }
+  }
 
   const results = await Promise.allSettled(fetches);
 

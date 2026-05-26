@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchTrendingMarketTokens } from "@/lib/dexscreener";
+import { fetchTrendingMarketTokens, fetchTokenByAddress } from "@/lib/dexscreener";
 import { analyzeTrendingFeed } from "@/lib/nexus-agent";
 import { trendingToDemoToken } from "@/lib/demo-trading";
 
@@ -10,7 +10,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Number(searchParams.get("limit") ?? 20), 24);
 
-    const tokens = await fetchTrendingMarketTokens(limit);
+    let tokens = await fetchTrendingMarketTokens(limit);
+    tokens = await Promise.all(
+      tokens.map(async (t) => {
+        if (t.pairAddress) return t;
+        const pair = await fetchTokenByAddress(t.chainId, t.tokenAddress);
+        return pair ? { ...pair, intel: t.intel, demoTradeable: true, suggestedNetwork: "arc" } : t;
+      }),
+    );
     const analyzed = await analyzeTrendingFeed(tokens);
 
     const feed = analyzed.map(({ token, intel, signal }) => ({

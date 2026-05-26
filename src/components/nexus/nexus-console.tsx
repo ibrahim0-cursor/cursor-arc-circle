@@ -366,8 +366,12 @@ export function NexusConsole() {
 
   const chartPanel = (
     <div className="space-y-3">
-      <NexusTokenChart chainId={selectedToken?.chainId} pairAddress={selectedToken?.pairAddress} />
       {displayDecision && <NexusTokenDetail decision={displayDecision} />}
+      <NexusTokenChart
+        chainId={selectedToken?.chainId}
+        pairAddress={selectedToken?.pairAddress}
+        symbol={selectedToken?.symbol}
+      />
       <NexusTAPanel technical={displayDecision?.technical ?? selectedToken?.intel?.technical} priceUsd={selectedToken?.priceUsd} />
       <NexusTokenDetectPanel
         chainId={selectedToken?.chainId}
@@ -375,6 +379,7 @@ export function NexusConsole() {
         symbol={selectedToken?.symbol}
         txns24h={selectedToken?.txns24h}
         volume24h={selectedToken?.volume24h}
+        agentAction={displayDecision?.action}
         onIntelUpdate={handleBirdeyeIntel}
       />
     </div>

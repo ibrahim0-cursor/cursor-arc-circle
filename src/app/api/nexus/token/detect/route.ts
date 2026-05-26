@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { fetchTokenDetection } from "@/lib/birdeye";
 import { hasBirdeyeKey } from "@/lib/birdeye-client";
+import { fetchMergedTokenDetection } from "@/lib/token-detection";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,7 +19,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const detection = await fetchTokenDetection(address, chainId);
+    const detection = await fetchMergedTokenDetection(address, chainId, {
+      buys,
+      sells,
+      volume,
+    });
     return NextResponse.json({
       ...detection,
       serverHasKey: hasBirdeyeKey(),

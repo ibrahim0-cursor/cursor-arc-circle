@@ -94,11 +94,9 @@ export function NexusTrendingFeed({
 
       if (match) {
         onSelectRef.current(match);
-      } else if (!didInitialSelect.current && list[0]) {
+      } else if (list[0]) {
+        onSelectRef.current(list[0]);
         didInitialSelect.current = true;
-        onSelectRef.current(list[0]);
-      } else if (list[0] && sel && !match) {
-        onSelectRef.current(list[0]);
       }
     } catch (err) {
       if (!silent) setError(err instanceof Error ? err.message : "Feed load failed");

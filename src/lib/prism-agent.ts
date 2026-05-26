@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
+import { getAiClient, getAiModel } from "./ai-client";
 import { randomUUID } from "crypto";
 import { fetchGdeltArticles, MACRO_EVENTS } from "./gdelt";
 import { fetchNewsArticles } from "./newsapi";
@@ -40,11 +40,6 @@ function heuristicPrediction(input: {
   };
 }
 
-function getOpenAI() {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-  return new OpenAI({ apiKey: key });
-}
 
 function parsePrismJson(raw: string, fallback: ReturnType<typeof heuristicPrediction>) {
   const parsed = JSON.parse(raw) as {
@@ -75,7 +70,7 @@ async function aiPrediction(input: {
   news: Awaited<ReturnType<typeof fetchNewsArticles>>;
 }) {
   const anthropic = getAnthropic();
-  const openai = getOpenAI();
+  const openai = getAiClient();
   const headlines = [
     ...input.gdelt.map((item) => item.title),
     ...input.news.map((item) => item.title),
@@ -100,7 +95,7 @@ async function aiPrediction(input: {
   if (openai) {
     try {
       const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+        model: getAiModel(),
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [

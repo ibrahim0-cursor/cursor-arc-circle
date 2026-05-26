@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
+  Bot,
   CheckCircle2,
   Crosshair,
   Fish,
   Loader2,
   Radar,
+  Sparkles,
   Target,
   UserX,
   Users,
+  Zap,
 } from "lucide-react";
 import { formatCompact, formatUsd, truncateHash } from "@/lib/utils";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
@@ -35,8 +39,12 @@ type Detection = {
     holderCount?: number;
     birdeyeConnected?: boolean;
     birdeyeLive?: boolean;
+    paprikaConnected?: boolean;
     holderSource?: "holders" | "top_traders";
-    dataSource?: "birdeye" | "birdeye_pending" | "unavailable";
+    dataSource?: "birdeye" | "dexpaprika" | "dex" | "birdeye_pending" | "unavailable";
+    buy24h?: number;
+    sell24h?: number;
+    trade24h?: number;
   };
   errors?: string[];
 };
@@ -69,6 +77,7 @@ export function NexusTokenDetectPanel({
   symbol,
   txns24h,
   volume24h,
+  agentAction,
   onIntelUpdate,
 }: {
   chainId?: string;
@@ -76,6 +85,7 @@ export function NexusTokenDetectPanel({
   symbol?: string;
   txns24h?: { buys: number; sells: number };
   volume24h?: number;
+  agentAction?: string;
   onIntelUpdate?: (summary: {
     holderCount?: number;
     sniperCount?: number;
@@ -84,7 +94,8 @@ export function NexusTokenDetectPanel({
     top10Pct?: number;
   }) => void;
 }) {
-  const [tab, setTab] = useState<"txs" | "snipers" | "whales" | "insiders" | "holders">("txs");
+  const [showDetails, setShowDetails] = useState(false);
+  const [tab, setTab] = useState<"txs" | "whales" | "snipers">("txs");
   const [data, setData] = useState<Detection | null>(null);
   const [loading, setLoading] = useState(false);
   const { status: integrations } = useIntegrationsStatus();
@@ -107,7 +118,12 @@ export function NexusTokenDetectPanel({
         const json = await res.json();
         if (!cancelled && res.ok) {
           setData(json);
-          if ((json.summary?.birdeyeLive || json.summary?.dataSource === "birdeye") && onIntelUpdate) {
+          const live =
+            json.summary?.birdeyeLive ||
+            json.summary?.dataSource === "birdeye" ||
+            json.summary?.dataSource === "dexpaprika" ||
+            json.summary?.dataSource === "dex";
+          if (live && onIntelUpdate) {
             onIntelUpdate({
               holderCount: json.summary.holderCount,
               sniperCount: json.summary.sniperCount,
@@ -123,7 +139,7 @@ export function NexusTokenDetectPanel({
     }
 
     load();
-    const interval = setInterval(load, 120_000);
+    const interval = setInterval(load, 45_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -133,240 +149,210 @@ export function NexusTokenDetectPanel({
   if (!chainId || !tokenAddress) return null;
 
   const s = data?.summary;
-  const serverHasKey = data?.serverHasKey ?? integrations?.birdeye ?? s?.birdeyeConnected;
-  const probeOk = integrations?.birdeyeProbe?.ok;
-  const isLive = Boolean(s?.birdeyeLive || s?.dataSource === "birdeye");
+  const isLive =
+    s?.birdeyeLive ||
+    s?.dataSource === "birdeye" ||
+    s?.dataSource === "dexpaprika" ||
+    s?.dataSource === "dex";
+  const sourceLabel =
+    s?.dataSource === "dexpaprika"
+      ? "DexPaprika on-chain"
+      : s?.dataSource === "birdeye"
+        ? s?.holderSource === "top_traders"
+          ? "Birdeye · top traders"
+          : "Birdeye live"
+        : s?.dataSource === "dex"
+          ? "DexScreener flow"
+          : loading
+            ? "Scanning…"
+            : "Awaiting data";
 
-  const sourceLabel = isLive
-    ? s?.holderSource === "top_traders"
-      ? "Live · top traders (EVM)"
-      : "Live · Birdeye"
-    : serverHasKey && probeOk === false
-      ? "Key invalid or rate-limited"
-      : serverHasKey
-        ? "Loading Birdeye…"
-        : "API key not on server";
-
-  const hint = [
-    s?.holderCount != null ? `${formatCompact(s.holderCount)} holders` : null,
-    s?.sniperCount != null ? `${s.sniperCount} snipers` : null,
-    s?.whaleCount != null ? `${s.whaleCount} whales` : null,
-    isLive ? sourceLabel : serverHasKey ? sourceLabel : "Configure Birdeye",
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  const tabs = [
-    { id: "txs" as const, label: "Swaps", icon: Target },
-    { id: "snipers" as const, label: "Snipers", icon: Crosshair },
-    { id: "whales" as const, label: "Whales", icon: Fish },
-    { id: "insiders" as const, label: "Insiders", icon: UserX },
-    { id: "holders" as const, label: "Holders", icon: Users },
-  ];
+  const buys = s?.buy24h ?? txns24h?.buys ?? 0;
+  const sells = s?.sell24h ?? txns24h?.sells ?? 0;
+  const flowBias = buys > sells * 1.1 ? "Buy pressure" : sells > buys * 1.1 ? "Sell pressure" : "Balanced flow";
 
   const statusTone: "ok" | "warn" | "error" | "loading" = loading
     ? "loading"
     : isLive
       ? "ok"
-      : serverHasKey
+      : integrations?.birdeye
         ? "warn"
         : "error";
 
+  const tabs = [
+    { id: "txs" as const, label: "Swaps", icon: Target },
+    { id: "whales" as const, label: "Whales", icon: Fish },
+    { id: "snipers" as const, label: "Snipers", icon: Crosshair },
+  ];
+
   return (
     <NexusCollapsible
-      label={`Token intel · ${symbol ?? "token"}`}
-      hint={hint || "Loading market intel…"}
+      label="Agent intel scan"
+      hint={`${symbol ?? "Token"} · ${flowBias} · ${sourceLabel}`}
       variant="intel"
       icon={Radar}
+      defaultOpen
     >
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {statusTone === "loading" && (
-            <StatusPill tone="loading">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Fetching Birdeye…
-            </StatusPill>
-          )}
-          {statusTone === "ok" && (
-            <StatusPill tone="ok">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {sourceLabel}
-            </StatusPill>
-          )}
-          {statusTone === "warn" && (
-            <StatusPill tone="warn">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {sourceLabel}
-            </StatusPill>
-          )}
-          {statusTone === "error" && (
-            <StatusPill tone="error">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Birdeye not configured
-            </StatusPill>
-          )}
-        </div>
-
-        {!serverHasKey && (
-          <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2.5 text-sm leading-relaxed text-amber-50/95">
-            <p className="font-semibold">Birdeye is required for whale, sniper &amp; swap data</p>
-            <p className="mt-1 text-xs text-amber-100/85">
-              Add <code className="rounded bg-black/30 px-1 font-mono">BIRDEYE_API_KEY</code> in Vercel env (or{" "}
-              <code className="rounded bg-black/30 px-1 font-mono">.env.local</code> locally), redeploy, then hard-refresh.
-            </p>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-500/15 via-cyan-500/5 to-transparent p-4"
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-violet-200" />
+              <span className="text-sm font-bold text-white">NEXUS handled analysis</span>
+            </div>
+            {statusTone === "loading" && (
+              <StatusPill tone="loading">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Scanning
+              </StatusPill>
+            )}
+            {statusTone === "ok" && (
+              <StatusPill tone="ok">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {sourceLabel}
+              </StatusPill>
+            )}
+            {statusTone === "warn" && (
+              <StatusPill tone="warn">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Partial data
+              </StatusPill>
+            )}
           </div>
-        )}
 
-        {data?.errors && data.errors.length > 0 && !isLive && serverHasKey && (
-          <p className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-            {data.errors[0]}
-            {data.errors.length > 1 ? ` (+${data.errors.length - 1} more)` : ""}
+          <p className="text-xs leading-relaxed text-white/75">
+            You do not need DexScreener tabs — the agent reads liquidity, flow, whales, and news, then signals{" "}
+            <strong className="text-cyan-100">{agentAction ?? "HOLD"}</strong> for you.
           </p>
-        )}
 
-        <div className="flex flex-wrap gap-1.5">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                tab === id
-                  ? "bg-amber-400/20 text-amber-50 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
-                  : "bg-white/5 text-white/65 hover:bg-white/10 hover:text-white/90"
-              }`}
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { icon: Zap, label: "24h Buys", value: formatCompact(buys) },
+              { icon: Target, label: "24h Sells", value: formatCompact(sells) },
+              { icon: Fish, label: "Whales", value: String(s?.whaleCount ?? data?.whales.length ?? "—") },
+              { icon: Users, label: "Snipers", value: String(s?.sniperCount ?? data?.snipers.length ?? "—") },
+            ].map((m) => (
+              <div
+                key={m.label}
+                className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 transition hover:border-cyan-400/25"
+              >
+                <m.icon className="mb-1 h-4 w-4 text-cyan-300/80" />
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{m.label}</p>
+                <p className="text-sm font-bold text-white">{m.value}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] text-sm font-semibold text-white/75 transition hover:bg-white/10"
+        >
+          <Sparkles className="h-4 w-4 text-violet-300" />
+          {showDetails ? "Hide raw intel" : "View swap / whale rows"}
+        </button>
+
+        <AnimatePresence>
+          {showDetails && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
             >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
+              <div className="flex flex-wrap gap-1.5 pb-2">
+                {tabs.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setTab(id)}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                      tab === id
+                        ? "bg-amber-400/20 text-amber-50"
+                        : "bg-white/5 text-white/65 hover:bg-white/10"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
 
-        <div className="max-h-48 space-y-1.5 overflow-y-auto pr-0.5">
-          {tab === "txs" &&
-            (data?.trades.length ? (
-              data.trades.map((tx, i) => (
-                <Row
-                  key={tx.hash ?? i}
-                  left={
-                    <span
-                      className={
-                        tx.side === "buy"
-                          ? "font-semibold text-emerald-300"
-                          : tx.side === "sell"
-                            ? "font-semibold text-rose-300"
-                            : "text-white/80"
-                      }
-                    >
-                      {tx.side.toUpperCase()} · {truncateHash(tx.trader, 6, 4)}
-                    </span>
-                  }
-                  right={
-                    <>
-                      <span className="font-medium text-white/90">{formatUsd(tx.amountUsd)}</span>
-                      <span className="text-white/50"> · {new Date(tx.timestamp).toLocaleTimeString()}</span>
-                    </>
-                  }
-                />
-              ))
-            ) : (
-              <Empty
-                text={
-                  serverHasKey
-                    ? "No recent swaps from Birdeye yet — try again in a minute (rate limits)."
-                    : "Connect Birdeye to show live swap feed."
-                }
-              />
-            ))}
+              <div className="max-h-40 space-y-1.5 overflow-y-auto">
+                {tab === "txs" &&
+                  (data?.trades.length ? (
+                    data.trades.map((tx, i) => (
+                      <Row
+                        key={tx.hash ?? i}
+                        left={
+                          <span
+                            className={
+                              tx.side === "buy"
+                                ? "font-semibold text-emerald-300"
+                                : tx.side === "sell"
+                                  ? "font-semibold text-rose-300"
+                                  : "text-white/80"
+                            }
+                          >
+                            {tx.side.toUpperCase()} · {truncateHash(tx.trader, 6, 4)}
+                          </span>
+                        }
+                        right={
+                          <>
+                            <span className="font-medium">{formatUsd(tx.amountUsd)}</span>
+                          </>
+                        }
+                      />
+                    ))
+                  ) : (
+                    <Empty text="No swaps yet — refreshes every 45s with DexPaprika + Birdeye." />
+                  ))}
 
-          {tab === "snipers" &&
-            (data?.snipers.length ? (
-              data.snipers.map((sn, i) => (
-                <Row
-                  key={sn.address + i}
-                  left={<span className="font-medium text-white/90">{sn.label}</span>}
-                  right={truncateHash(sn.address, 8, 6)}
-                  score={data.walletScores.find((w) => w.address.toLowerCase() === sn.address.toLowerCase())}
-                />
-              ))
-            ) : (
-              <Empty text="No sniper wallets flagged by Birdeye security." />
-            ))}
+                {tab === "whales" &&
+                  (data?.whales.length ? (
+                    data.whales.map((w, i) => (
+                      <Row
+                        key={w.address + i}
+                        left={
+                          <span className="text-white/90">
+                            {w.label} · {truncateHash(w.address, 6, 4)}
+                          </span>
+                        }
+                        right={
+                          <span>
+                            {formatCompact(w.balance)} · {w.pct.toFixed(1)}%
+                          </span>
+                        }
+                        score={data.walletScores.find(
+                          (wsc) => wsc.address.toLowerCase() === w.address.toLowerCase(),
+                        )}
+                      />
+                    ))
+                  ) : (
+                    <Empty text="Whale / trader rows load when on-chain volume is detected." />
+                  ))}
 
-          {tab === "whales" &&
-            (data?.whales.length ? (
-              data.whales.map((w, i) => (
-                <Row
-                  key={w.address + i}
-                  left={
-                    <span className="text-white/90">
-                      <span className="font-medium">{w.label}</span> · {truncateHash(w.address, 6, 4)}
-                    </span>
-                  }
-                  right={
-                    <span className="text-white/85">
-                      {s?.holderSource === "top_traders"
-                        ? `${formatCompact(w.balance)} vol`
-                        : formatCompact(w.balance)}{" "}
-                      · {w.pct.toFixed(1)}%
-                    </span>
-                  }
-                  score={data.walletScores.find((wsc) => wsc.address.toLowerCase() === w.address.toLowerCase())}
-                />
-              ))
-            ) : (
-              <Empty
-                text={
-                  s?.holderSource === "top_traders"
-                    ? "No top traders returned for this token."
-                    : "No whale holders from Birdeye."
-                }
-              />
-            ))}
-
-          {tab === "insiders" &&
-            (data?.insiders.length ? (
-              data.insiders.map((ins, i) => (
-                <Row
-                  key={ins.address + i}
-                  left={
-                    <span className="text-white/90">
-                      {ins.label} · {truncateHash(ins.address, 6, 4)}
-                    </span>
-                  }
-                  right={
-                    <span className="capitalize text-white/85">
-                      {ins.pct.toFixed(1)}% · <span className={ins.risk === "high" ? "text-rose-300" : ""}>{ins.risk}</span>
-                    </span>
-                  }
-                />
-              ))
-            ) : (
-              <Empty text="No insider wallets flagged." />
-            ))}
-
-          {tab === "holders" &&
-            (data?.holders.length ? (
-              data.holders.map((h, i) => (
-                <Row
-                  key={h.address + i}
-                  left={
-                    <span className="font-medium text-white/90">
-                      #{h.rank ?? i + 1} · {truncateHash(h.address, 8, 6)}
-                    </span>
-                  }
-                  right={
-                    <span className="text-white/85">
-                      {formatCompact(h.balance)} · {h.pct.toFixed(1)}%
-                    </span>
-                  }
-                  score={data.walletScores.find((w) => w.address.toLowerCase() === h.address.toLowerCase())}
-                />
-              ))
-            ) : (
-              <Empty text="No holder breakdown from Birdeye." />
-            ))}
-        </div>
+                {tab === "snipers" &&
+                  (data?.snipers.length ? (
+                    data.snipers.map((sn, i) => (
+                      <Row
+                        key={sn.address + i}
+                        left={<span>{sn.label}</span>}
+                        right={truncateHash(sn.address, 8, 6)}
+                      />
+                    ))
+                  ) : (
+                    <Empty text="No sniper flags (common on EVM — we use flow + traders instead)." />
+                  ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </NexusCollapsible>
   );
@@ -393,5 +379,9 @@ function Row({
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="rounded-xl border border-dashed border-white/12 px-3 py-4 text-center text-sm text-white/65">{text}</p>;
+  return (
+    <p className="rounded-xl border border-dashed border-white/12 px-3 py-3 text-center text-xs text-white/60">
+      {text}
+    </p>
+  );
 }

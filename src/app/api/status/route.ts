@@ -34,6 +34,17 @@ export async function GET() {
     arcRpc: Boolean(process.env.NEXT_PUBLIC_ARC_RPC_URL?.trim()),
     newsapi: Boolean(process.env.NEWS_API_KEY?.trim()),
     coingecko: Boolean(process.env.COINGECKO_API_KEY?.trim()),
-    mode: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY ? "ai" : "heuristic",
+    groq: Boolean(process.env.GROQ_API_KEY?.trim()),
+    dexpaprika: true,
+    cryptoNews: true,
+    mode:
+      process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
+        ? "ai"
+        : "heuristic",
+    aiProvider: process.env.GROQ_API_KEY
+      ? "groq"
+      : process.env.OPENAI_API_KEY
+        ? "openai"
+        : "heuristic",
   });
 }
