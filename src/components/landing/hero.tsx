@@ -24,9 +24,10 @@ export function LandingHero() {
           </span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">
-          ARC CIRCLE ships two production-grade AI agents on Arc testnet —{" "}
-          <strong className="text-white">NEXUS</strong> for autonomous market execution and{" "}
-          <strong className="text-white">PRISM</strong> for macro and geopolitical forecasting.
+          ARC CIRCLE ships two production-grade AI agents —{" "}
+          <strong className="text-white">NEXUS</strong> for testnet demo trading with live DexScreener + Birdeye feeds
+          and <strong className="text-white">PRISM</strong> for macro and geopolitical forecasting. All fees settle in
+          Arc USDC.
         </p>
         <div className="mt-10 flex flex-wrap gap-4">
           <Link href="/nexus">
@@ -52,7 +53,7 @@ export function LandingHero() {
           {
             icon: Shield,
             title: "Arc + Circle settlement",
-            copy: "Every agent action pays USDC fees on Arc testnet — sub-second finality with Circle wallet primitives.",
+            copy: "Demo trade trending tokens on testnet — buy, sell, swap back to Arc USDC with sub-second finality.",
           },
           {
             icon: BrainCircuit,

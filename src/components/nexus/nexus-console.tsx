@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
-import { Bot, Loader2, Play, RefreshCw, Sparkles, Wallet, Zap } from "lucide-react";
+import { Bot, FlaskConical, Loader2, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MeshBackground } from "@/components/layout/mesh-background";
 import { NexusDecisionCard, NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
-import { NexusSwapPanel } from "@/components/nexus/nexus-swap-panel";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
+import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
+import { NexusDemoTradePanel } from "@/components/nexus/nexus-demo-trade-panel";
+import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { isArcChain } from "@/lib/arc-chain";
 import { SWAP_CRITERIA, chainIdFromWallet } from "@/lib/swappable";
@@ -23,12 +25,15 @@ export function NexusConsole() {
   const walletChain = chainIdFromWallet(walletChainId);
   const { payArcFee, ensureArcNetwork, isPending: arcFeePending, feeUsd } = useArcSettlement();
   const [lastArcFeeTx, setLastArcFeeTx] = useState<string | null>(null);
+  const [portfolioKey, setPortfolioKey] = useState(0);
 
   const [decisions, setDecisions] = useState<NexusDecision[]>([]);
+  const [selectedToken, setSelectedToken] = useState<TrendingMarketToken | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"trending" | "agent">("trending");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/nexus/decisions");
@@ -42,7 +47,9 @@ export function NexusConsole() {
     load();
   }, [load]);
 
-  const selected = decisions.find((d) => d.id === selectedId) ?? decisions[0] ?? null;
+  const selectedDecision = decisions.find((d) => d.id === selectedId) ?? decisions[0] ?? null;
+  const chartToken = selectedToken ?? selectedDecision;
+  const tradeToken = selectedToken ?? selectedDecision;
 
   async function runScan() {
     setScanning(true);
@@ -64,6 +71,7 @@ export function NexusConsole() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
       await load();
+      setActiveTab("agent");
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "Scan failed");
     } finally {
@@ -93,6 +101,7 @@ export function NexusConsole() {
         throw new Error(data.error ?? "Decision failed");
       }
       await load();
+      setActiveTab("agent");
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "Decision failed");
     } finally {
@@ -105,27 +114,30 @@ export function NexusConsole() {
       <MeshBackground variant="nexus" />
 
       <div className="relative mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:py-10">
-        {/* Hero header */}
         <div className="mb-8 overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-6 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
-              <div className="mb-3 flex items-center gap-2">
-                <Badge variant="nexus">NEXUS v2</Badge>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge variant="nexus">NEXUS Demo</Badge>
+                <Badge variant="default" className="border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+                  <FlaskConical className="mr-1 h-3 w-3" />
+                  Testnet trading
+                </Badge>
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  Live markets
+                  DexScreener + Birdeye live
                 </span>
               </div>
               <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                Autonomous Trading Intelligence
+                Demo Trading on Arc
               </h1>
               <p className="mt-3 text-white/60">
-                Circle Agora hackathon build — agent signals with{" "}
-                <strong className="text-white">USDC fees on Arc Testnet</strong> (~${feeUsd}/action).
+                Trending tokens from <strong className="text-white">DexScreener & Birdeye</strong> — buy, sell, and
+                swap to <strong className="text-white">Arc USDC</strong> on testnet (~${feeUsd}/tx).
                 <span className="mt-1 block text-cyan-300/80">
                   {isConnected && isArcChain(walletChainId)
-                    ? "Arc Testnet connected · fees paid in USDC"
-                    : "Connect MetaMask → Arc Testnet to scan & settle on-chain"}
+                    ? "Arc Testnet · demo trade on Arc / Sepolia / Base / Arbitrum testnets"
+                    : "Connect MetaMask on Arc Testnet to start demo trading"}
                 </span>
               </p>
             </div>
@@ -133,7 +145,7 @@ export function NexusConsole() {
               <WalletConnectButton />
               <Button variant="outline" onClick={runScan} disabled={scanning || arcFeePending}>
                 {scanning || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Scan
+                Agent Scan
               </Button>
               <Button variant="nexus" onClick={runDecision} disabled={loading || arcFeePending}>
                 {loading || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -144,9 +156,9 @@ export function NexusConsole() {
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
-              { icon: Zap, label: "DexScreener + Birdeye", sub: "Live token intel" },
-              { icon: Bot, label: "AI reasoning", sub: "Why BUY / SELL / HOLD" },
-              { icon: Sparkles, label: "Wallet + Swap", sub: "Execute on-chain" },
+              { icon: Zap, label: "Live trending feed", sub: "DexScreener + Birdeye intel" },
+              { icon: FlaskConical, label: "Testnet demo trades", sub: "Arc · Sepolia · Base · Arb" },
+              { icon: Sparkles, label: "Settle in Arc USDC", sub: "Fees + swap back to USDC" },
             ].map((item) => (
               <div
                 key={item.label}
@@ -162,15 +174,17 @@ export function NexusConsole() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-2 text-[11px] text-white/45">
-            <CriteriaPill label={`Liquidity ≥ $${SWAP_CRITERIA.minLiquidityUsd / 1000}K`} />
-            <CriteriaPill label={`Volume ≥ $${SWAP_CRITERIA.minVolume24h / 1000}K`} />
-            <CriteriaPill label="EVM contract only" />
-            <CriteriaPill label="Fees in USDC on Arc" />
+            <CriteriaPill label="Testnet only" />
+            <CriteriaPill label="Fees in Arc USDC" />
             <CriteriaPill label="Circle × Agora" />
+            <CriteriaPill label={`Live mcap from Birdeye`} />
           </div>
         </div>
 
-        <ArcSettlementBanner txHash={lastArcFeeTx ?? selected?.arcTxHash} arcBlockNumber={selected?.arcBlockNumber} />
+        <ArcSettlementBanner
+          txHash={lastArcFeeTx ?? selectedDecision?.arcTxHash}
+          arcBlockNumber={selectedDecision?.arcBlockNumber}
+        />
 
         {scanError && (
           <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
@@ -179,20 +193,41 @@ export function NexusConsole() {
         )}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-          {/* Left: decision feed */}
           <Card className="border-white/10">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium">Agent feed</h2>
-                <Badge variant="nexus">{decisions.length} signals</Badge>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("trending")}
+                  className={`rounded-lg px-3 py-1.5 text-sm ${activeTab === "trending" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"}`}
+                >
+                  Trending
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("agent")}
+                  className={`rounded-lg px-3 py-1.5 text-sm ${activeTab === "agent" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"}`}
+                >
+                  Agent feed
+                </button>
+                <Badge variant="nexus" className="ml-auto">
+                  {activeTab === "trending" ? "Live market" : `${decisions.length} signals`}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="max-h-[85vh] space-y-4 overflow-y-auto pr-1">
-              {decisions.length === 0 ? (
+              {activeTab === "trending" ? (
+                <NexusTrendingFeed
+                  selectedAddress={selectedToken?.tokenAddress}
+                  onSelect={(token) => {
+                    setSelectedToken(token);
+                    setSelectedId(null);
+                  }}
+                />
+              ) : decisions.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
-                  <Wallet className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
-                  Connect wallet and tap <strong className="text-white/70">Scan</strong> to load tokens
-                  you can buy or sell directly.
+                  <Bot className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
+                  Run <strong className="text-white/70">Agent Scan</strong> for AI signals, or use Trending tab to demo trade now.
                 </div>
               ) : (
                 decisions.map((decision) => (
@@ -205,22 +240,30 @@ export function NexusConsole() {
                       reasoningFactors: decision.reasoningFactors ?? [],
                       intel: decision.intel ?? {},
                     }}
-                    selected={selected?.id === decision.id}
-                    onSelect={() => setSelectedId(decision.id)}
+                    selected={selectedDecision?.id === decision.id}
+                    onSelect={() => {
+                      setSelectedId(decision.id);
+                      setSelectedToken(null);
+                    }}
                   />
                 ))
               )}
             </CardContent>
           </Card>
 
-          {/* Right: chart + detail + swap */}
           <div className="space-y-6">
             <NexusTokenChart
-              chainId={selected?.chainId}
-              pairAddress={selected?.pairAddress}
+              chainId={chartToken?.chainId}
+              pairAddress={chartToken?.pairAddress}
             />
-            <NexusTokenDetail decision={selected} />
-            <NexusSwapPanel decision={selected} />
+            {selectedDecision && !selectedToken && (
+              <NexusTokenDetail decision={selectedDecision} />
+            )}
+            <NexusDemoTradePanel
+              token={tradeToken}
+              onTradeComplete={() => setPortfolioKey((k) => k + 1)}
+            />
+            <NexusPortfolio refreshKey={portfolioKey} />
           </div>
         </div>
       </div>

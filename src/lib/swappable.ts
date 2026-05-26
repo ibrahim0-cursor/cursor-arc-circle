@@ -1,9 +1,10 @@
 import { isAddress } from "viem";
 import { ARC_TESTNET_ID } from "./arc-chain";
+import { sepolia, baseSepolia, arbitrumSepolia } from "./testnet-chains";
 import { evmChainId, isEvmChain } from "./swap";
 import type { TrendingToken } from "./dexscreener";
 
-/** Chains where MetaMask + 0x swap works in NEXUS */
+/** Chains with live market data (DexScreener) — demo execution on testnets */
 export const WALLET_SWAP_CHAINS = ["base", "ethereum", "arbitrum"] as const;
 
 export type WalletSwapChain = (typeof WALLET_SWAP_CHAINS)[number];
@@ -21,8 +22,11 @@ export type SwappableCheck = {
   reasons: string[];
 };
 
-export function chainIdFromWallet(chainId?: number): WalletSwapChain | "arc" | undefined {
+export function chainIdFromWallet(chainId?: number): WalletSwapChain | "arc" | "sepolia" | "base-sepolia" | "arbitrum-sepolia" | undefined {
   if (chainId === ARC_TESTNET_ID) return "arc";
+  if (chainId === sepolia.id) return "sepolia";
+  if (chainId === baseSepolia.id) return "base-sepolia";
+  if (chainId === arbitrumSepolia.id) return "arbitrum-sepolia";
   if (chainId === 8453) return "base";
   if (chainId === 1) return "ethereum";
   if (chainId === 42161) return "arbitrum";
@@ -47,8 +51,8 @@ export function checkSwappable(token: TrendingToken, preferredChain?: string): S
     return { ok: false, reasons };
   }
 
-  if (preferredChain === "arc") {
-    reasons.push("Wallet on Arc — scan Base/Ethereum swappable tokens; fees settle on Arc");
+  if (preferredChain === "arc" || preferredChain === "sepolia" || preferredChain === "base-sepolia" || preferredChain === "arbitrum-sepolia") {
+    reasons.push("Demo trade on testnet · live price from DexScreener · fees on Arc USDC");
     return { ok: true, reasons };
   }
 

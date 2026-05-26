@@ -5,6 +5,7 @@ import { Wallet, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { truncateHash } from "@/lib/utils";
 import { ARC_TESTNET_ID, arcTestnet } from "@/lib/arc-chain";
+import { DEMO_TRADE_NETWORKS } from "@/lib/testnet-chains";
 
 export function WalletConnectButton() {
   const { address, isConnected } = useAccount();
@@ -19,28 +20,35 @@ export function WalletConnectButton() {
     if (connector) connect({ connector, chainId: ARC_TESTNET_ID });
   }
 
-  async function switchToArc() {
+  async function addAndSwitchChain(chain: (typeof DEMO_TRADE_NETWORKS)[number]) {
     try {
-      await switchChainAsync({ chainId: ARC_TESTNET_ID });
+      await switchChainAsync({ chainId: chain.chainId });
     } catch {
       const eth = (window as Window & { ethereum?: { request: (args: unknown) => Promise<unknown> } }).ethereum;
       await eth?.request({
         method: "wallet_addEthereumChain",
         params: [
           {
-            chainId: `0x${ARC_TESTNET_ID.toString(16)}`,
-            chainName: arcTestnet.name,
-            nativeCurrency: arcTestnet.nativeCurrency,
-            rpcUrls: arcTestnet.rpcUrls.default.http,
-            blockExplorerUrls: [arcTestnet.blockExplorers.default.url],
+            chainId: `0x${chain.chainId.toString(16)}`,
+            chainName: chain.chain.name,
+            nativeCurrency: chain.chain.nativeCurrency,
+            rpcUrls: chain.chain.rpcUrls.default.http,
+            blockExplorerUrls: chain.chain.blockExplorers
+              ? [chain.chain.blockExplorers.default.url]
+              : [],
           },
         ],
       });
-      await switchChainAsync({ chainId: ARC_TESTNET_ID });
+      await switchChainAsync({ chainId: chain.chainId });
     }
   }
 
+  async function switchToArc() {
+    await addAndSwitchChain(DEMO_TRADE_NETWORKS[0]);
+  }
+
   if (isConnected && address) {
+    const network = DEMO_TRADE_NETWORKS.find((n) => n.chainId === chainId);
     return (
       <div className="flex flex-wrap items-center gap-2">
         {!onArc && (
@@ -51,8 +59,7 @@ export function WalletConnectButton() {
         )}
         <Button variant="outline" size="sm">
           <Wallet className="h-4 w-4" />
-          {onArc ? "Arc · " : ""}
-          {truncateHash(address, 6, 4)}
+          {network?.short ?? "Testnet"} · {truncateHash(address, 6, 4)}
         </Button>
       </div>
     );
@@ -61,7 +68,7 @@ export function WalletConnectButton() {
   return (
     <Button variant="nexus" size="sm" onClick={connectWallet}>
       <Wallet className="h-4 w-4" />
-      Connect on Arc Testnet
+      Connect · Arc Testnet
     </Button>
   );
 }

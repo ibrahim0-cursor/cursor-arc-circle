@@ -1,6 +1,7 @@
 import { WALLET_SWAP_CHAINS, SWAP_CRITERIA, checkSwappable, filterSwappableTokens, type WalletSwapChain } from "./swappable";
 import { isEvmChain } from "./swap";
-import { ARC_TESTNET_ID } from "./arc-chain";
+import { fetchTokenIntel } from "./birdeye";
+import { birdeyeChainFor } from "./testnet-chains";
 
 export type TrendingToken = {
   symbol: string;
@@ -19,6 +20,8 @@ export type TrendingToken = {
   txns24h?: { buys: number; sells: number };
   quoteSymbol?: string;
   swappable?: boolean;
+  demoTradeable?: boolean;
+  suggestedNetwork?: string;
 };
 
 type DexPair = {
@@ -132,6 +135,48 @@ export async function fetchSwappableTokens(limit = 8, preferredChain?: string) {
   return filtered
     .sort((a, b) => b.liquidityUsd - a.liquidityUsd)
     .slice(0, limit);
+}
+
+/** Trending tokens for demo trading — live DexScreener + optional Birdeye intel */
+export async function fetchTrendingMarketTokens(limit = 12) {
+  const res = await fetch("https://api.dexscreener.com/token-boosts/top/v1", {
+    next: { revalidate: 30 },
+  });
+  if (!res.ok) throw new Error("DexScreener boosts unavailable");
+
+  const boosts = (await res.json()) as Array<{ chainId: string; tokenAddress: string }>;
+  const evmBoosts = boosts.filter(
+    (b) =>
+      isEvmChain(b.chainId) &&
+      WALLET_SWAP_CHAINS.includes(b.chainId as WalletSwapChain),
+  );
+
+  const tokens: TrendingToken[] = [];
+  for (const boost of evmBoosts.slice(0, limit * 2)) {
+    const pair = await loadPair(boost.chainId, boost.tokenAddress);
+    if (!pair || pair.priceUsd <= 0) continue;
+    tokens.push({ ...pair, demoTradeable: true });
+  }
+
+  const unique = Array.from(
+    new Map(tokens.map((t) => [`${t.chainId}:${t.tokenAddress}`, t])).values(),
+  )
+    .sort((a, b) => b.volume24h - a.volume24h)
+    .slice(0, limit);
+
+  const enriched = await Promise.all(
+    unique.map(async (token) => {
+      const { intel } = await fetchTokenIntel(token.tokenAddress, birdeyeChainFor(token.chainId));
+      return {
+        ...token,
+        marketCap: intel.marketCap ?? token.marketCap,
+        fdv: intel.fdv ?? token.fdv,
+        intel,
+      };
+    }),
+  );
+
+  return enriched;
 }
 
 /** @deprecated use fetchSwappableTokens */

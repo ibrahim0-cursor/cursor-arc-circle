@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { fetchSwappableTokens, type TrendingToken } from "./dexscreener";
 import { checkSwappable } from "./swappable";
 import { fetchTokenIntel } from "./birdeye";
+import { birdeyeChainFor } from "./testnet-chains";
 import { anchorDecisionPayload } from "./arc";
 import {
   addNexusDecision,
@@ -168,7 +169,7 @@ function heuristicDecision(
 }
 
 async function enrichToken(token: TrendingToken) {
-  const birdeyeChain = token.chainId === "solana" ? "solana" : "ethereum";
+  const birdeyeChain = birdeyeChainFor(token.chainId);
   const { intel } = await fetchTokenIntel(token.tokenAddress, birdeyeChain);
   return {
     ...intel,

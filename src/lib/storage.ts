@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import type { DemoPosition, DemoTradeRecord } from "./demo-trading";
 import { getSupabase } from "./supabase";
 
 export type ReasoningFactor = {
@@ -52,6 +53,8 @@ export type NexusDecision = {
   swappable?: boolean;
   swapCriteriaMet?: string[];
 };
+
+export type { DemoPosition, DemoTradeRecord };
 
 export type PrismPrediction = {
   id: string;
@@ -153,4 +156,31 @@ export async function addPrismPrediction(prediction: PrismPrediction) {
   items.unshift(prediction);
   await writeJson("prism-predictions.json", items.slice(0, 200));
   return prediction;
+}
+
+export async function getDemoPositions(wallet: string) {
+  const all = await readJson<DemoPosition[]>("demo-positions.json", []);
+  return all.filter((p) => p.wallet.toLowerCase() === wallet.toLowerCase() && p.tokenAmount > 0);
+}
+
+async function getAllDemoPositions() {
+  return readJson<DemoPosition[]>("demo-positions.json", []);
+}
+
+export async function getDemoTrades(wallet: string, limit = 30) {
+  const all = await readJson<DemoTradeRecord[]>("demo-trades.json", []);
+  return all
+    .filter((t) => t.wallet.toLowerCase() === wallet.toLowerCase())
+    .slice(0, limit);
+}
+
+export async function saveDemoTrade(trade: DemoTradeRecord, walletPositions: DemoPosition[]) {
+  const trades = await readJson<DemoTradeRecord[]>("demo-trades.json", []);
+  trades.unshift(trade);
+  await writeJson("demo-trades.json", trades.slice(0, 500));
+
+  const all = await getAllDemoPositions();
+  const others = all.filter((p) => p.wallet.toLowerCase() !== trade.wallet.toLowerCase());
+  await writeJson("demo-positions.json", [...walletPositions, ...others].slice(0, 500));
+  return trade;
 }
