@@ -60,7 +60,7 @@ export function NexusTrendingFeed({
   showAgent = true,
 }: {
   selectedAddress?: string;
-  onSelect: (token: TrendingMarketToken) => void;
+  onSelect: (token: TrendingMarketToken, options?: { openChart?: boolean }) => void;
   onTokensRefresh?: (tokens: TrendingMarketToken[]) => void;
   onOpenTrade?: (tab: "buy" | "sell" | "agent") => void;
   showAgent?: boolean;
@@ -103,7 +103,7 @@ export function NexusTrendingFeed({
     });
     if (!userPickedRef.current && !didInitialPick.current && list[0]) {
       didInitialPick.current = true;
-      onSelectRef.current(list[0]);
+      onSelectRef.current(list[0], { openChart: false });
     }
   }, []);
 
@@ -173,7 +173,7 @@ export function NexusTrendingFeed({
 
   function handleUserSelect(token: TrendingMarketToken) {
     userPickedRef.current = true;
-    onSelect(token);
+    onSelect(token, { openChart: true });
   }
 
   if (loading && tokens.length === 0) {
@@ -227,7 +227,7 @@ export function NexusTrendingFeed({
         {refreshing && <span className="ml-1 text-cyan-300"> Updating prices…</span>}
       </p>
       <p className="text-xs text-white/55 lg:hidden">
-        Tap a token → opens Chart. Use bottom tabs: Tokens · Chart · Trade.
+        Tap any token to open its chart. Bottom tabs: Tokens · Chart · Trade.
         {refreshing && <span className="ml-1 text-cyan-300"> Updating…</span>}
       </p>
 

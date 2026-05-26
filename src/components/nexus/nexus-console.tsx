@@ -153,6 +153,26 @@ export function NexusConsole() {
     });
   }, []);
 
+  const openChartView = useCallback(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+      setMobilePanel("chart");
+      scrollToMobileContent();
+      return;
+    }
+    requestAnimationFrame(() => {
+      document.getElementById("nexus-chart-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [scrollToMobileContent]);
+
+  const handleTokenSelect = useCallback(
+    (token: TrendingMarketToken, openChart = true) => {
+      setSelectedToken(token);
+      setDeepResearch(null);
+      if (openChart) openChartView();
+    },
+    [openChartView],
+  );
+
   const handleMobilePanel = useCallback(
     (panel: NexusMobilePanel) => {
       setMobilePanel(panel);
@@ -373,14 +393,7 @@ export function NexusConsole() {
             <div className="min-h-0 flex-1 overflow-hidden">
               <NexusTrendingFeed
                 selectedAddress={selectedToken?.tokenAddress}
-                onSelect={(t) => {
-                  setSelectedToken(t);
-                  setDeepResearch(null);
-                  if (isMobile) {
-                    setMobilePanel("chart");
-                  }
-                  scrollToMobileContent();
-                }}
+                onSelect={(t, opts) => handleTokenSelect(t, opts?.openChart ?? true)}
                 onTokensRefresh={handleFeedRefresh}
                 onOpenTrade={(tab) => {
                   setTradeTab(tab);
@@ -399,30 +412,31 @@ export function NexusConsole() {
                 setActiveTab("saved");
                 setSelectedSavedId(decision.id);
                 setDeepResearch(null);
-                setSelectedToken({
-                  symbol: decision.symbol,
-                  name: decision.name ?? decision.symbol,
-                  tokenAddress: decision.token,
-                  chainId: decision.chainId,
-                  pairAddress: decision.pairAddress ?? "",
-                  priceUsd: decision.priceUsd,
-                  change24h: decision.change24h,
-                  volume24h: decision.volume24h ?? 0,
-                  liquidityUsd: decision.liquidityUsd ?? 0,
-                  icon: decision.icon,
-                  url: decision.dexUrl ?? "",
-                  intel: decision.intel,
-                  agent: {
-                    action: decision.action,
-                    confidence: decision.confidence,
-                    riskScore: decision.riskScore,
-                    reasoning: decision.reasoning,
-                    whyAction: decision.whyAction,
-                    reasoningFactors: decision.reasoningFactors ?? [],
+                handleTokenSelect(
+                  {
+                    symbol: decision.symbol,
+                    name: decision.name ?? decision.symbol,
+                    tokenAddress: decision.token,
+                    chainId: decision.chainId,
+                    pairAddress: decision.pairAddress ?? "",
+                    priceUsd: decision.priceUsd,
+                    change24h: decision.change24h,
+                    volume24h: decision.volume24h ?? 0,
+                    liquidityUsd: decision.liquidityUsd ?? 0,
+                    icon: decision.icon,
+                    url: decision.dexUrl ?? "",
+                    intel: decision.intel,
+                    agent: {
+                      action: decision.action,
+                      confidence: decision.confidence,
+                      riskScore: decision.riskScore,
+                      reasoning: decision.reasoning,
+                      whyAction: decision.whyAction,
+                      reasoningFactors: decision.reasoningFactors ?? [],
+                    },
                   },
-                });
-                setMobilePanel("chart");
-                scrollToMobileContent();
+                  true,
+                );
               }}
             />
           </div>
@@ -438,7 +452,7 @@ export function NexusConsole() {
   ) : (
     <div className="space-y-3 max-lg:pb-2">
       <div className="hidden lg:block">
-        <NexusTokenStrip tokens={feedTokens} selected={selectedToken} onSelect={(t) => setSelectedToken(t)} />
+        <NexusTokenStrip tokens={feedTokens} selected={selectedToken} onSelect={(t) => handleTokenSelect(t)} />
       </div>
       <NexusTokenMetrics token={selectedToken} />
       <NexusTokenChart
@@ -471,7 +485,7 @@ export function NexusConsole() {
   const tradePanel = (
     <div className="space-y-3 max-lg:pb-4">
       <div className="hidden lg:block">
-        <NexusTokenStrip tokens={feedTokens} selected={selectedToken} onSelect={(t) => setSelectedToken(t)} />
+        <NexusTokenStrip tokens={feedTokens} selected={selectedToken} onSelect={(t) => handleTokenSelect(t)} />
       </div>
       <NexusTradeHub
         token={selectedToken}
@@ -613,7 +627,7 @@ export function NexusConsole() {
 
         <div className="hidden gap-4 lg:grid lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
           {feedPanel}
-          <div className="space-y-3">
+          <div id="nexus-chart-panel" className="scroll-mt-24 space-y-3">
             {chartPanel}
             {tradePanel}
           </div>
