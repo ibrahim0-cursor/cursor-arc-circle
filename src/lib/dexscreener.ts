@@ -6,6 +6,7 @@ import {
   paprikaNetworksForCycle,
 } from "./dexpaprika";
 import type { TokenIntel } from "./storage";
+import { isStablecoin } from "./token-filters";
 
 export type TrendingToken = {
   symbol: string;
@@ -175,6 +176,7 @@ export async function fetchTrendingMarketTokens(limit = 100) {
 
   function addToken(token: TrendingToken | null) {
     if (!token || token.priceUsd <= 0) return;
+    if (isStablecoin(token.symbol, token.name)) return;
     const key = `${token.chainId}:${token.tokenAddress}`;
     if (seen.has(key)) return;
     seen.add(key);

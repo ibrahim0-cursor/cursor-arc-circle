@@ -24,7 +24,10 @@ export function resolveAgentVaultAddress(circleAddress?: string | null): AgentVa
     return { address: circleAddress, source: "circle", configured: true };
   }
 
-  const envAddr = process.env.NEXT_PUBLIC_AGENT_VAULT_ADDRESS ?? process.env.AGENT_VAULT_ADDRESS;
+  const envAddr =
+    process.env.NEXT_PUBLIC_AGENT_VAULT_ADDRESS ??
+    process.env.AGENT_VAULT_ADDRESS ??
+    process.env.NEXT_PUBLIC_DEFAULT_AGENT_VAULT;
   if (envAddr && isAddress(envAddr)) {
     return { address: envAddr, source: "env", configured: true };
   }

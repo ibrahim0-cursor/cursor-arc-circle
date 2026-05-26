@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchTrendingMarketTokens, fetchTokenByAddress } from "@/lib/dexscreener";
+import { filterTradableTokens } from "@/lib/token-filters";
 import { analyzeTrendingFeed, analyzeTrendingFeedQuick } from "@/lib/nexus-agent";
 import { trendingToDemoToken } from "@/lib/demo-trading";
 
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       ? Math.min(Number(searchParams.get("limit") ?? 50), 60)
       : Math.min(Number(searchParams.get("limit") ?? 60), 80);
 
-    let tokens = await fetchTrendingMarketTokens(limit);
+    let tokens = filterTradableTokens(await fetchTrendingMarketTokens(limit));
     tokens = await enrichMissingPairs(tokens, quick ? 8 : 16);
 
     if (quick) {

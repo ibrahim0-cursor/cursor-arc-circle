@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { runNexusScan } from "@/lib/nexus-agent";
 import { chainIdFromWallet } from "@/lib/swappable";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as {

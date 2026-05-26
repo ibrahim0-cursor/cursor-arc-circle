@@ -372,20 +372,62 @@ export async function buildDecision(token: TrendingToken, arcFeeTxHash?: string)
   };
 }
 
-export async function runNexusScan(limit = 20, preferredChain?: string, arcFeeTxHash?: string) {
-  const tokens = await fetchTrendingMarketTokens(limit);
+export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTxHash?: string) {
+  const { filterTradableTokens } = await import("./token-filters");
+  const raw = await fetchTrendingMarketTokens(Math.min(limit * 3, 60));
+  const tokens = filterTradableTokens(raw).slice(0, limit);
   if (tokens.length === 0) {
-    throw new Error("No trending tokens found. Check DexScreener connection.");
+    throw new Error("No tradable tokens found (stablecoins excluded). Check DexScreener connection.");
   }
 
+  const analyzed = await analyzeTrendingFeedQuick(tokens);
+  const anchor = arcFeeTxHash
+    ? await anchorDecisionPayload(JSON.stringify({ product: "NEXUS", scan: Date.now(), count: tokens.length }))
+    : { txHash: undefined as string | undefined, blockNumber: undefined as number | undefined };
+
   const decisions: NexusDecision[] = [];
-  for (const token of tokens) {
-    const decision = await buildDecision(token, arcFeeTxHash);
+  for (const { token, intel, signal, security } of analyzed) {
+    const swapCheck = checkSwappable(token);
+    const decision: NexusDecision = {
+      id: randomUUID(),
+      timestamp: new Date().toISOString(),
+      token: token.tokenAddress,
+      symbol: token.symbol,
+      name: token.name,
+      chainId: token.chainId,
+      pairAddress: token.pairAddress,
+      dexUrl: token.url,
+      icon: token.icon,
+      priceUsd: token.priceUsd,
+      change24h: token.change24h,
+      volume24h: token.volume24h,
+      liquidityUsd: token.liquidityUsd,
+      intel,
+      swappable: swapCheck.ok,
+      swapCriteriaMet: swapCheck.reasons,
+      action: signal.action,
+      confidence: signal.confidence,
+      riskScore: signal.riskScore,
+      reasoning: signal.reasoning,
+      whyAction: signal.whyAction,
+      reasoningFactors: signal.reasoningFactors,
+      arcTxHash: anchor.txHash ?? arcFeeTxHash,
+      arcBlockNumber: anchor.blockNumber,
+      arcFeeTxHash,
+      settlementNetwork: "Arc Testnet",
+      feeCurrency: "USDC",
+      technical: intel.technical,
+    };
     await addNexusDecision(decision);
     decisions.push(decision);
   }
 
-  return { tokens, decisions, count: decisions.length, criteria: "arc-settlement|dexscreener|birdeye|ta" };
+  return {
+    tokens,
+    decisions,
+    count: decisions.length,
+    criteria: "arc-settlement|dexscreener|ta|no-stablecoins|fast-scan",
+  };
 }
 
 export async function runNexusDecisionForSymbol(

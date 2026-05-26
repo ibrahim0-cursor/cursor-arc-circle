@@ -18,6 +18,8 @@ import { MeshBackground } from "@/components/layout/mesh-background";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
+import { NexusAbSwap } from "@/components/nexus/nexus-ab-swap";
+import { filterTradableTokens } from "@/lib/token-filters";
 import type { NexusResearchReport } from "@/lib/nexus-research";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
@@ -157,10 +159,11 @@ export function NexusConsole() {
   );
 
   const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
-    setFeedTokens((prev) => mergeFeedTokens(prev, tokens, 120));
+    const tradable = filterTradableTokens(tokens);
+    setFeedTokens((prev) => mergeFeedTokens(prev, tradable, 120));
     setSelectedToken((prev) => {
-      if (!prev) return tokens[0] ?? null;
-      const match = tokens.find(
+      if (!prev) return tradable[0] ?? null;
+      const match = tradable.find(
         (t) =>
           t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
           t.chainId === prev.chainId,
@@ -224,6 +227,9 @@ export function NexusConsole() {
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
 
       const decisions = (data.decisions ?? []) as NexusDecision[];
+      if (decisions.length === 0 && !data.error) {
+        throw new Error("Scan returned 0 tokens — try again in a few seconds");
+      }
       const merged = decisions.length ? decisions : readSavedScansCache();
       setSavedDecisions(merged);
       persistSavedScans(merged);
@@ -510,7 +516,7 @@ export function NexusConsole() {
               <Button
                 variant="nexus"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
-                title="Deep AI on selected token · saves report · opens chart"
+                title="Thesis, risks, catalysts & levels for selected token (chart panel) — not the same as feed BUY/SELL"
                 onClick={runDeepAnalyze}
                 disabled={loading || arcFeePending || !selectedToken}
               >
@@ -521,6 +527,9 @@ export function NexusConsole() {
                 )}
                 Deep Research
               </Button>
+              <span className="hidden text-[10px] text-white/40 xl:inline" title="Thesis, risks, news — not just BUY/SELL">
+                ≠ feed signal
+              </span>
             </div>
           </div>
 
@@ -582,6 +591,10 @@ export function NexusConsole() {
             {chartPanel}
             {tradePanel}
           </div>
+        </div>
+
+        <div className="mt-4 lg:mt-6">
+          <NexusAbSwap tokens={feedTokens} />
         </div>
 
         <NexusMobileDock active={mobilePanel} onChange={handleMobilePanel} />
