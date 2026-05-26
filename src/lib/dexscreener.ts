@@ -1,7 +1,7 @@
 import { WALLET_SWAP_CHAINS, SWAP_CRITERIA, checkSwappable, filterSwappableTokens, type WalletSwapChain } from "./swappable";
 import { isEvmChain } from "./swap";
-import { fetchTokenIntel } from "./birdeye";
-import { birdeyeChainFor } from "./testnet-chains";
+import { buildLocalTokenIntel } from "./token-intel-local";
+import type { TokenIntel } from "./storage";
 
 export type TrendingToken = {
   symbol: string;
@@ -22,6 +22,8 @@ export type TrendingToken = {
   swappable?: boolean;
   demoTradeable?: boolean;
   suggestedNetwork?: string;
+  priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
+  intel?: TokenIntel;
 };
 
 type DexPair = {
@@ -32,7 +34,7 @@ type DexPair = {
   baseToken: { address: string; name: string; symbol: string };
   quoteToken: { symbol: string };
   priceUsd?: string;
-  priceChange?: { h24?: number };
+  priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
   volume?: { h24?: number };
   liquidity?: { usd?: number };
   fdv?: number;
@@ -50,6 +52,12 @@ function mapPair(pair: DexPair): TrendingToken {
     pairAddress: pair.pairAddress,
     priceUsd: Number(pair.priceUsd ?? 0),
     change24h: pair.priceChange?.h24 ?? 0,
+    priceChange: {
+      m5: pair.priceChange?.m5,
+      h1: pair.priceChange?.h1,
+      h6: pair.priceChange?.h6,
+      h24: pair.priceChange?.h24 ?? 0,
+    },
     volume24h: pair.volume?.h24 ?? 0,
     liquidityUsd: pair.liquidity?.usd ?? 0,
     marketCap: pair.marketCap,
@@ -188,26 +196,10 @@ export async function fetchTrendingMarketTokens(limit = 20) {
     .sort((a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd)
     .slice(0, limit);
 
-  const enriched = await Promise.all(
-    sorted.map(async (token) => {
-      try {
-        const { intel } = await fetchTokenIntel(
-          token.tokenAddress,
-          birdeyeChainFor(token.chainId),
-        );
-        return {
-          ...token,
-          marketCap: intel.marketCap ?? token.marketCap,
-          fdv: intel.fdv ?? token.fdv,
-          intel,
-        };
-      } catch {
-        return token;
-      }
-    }),
-  );
-
-  return enriched;
+  return sorted.map((token) => ({
+    ...token,
+    intel: buildLocalTokenIntel(token),
+  }));
 }
 
 /** @deprecated use fetchSwappableTokens */

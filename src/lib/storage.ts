@@ -24,6 +24,8 @@ export type TokenIntel = {
   isFreezable?: boolean;
   whaleCount?: number;
   sniperWallets?: string[];
+  insiderCount?: number;
+  technical?: TechnicalSnapshot;
 };
 
 export type TokenTx = {
@@ -40,6 +42,23 @@ export type TokenWhale = {
   balance: number;
   pct: number;
   label: string;
+};
+
+export type TokenInsider = {
+  address: string;
+  pct: number;
+  label: string;
+  risk: "high" | "medium" | "low";
+};
+
+export type TechnicalSnapshot = {
+  rsi: number;
+  rsiSignal: string;
+  macd: number;
+  macdSignal: string;
+  trend: string;
+  trendLine: string;
+  score: number;
 };
 
 export type NexusDecision = {
@@ -70,6 +89,7 @@ export type NexusDecision = {
   liquidityUsd?: number;
   swappable?: boolean;
   swapCriteriaMet?: string[];
+  technical?: TechnicalSnapshot;
 };
 
 export type { DemoPosition, DemoTradeRecord };

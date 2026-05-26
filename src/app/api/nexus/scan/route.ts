@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const preferredChain =
       body.chain ?? (body.walletChainId ? chainIdFromWallet(body.walletChainId) : undefined);
 
-    const result = await runNexusScan(6, preferredChain, body.arcFeeTxHash);
+    const result = await runNexusScan(20, preferredChain, body.arcFeeTxHash);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

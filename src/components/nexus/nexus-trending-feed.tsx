@@ -27,6 +27,7 @@ export type TrendingMarketToken = {
   txns24h?: { buys: number; sells: number };
   agent?: AgentSignal;
   updatedAt?: string;
+  priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
 };
 
 const REFRESH_MS = 45_000;

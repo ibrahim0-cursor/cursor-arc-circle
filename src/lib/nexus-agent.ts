@@ -1,9 +1,8 @@
 import OpenAI from "openai";
 import { randomUUID } from "crypto";
-import { fetchSwappableTokens, type TrendingToken } from "./dexscreener";
+import { fetchTrendingMarketTokens, fetchSwappableTokens, type TrendingToken } from "./dexscreener";
+import { buildLocalTokenIntel } from "./token-intel-local";
 import { checkSwappable } from "./swappable";
-import { fetchTokenIntel } from "./birdeye";
-import { birdeyeChainFor } from "./testnet-chains";
 import { anchorDecisionPayload } from "./arc";
 import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
 
@@ -93,6 +92,37 @@ function buildReasoningFactors(
     });
   }
 
+  if (intel.technical) {
+    const ta = intel.technical;
+    factors.push({
+      label: `RSI (${ta.rsi.toFixed(0)})`,
+      detail: `${ta.rsiSignal} · ${ta.rsi > 70 ? "overbought zone" : ta.rsi < 30 ? "oversold bounce setup" : "neutral momentum"}`,
+      impact: ta.rsiSignal === "oversold" ? "bullish" : ta.rsiSignal === "overbought" ? "bearish" : "neutral",
+      weight: 16,
+    });
+    factors.push({
+      label: "MACD",
+      detail: `${ta.macdSignal} crossover · histogram ${ta.macd >= 0 ? "+" : ""}${ta.macd}`,
+      impact: ta.macdSignal === "bullish" ? "bullish" : ta.macdSignal === "bearish" ? "bearish" : "neutral",
+      weight: 18,
+    });
+    factors.push({
+      label: "Trend",
+      detail: ta.trendLine,
+      impact: ta.trend.includes("up") ? "bullish" : ta.trend.includes("down") ? "bearish" : "neutral",
+      weight: 20,
+    });
+  }
+
+  if (intel.insiderCount && intel.insiderCount > 3) {
+    factors.push({
+      label: "Insider Risk",
+      detail: `${intel.insiderCount} insider wallets with large allocations`,
+      impact: "bearish",
+      weight: 22,
+    });
+  }
+
   return factors;
 }
 
@@ -131,7 +161,18 @@ function heuristicDecision(
 
   const factors = buildReasoningFactors(token, intel, action);
 
-  if (token.change24h > 8 && token.liquidityUsd > 250_000 && (intel.sniperCount ?? 0) < 8) {
+  const ta = intel.technical;
+  const taScore = ta?.score ?? 50;
+
+  if (taScore > 65 && token.liquidityUsd > 100_000 && (intel.sniperCount ?? 0) < 10) {
+    action = "BUY";
+    confidence = Math.min(88, 68 + Math.floor((taScore - 50) / 3));
+    riskScore = Math.max(20, 45 - Math.floor((taScore - 50) / 4));
+  } else if (taScore < 35 || token.change24h < -12 || (intel.sniperCount ?? 0) > 15) {
+    action = "SELL";
+    confidence = Math.min(85, 65 + Math.floor((50 - taScore) / 4));
+    riskScore = Math.min(85, 55 + Math.floor((50 - taScore) / 3));
+  } else if (token.change24h > 8 && token.liquidityUsd > 250_000 && (intel.sniperCount ?? 0) < 8) {
     action = "BUY";
     confidence = 72;
     riskScore = 38;
@@ -139,19 +180,23 @@ function heuristicDecision(
     action = "SELL";
     confidence = 68;
     riskScore = 62;
-  } else if (token.volume24h > 1_000_000 && Math.abs(token.change24h) < 3) {
+  } else if (token.volume24h > 500_000 && Math.abs(token.change24h) < 4) {
     action = "HOLD";
     confidence = 61;
     riskScore = 42;
+  } else {
+    action = "HOLD";
+    confidence = 58;
+    riskScore = 48;
   }
 
   const finalFactors = buildReasoningFactors(token, intel, action);
   const reasoning =
     action === "BUY"
-      ? "Momentum breakout with adequate liquidity. Smart-money flow supports a tactical entry."
+      ? `Technical score ${taScore}/100 with ${intel.technical?.macdSignal ?? "neutral"} MACD. Momentum and liquidity support entry.`
       : action === "SELL"
-        ? "Bearish momentum or elevated sniper/concentration risk. Capital preservation prioritized."
-        : "Mixed signals — no asymmetric edge. Agent stays flat until setup clarifies.";
+        ? `Technical score ${taScore}/100 — bearish MACD/RSI or elevated sniper/insider risk. Preserve capital.`
+        : `Mixed TA (${taScore}/100) — RSI ${intel.technical?.rsi?.toFixed(0) ?? "N/A"}, MACD ${intel.technical?.macdSignal ?? "neutral"}. Wait for clearer edge.`;
 
   return {
     action,
@@ -164,13 +209,7 @@ function heuristicDecision(
 }
 
 async function enrichToken(token: TrendingToken) {
-  const birdeyeChain = birdeyeChainFor(token.chainId);
-  const { intel } = await fetchTokenIntel(token.tokenAddress, birdeyeChain);
-  return {
-    ...intel,
-    marketCap: intel.marketCap ?? token.marketCap,
-    fdv: intel.fdv ?? token.fdv,
-  } satisfies TokenIntel;
+  return token.intel ?? buildLocalTokenIntel(token);
 }
 
 async function aiDecision(token: TrendingToken, intel: TokenIntel) {
@@ -223,7 +262,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
   }
 }
 
-async function buildDecision(token: TrendingToken, arcFeeTxHash?: string): Promise<NexusDecision> {
+export async function buildDecision(token: TrendingToken, arcFeeTxHash?: string): Promise<NexusDecision> {
   const swapCheck = checkSwappable(token);
   const intel = await enrichToken(token);
   const core = await aiDecision(token, intel);
@@ -253,19 +292,14 @@ async function buildDecision(token: TrendingToken, arcFeeTxHash?: string): Promi
     arcFeeTxHash,
     settlementNetwork: "Arc Testnet",
     feeCurrency: "USDC",
+    technical: intel.technical,
   };
 }
 
-export async function runNexusScan(limit = 6, preferredChain?: string, arcFeeTxHash?: string) {
-  // Arc wallet: show cross-chain swappable tokens; fees always settle on Arc
-  const scanChain = preferredChain === "arc" ? undefined : preferredChain;
-  const tokens = await fetchSwappableTokens(limit, scanChain);
+export async function runNexusScan(limit = 20, preferredChain?: string, arcFeeTxHash?: string) {
+  const tokens = await fetchTrendingMarketTokens(limit);
   if (tokens.length === 0) {
-    throw new Error(
-      preferredChain
-        ? `No wallet-swappable tokens on ${preferredChain}. Try Base or Ethereum.`
-        : "No wallet-swappable tokens found matching liquidity criteria.",
-    );
+    throw new Error("No trending tokens found. Check DexScreener connection.");
   }
 
   const decisions: NexusDecision[] = [];
@@ -275,7 +309,7 @@ export async function runNexusScan(limit = 6, preferredChain?: string, arcFeeTxH
     decisions.push(decision);
   }
 
-  return { tokens, decisions, criteria: preferredChain ?? "arc-settlement|base|ethereum" };
+  return { tokens, decisions, count: decisions.length, criteria: "arc-settlement|dexscreener|birdeye|ta" };
 }
 
 export async function runNexusDecisionForSymbol(
@@ -314,13 +348,11 @@ export async function analyzeTokenSignal(
   return heuristicDecision(token, enriched);
 }
 
-/** Batch analyze trending tokens for live agent feed */
+/** Batch analyze trending tokens for live agent feed (fast — no Birdeye) */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
-  return Promise.all(
-    tokens.map(async (token) => {
-      const intel = (token as TrendingToken & { intel?: TokenIntel }).intel ?? (await enrichToken(token));
-      const signal = await analyzeTokenSignal(token, intel, false);
-      return { token, intel, signal };
-    }),
-  );
+  return tokens.map((token) => {
+    const intel = token.intel ?? buildLocalTokenIntel(token);
+    const signal = heuristicDecision(token, intel);
+    return { token: { ...token, intel }, intel, signal };
+  });
 }

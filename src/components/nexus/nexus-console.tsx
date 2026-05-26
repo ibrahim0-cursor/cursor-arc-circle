@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
-import { Bot, FlaskConical, Loader2, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
+import { Bot, CheckCircle2, Loader2, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,9 +15,28 @@ import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/
 import { NexusDemoTradePanel } from "@/components/nexus/nexus-demo-trade-panel";
 import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
+import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
+import { NexusWalletScoreButton } from "@/components/nexus/nexus-wallet-score";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
-import { isArcChain } from "@/lib/arc-chain";
 import type { NexusDecision } from "@/lib/storage";
+
+const SAVED_SCANS_KEY = "nexus-saved-scans";
+
+function persistSavedScans(decisions: NexusDecision[]) {
+  try {
+    localStorage.setItem(SAVED_SCANS_KEY, JSON.stringify(decisions.slice(0, 50)));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readSavedScansCache(): NexusDecision[] {
+  try {
+    return JSON.parse(localStorage.getItem(SAVED_SCANS_KEY) ?? "[]") as NexusDecision[];
+  } catch {
+    return [];
+  }
+}
 
 function tokenToDecision(token: TrendingMarketToken): NexusDecision | null {
   if (!token.agent) return null;
@@ -37,6 +56,7 @@ function tokenToDecision(token: TrendingMarketToken): NexusDecision | null {
     liquidityUsd: token.liquidityUsd,
     intel: token.intel ?? {},
     swappable: true,
+    technical: token.intel?.technical,
     ...token.agent,
   };
 }
@@ -50,15 +70,23 @@ export function NexusConsole() {
 
   const [savedDecisions, setSavedDecisions] = useState<NexusDecision[]>([]);
   const [selectedToken, setSelectedToken] = useState<TrendingMarketToken | null>(null);
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"live" | "saved">("live");
 
   const loadSaved = useCallback(async () => {
-    const res = await fetch("/api/nexus/decisions");
+    const res = await fetch(`/api/nexus/decisions?t=${Date.now()}`);
     const data = (await res.json()) as NexusDecision[];
-    setSavedDecisions(data.filter((d) => d.swappable !== false));
+    if (data.length > 0) {
+      setSavedDecisions(data);
+      persistSavedScans(data);
+      return;
+    }
+    const cached = readSavedScansCache();
+    if (cached.length > 0) setSavedDecisions(cached);
   }, []);
 
   useEffect(() => {
@@ -66,12 +94,13 @@ export function NexusConsole() {
   }, [loadSaved]);
 
   const liveDecision = selectedToken ? tokenToDecision(selectedToken) : null;
-  const chartToken = selectedToken;
-  const tradeToken = selectedToken;
+  const selectedSaved = savedDecisions.find((d) => d.id === selectedSavedId) ?? null;
+  const displayDecision = activeTab === "saved" && selectedSaved ? selectedSaved : liveDecision;
 
   async function runScan() {
     setScanning(true);
     setScanError(null);
+    setSuccessMsg(null);
     try {
       if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
       await ensureArcNetwork();
@@ -85,8 +114,15 @@ export function NexusConsole() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
-      await loadSaved();
+
+      const decisions = (data.decisions ?? []) as NexusDecision[];
+      const merged = decisions.length ? decisions : readSavedScansCache();
+      setSavedDecisions(merged);
+      persistSavedScans(merged);
+      if (merged[0]) setSelectedSavedId(merged[0].id);
+      setSuccessMsg(`Deep scan saved ${data.count ?? decisions.length} tokens with RSI/MACD + whale intel on Arc`);
       setActiveTab("saved");
+      await loadSaved();
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "Scan failed");
     } finally {
@@ -98,6 +134,7 @@ export function NexusConsole() {
     if (!selectedToken || !isConnected) return;
     setLoading(true);
     setScanError(null);
+    setSuccessMsg(null);
     try {
       await ensureArcNetwork();
       const fee = await payArcFee("ANALYZE", selectedToken.tokenAddress);
@@ -110,20 +147,40 @@ export function NexusConsole() {
           chainId: selectedToken.chainId,
           tokenAddress: selectedToken.tokenAddress,
           deep: true,
+          save: true,
+          arcFeeTxHash: fee.txHash,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Analyze failed");
 
+      const agent = data.agent ?? data;
       setSelectedToken((prev) =>
         prev
           ? {
               ...prev,
-              agent: data.agent,
-              intel: data.intel ?? prev.intel,
+              agent: {
+                action: agent.action,
+                confidence: agent.confidence,
+                riskScore: agent.riskScore,
+                reasoning: agent.reasoning,
+                whyAction: agent.whyAction,
+                reasoningFactors: agent.reasoningFactors ?? [],
+              },
+              intel: { ...prev.intel, ...data.intel, technical: data.technical ?? data.intel?.technical },
             }
           : prev,
       );
+      setSuccessMsg(data.message ?? `AI Analyze: ${agent.action} · saved to Arc`);
+      if (data.saved && data.agent) {
+        const saved = data.agent as NexusDecision;
+        setSavedDecisions((prev) => {
+          const next = [saved, ...prev.filter((d) => d.id !== saved.id)].slice(0, 50);
+          persistSavedScans(next);
+          return next;
+        });
+      }
+      await loadSaved();
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "Analyze failed");
     } finally {
@@ -142,34 +199,24 @@ export function NexusConsole() {
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Badge variant="nexus">NEXUS AI Agent</Badge>
                 <Badge variant="default" className="border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
-                  <FlaskConical className="mr-1 h-3 w-3" />
-                  Live · 45s refresh
+                  RSI · MACD · Whales
                 </Badge>
-                <span className="inline-flex items-center gap-1 text-xs text-emerald-300">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  BUY · SELL · HOLD signals
-                </span>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                AI Trading on Arc
-              </h1>
+              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Full Crypto Intelligence</h1>
               <p className="mt-3 text-white/60">
-                NEXUS agent scans <strong className="text-white">DexScreener + Birdeye</strong>, signals which tokens
-                to buy, sell, or hold — with sniper & whale detection. Settle in{" "}
-                <strong className="text-white">Arc USDC</strong> (~${feeUsd}/tx).
+                Live feed with <strong className="text-white">RSI, MACD, trend lines</strong>, sniper/whale/insider
+                detection, and AI <strong className="text-white">BUY · SELL · HOLD</strong> signals. Arc USDC fees (~$
+                {feeUsd}/tx).
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <WalletConnectButton />
+              <NexusWalletScoreButton />
               <Button variant="outline" onClick={runScan} disabled={scanning || arcFeePending}>
                 {scanning || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Deep Scan
+                Deep Scan (20)
               </Button>
-              <Button
-                variant="nexus"
-                onClick={runDeepAnalyze}
-                disabled={loading || arcFeePending || !selectedToken}
-              >
+              <Button variant="nexus" onClick={runDeepAnalyze} disabled={loading || arcFeePending || !selectedToken}>
                 {loading || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 AI Analyze
               </Button>
@@ -178,14 +225,11 @@ export function NexusConsole() {
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
-              { icon: Zap, label: "Live token feed", sub: "Updates every 45s like DexScreener" },
-              { icon: Bot, label: "AI agent signals", sub: "BUY · SELL · HOLD + reasoning" },
-              { icon: Sparkles, label: "Detect snipers & whales", sub: "Live txs · holder intel" },
+              { icon: Zap, label: "20 tokens · 45s refresh", sub: "DexScreener live like the real feed" },
+              { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
+              { icon: Sparkles, label: "Wallet score", sub: "Grade every wallet A–F" },
             ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-              >
+              <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                 <item.icon className="h-5 w-5 text-cyan-300" />
                 <div>
                   <p className="text-sm font-medium">{item.label}</p>
@@ -198,6 +242,12 @@ export function NexusConsole() {
 
         <ArcSettlementBanner txHash={lastArcFeeTx ?? undefined} />
 
+        {successMsg && (
+          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {successMsg}
+          </div>
+        )}
         {scanError && (
           <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
             {scanError}
@@ -213,30 +263,24 @@ export function NexusConsole() {
                   onClick={() => setActiveTab("live")}
                   className={`rounded-lg px-3 py-1.5 text-sm ${activeTab === "live" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"}`}
                 >
-                  Live Agent Feed
+                  Live Feed
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("saved")}
                   className={`rounded-lg px-3 py-1.5 text-sm ${activeTab === "saved" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"}`}
                 >
-                  Saved Scans
+                  Saved Scans ({savedDecisions.length})
                 </button>
-                <Badge variant="nexus" className="ml-auto">
-                  {activeTab === "live" ? "Auto-refresh" : `${savedDecisions.length} saved`}
-                </Badge>
               </div>
             </CardHeader>
             <CardContent className="max-h-[85vh] space-y-4 overflow-y-auto pr-1">
               {activeTab === "live" ? (
-                <NexusTrendingFeed
-                  selectedAddress={selectedToken?.tokenAddress}
-                  onSelect={setSelectedToken}
-                />
+                <NexusTrendingFeed selectedAddress={selectedToken?.tokenAddress} onSelect={setSelectedToken} />
               ) : savedDecisions.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
                   <Bot className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
-                  Run <strong className="text-white/70">Deep Scan</strong> to save anchored decisions on Arc.
+                  Run <strong className="text-white/70">Deep Scan (20)</strong> to save full analysis on Arc.
                 </div>
               ) : (
                 savedDecisions.map((decision) => (
@@ -249,8 +293,9 @@ export function NexusConsole() {
                       reasoningFactors: decision.reasoningFactors ?? [],
                       intel: decision.intel ?? {},
                     }}
-                    selected={false}
+                    selected={selectedSavedId === decision.id}
                     onSelect={() => {
+                      setSelectedSavedId(decision.id);
                       setSelectedToken({
                         symbol: decision.symbol,
                         name: decision.name ?? decision.symbol,
@@ -273,7 +318,6 @@ export function NexusConsole() {
                           reasoningFactors: decision.reasoningFactors,
                         },
                       });
-                      setActiveTab("live");
                     }}
                   />
                 ))
@@ -282,11 +326,9 @@ export function NexusConsole() {
           </Card>
 
           <div className="space-y-6">
-            <NexusTokenChart
-              chainId={chartToken?.chainId}
-              pairAddress={chartToken?.pairAddress}
-            />
-            {liveDecision && <NexusTokenDetail decision={liveDecision} />}
+            <NexusTokenChart chainId={selectedToken?.chainId} pairAddress={selectedToken?.pairAddress} />
+            {displayDecision && <NexusTokenDetail decision={displayDecision} />}
+            <NexusTAPanel technical={displayDecision?.technical ?? selectedToken?.intel?.technical} priceUsd={selectedToken?.priceUsd} />
             <NexusTokenDetectPanel
               chainId={selectedToken?.chainId}
               tokenAddress={selectedToken?.tokenAddress}
@@ -294,10 +336,7 @@ export function NexusConsole() {
               txns24h={selectedToken?.txns24h}
               volume24h={selectedToken?.volume24h}
             />
-            <NexusDemoTradePanel
-              token={tradeToken}
-              onTradeComplete={() => setPortfolioKey((k) => k + 1)}
-            />
+            <NexusDemoTradePanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
             <NexusPortfolio refreshKey={portfolioKey} />
           </div>
         </div>
