@@ -19,6 +19,7 @@ import { NexusDecisionCard, NexusTokenDetail } from "@/components/nexus/nexus-de
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
 import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
+import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
 import { NexusTradeHub } from "@/components/nexus/nexus-demo-trade-panel";
 import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
 import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
@@ -465,6 +466,7 @@ export function NexusConsole() {
   );
 
   return (
+    <NexusAgentWalletProvider>
     <div className="relative min-h-screen text-white" data-nexus-page>
       <MeshBackground variant="nexus" />
 
@@ -587,5 +589,6 @@ export function NexusConsole() {
         <NexusMobileDock active={mobilePanel} onChange={handleMobilePanel} />
       </div>
     </div>
+    </NexusAgentWalletProvider>
   );
 }

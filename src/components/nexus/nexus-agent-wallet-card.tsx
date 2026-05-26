@@ -27,7 +27,7 @@ export function NexusAgentWalletCard({
   async function handleSync() {
     setSyncing(true);
     try {
-      const data = await syncDeposits();
+      const data = (await syncDeposits()) as { newDeposits?: number };
       const n = data.newDeposits ?? 0;
       toast({
         type: n > 0 ? "success" : "info",
@@ -118,7 +118,10 @@ export function NexusAgentWalletCard({
         </div>
       )}
       <p className="mt-1.5 text-[10px] text-white/45">
-        Autopilot buys debit this vault — your main wallet only pays the ~$0.01 Arc fee per trade.
+        <strong className="text-white/70">Shared agent vault</strong> — every user sends USDC to this same
+        address from their connected wallet. We credit your balance by your wallet address (not your MetaMask
+        login address as the vault). Autopilot spends only your credited balance; your wallet pays ~$0.01 Arc
+        fee per trade.
       </p>
     </div>
   );

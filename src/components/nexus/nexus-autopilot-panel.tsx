@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { useAgentWallet } from "@/hooks/use-agent-wallet";
-import type { NexusAgentRuntime } from "@/components/nexus/nexus-agent-context";
 import {
   AutopilotAmountMode,
   AUTOPILOT_INTERVALS,
@@ -38,6 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
+import { NexusAgentProvider, type NexusAgentRuntime } from "@/components/nexus/nexus-agent-context";
 import { NexusExecutionPanel } from "@/components/nexus/nexus-execution-panel";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
@@ -57,16 +57,28 @@ const INTERVAL_KEYS = [
   "custom",
 ] as const;
 
+const defaultRuntime: NexusAgentRuntime = {
+  enabled: false,
+  nextIn: 0,
+  running: false,
+  logs: [],
+  lastReasoning: null,
+  displaySymbol: "—",
+  stop: () => {},
+  runNow: () => {},
+};
+
 export function NexusAutopilotPanel({
   token,
   onTradeComplete,
   embedded = false,
-  onRuntimeChange,
+  onAgentLiveChange,
 }: {
   token: TrendingMarketToken | null;
   onTradeComplete?: () => void;
   embedded?: boolean;
-  onRuntimeChange?: (runtime: NexusAgentRuntime) => void;
+  /** Only reports enabled state — avoids re-rendering Buy/Sell every second */
+  onAgentLiveChange?: (live: boolean) => void;
 }) {
   const toast = useToast();
   const { address, isConnected } = useAccount();
@@ -80,10 +92,14 @@ export function NexusAutopilotPanel({
   const [advancedOpen, setAdvancedOpen] = useState(true);
   const [resolvedToken, setResolvedToken] = useState<TrendingMarketToken | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedRef = useRef(false);
   const configRef = useRef(config);
   const tokenRef = useRef(token);
   const resolvedRef = useRef(resolvedToken);
+  const runCycleRef = useRef<() => Promise<void>>(async () => {});
+  const agentUsdcRef = useRef(agentUsdc);
+  const [agentRuntime, setAgentRuntime] = useState<NexusAgentRuntime>(defaultRuntime);
 
   useEffect(() => {
     configRef.current = config;
@@ -188,26 +204,31 @@ export function NexusAutopilotPanel({
 
     setRunning(true);
     try {
-      const analyzeRes = await fetch("/api/nexus/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chainId: t.chainId,
-          tokenAddress: t.tokenAddress,
-          deep: true,
-        }),
-      });
-      const analyzeJson = await analyzeRes.json();
-      const agent = analyzeJson.agent ?? analyzeJson;
-      if (analyzeJson.security?.honeypotRisk) {
-        pushLog(`Security halt: ${analyzeJson.security.label}`, "error");
-        return;
-      }
-      if (agent?.whyAction) setLastReasoning(agent.whyAction);
-      else if (agent?.reasoning) setLastReasoning(agent.reasoning);
-
-      const signal = t.agent ?? agent;
       const dcaBuy = cfg.mode === "buy_only";
+      let agent: { action?: string; confidence?: number; whyAction?: string; reasoning?: string } | null =
+        t.agent ?? null;
+
+      if (!dcaBuy) {
+        const analyzeRes = await fetch("/api/nexus/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chainId: t.chainId,
+            tokenAddress: t.tokenAddress,
+            deep: false,
+          }),
+        });
+        const analyzeJson = await analyzeRes.json();
+        agent = analyzeJson.agent ?? analyzeJson;
+        if (analyzeJson.security?.honeypotRisk) {
+          pushLog(`Security halt: ${analyzeJson.security.label}`, "error");
+          return;
+        }
+        if (agent?.whyAction) setLastReasoning(agent.whyAction);
+        else if (agent?.reasoning) setLastReasoning(agent.reasoning);
+      }
+
+      const signal = agent;
 
       let side: "buy" | "sell" | null = null;
       if (dcaBuy) {
@@ -221,8 +242,8 @@ export function NexusAutopilotPanel({
         pushLog("No signal — skipped", "error");
         return;
       } else {
-        if (signal.confidence < cfg.minConfidence) {
-          pushLog(`Wait · ${signal.action} ${signal.confidence}% (need ${cfg.minConfidence}%)`, "info");
+        if ((signal.confidence ?? 0) < cfg.minConfidence) {
+          pushLog(`Wait · ${signal.action} ${signal.confidence ?? 0}% (need ${cfg.minConfidence}%)`, "info");
           return;
         }
         if (cfg.mode === "buy_only" && signal.action === "BUY") side = "buy";
@@ -237,8 +258,10 @@ export function NexusAutopilotPanel({
         }
       }
 
-      if (side === "buy" && !hasDeposit) {
-        pushLog(`Need ~$${requiredUsdc.toFixed(2)} USDC in agent vault — deposit first`, "error");
+      const vaultBal = agentUsdcRef.current;
+      const need = estimateRequiredUsdc(cfg, vaultBal);
+      if (side === "buy" && vaultBal < need) {
+        pushLog(`Need ~$${need.toFixed(2)} USDC in agent vault — deposit first`, "error");
         void refreshBalance();
         return;
       }
@@ -309,15 +332,15 @@ export function NexusAutopilotPanel({
     activeToken,
     address,
     ensureArcNetwork,
-    hasDeposit,
     onTradeComplete,
     payArcFee,
     pushLog,
-    requiredUsdc,
     resolveAmounts,
     toast,
     refreshBalance,
   ]);
+
+  runCycleRef.current = runCycle;
 
   const stopAgent = useCallback(() => {
     persist({ ...configRef.current, enabled: false });
@@ -331,7 +354,7 @@ export function NexusAutopilotPanel({
       : token?.symbol ?? "—";
 
   useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
     const t = activeToken();
     if (!config.enabled || !t || !isConnected) {
       setNextIn(0);
@@ -339,37 +362,56 @@ export function NexusAutopilotPanel({
       return;
     }
 
-    if (config.scheduleMode === "once") {
-      if (!startedRef.current) {
-        startedRef.current = true;
-        void runCycle();
-      }
-      return;
-    }
+    if (startedRef.current) return;
+    startedRef.current = true;
 
-    const ms = autopilotIntervalMs(config);
-    if (!startedRef.current) {
-      startedRef.current = true;
-      setNextIn(Math.floor(ms / 1000));
-      void runCycle();
-    }
-
-    const tick = setInterval(() => {
-      setNextIn((s) => {
-        if (s <= 1) {
-          void runCycle();
-          return Math.floor(ms / 1000);
-        }
-        return s - 1;
+    const loop = () => {
+      void runCycleRef.current().finally(() => {
+        if (!configRef.current.enabled) return;
+        if (configRef.current.scheduleMode !== "recurring") return;
+        const wait = autopilotIntervalMs(configRef.current);
+        timerRef.current = setTimeout(loop, wait);
       });
-    }, 1000);
+    };
 
-    timerRef.current = tick;
-    return () => clearInterval(tick);
-  }, [config.enabled, config.scheduleMode, config.interval, config.customIntervalMinutes, token, resolvedToken, isConnected, runCycle, activeToken, config]);
+    loop();
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      startedRef.current = false;
+    };
+  }, [
+    config.enabled,
+    config.scheduleMode,
+    config.interval,
+    config.customIntervalMinutes,
+    token?.tokenAddress,
+    resolvedToken?.tokenAddress,
+    isConnected,
+  ]);
 
   useEffect(() => {
-    onRuntimeChange?.({
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    if (!config.enabled || config.scheduleMode === "once") {
+      setNextIn(0);
+      return;
+    }
+    const ms = autopilotIntervalMs(config);
+    setNextIn(Math.floor(ms / 1000));
+    countdownRef.current = setInterval(() => {
+      setNextIn((s) => (s <= 1 ? Math.floor(ms / 1000) : s - 1));
+    }, 1000);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [config.enabled, config.scheduleMode, config.interval, config.customIntervalMinutes]);
+
+  useEffect(() => {
+    onAgentLiveChange?.(config.enabled);
+  }, [config.enabled, onAgentLiveChange]);
+
+  useEffect(() => {
+    setAgentRuntime({
       enabled: config.enabled,
       nextIn,
       running,
@@ -377,19 +419,9 @@ export function NexusAutopilotPanel({
       lastReasoning,
       displaySymbol,
       stop: stopAgent,
-      runNow: () => void runCycle(),
+      runNow: () => void runCycleRef.current(),
     });
-  }, [
-    config.enabled,
-    nextIn,
-    running,
-    logs,
-    lastReasoning,
-    displaySymbol,
-    stopAgent,
-    runCycle,
-    onRuntimeChange,
-  ]);
+  }, [config.enabled, nextIn, running, logs, lastReasoning, displaySymbol, stopAgent]);
 
   useEffect(() => {
     if (token) persist({ ...config, tokenKey: tokenKey(token.chainId, token.tokenAddress) });
@@ -694,7 +726,7 @@ export function NexusAutopilotPanel({
               variant="outline"
               className="min-h-[48px] px-4"
               disabled={!isConnected || running || config.enabled}
-              onClick={() => runCycle()}
+              onClick={() => void runCycleRef.current()}
               title="One-shot without schedule"
             >
               <Zap className="h-4 w-4" />
@@ -705,7 +737,9 @@ export function NexusAutopilotPanel({
     </div>
   );
 
-  if (embedded) return inner;
+  const wrapped = <NexusAgentProvider value={agentRuntime}>{inner}</NexusAgentProvider>;
+
+  if (embedded) return wrapped;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-500/10 to-cyan-500/5">
@@ -726,7 +760,7 @@ export function NexusAutopilotPanel({
           </span>
         )}
       </div>
-      <div className="p-4">{inner}</div>
+      <div className="p-4">{wrapped}</div>
     </div>
   );
 }

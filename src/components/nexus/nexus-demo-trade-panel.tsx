@@ -16,10 +16,7 @@ import {
 import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
-import {
-  NexusAgentProvider,
-  type NexusAgentRuntime,
-} from "@/components/nexus/nexus-agent-context";
+import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
@@ -55,17 +52,6 @@ function formatAmount(n: number) {
 
 type TradeTab = "buy" | "sell" | "agent";
 
-const defaultRuntime: NexusAgentRuntime = {
-  enabled: false,
-  nextIn: 0,
-  running: false,
-  logs: [],
-  lastReasoning: null,
-  displaySymbol: "—",
-  stop: () => {},
-  runNow: () => {},
-};
-
 export function NexusTradeHub({
   token,
   onTradeComplete,
@@ -79,7 +65,7 @@ export function NexusTradeHub({
 }) {
   const [internalTab, setInternalTab] = useState<TradeTab>("buy");
   const tradeTab = activeTab ?? internalTab;
-  const [agentRuntime, setAgentRuntime] = useState<NexusAgentRuntime>(defaultRuntime);
+  const [agentLive, setAgentLive] = useState(false);
   const toast = useToast();
   const { address, isConnected } = useAccount();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
@@ -116,7 +102,7 @@ export function NexusTradeHub({
       setPosition(pos ?? null);
     }
     loadPosition();
-  }, [address, trade?.tokenAddress, lastTx, trade?.priceUsd]);
+  }, [address, trade?.tokenAddress, lastTx]);
 
   const livePrice = trade?.priceUsd ?? 0;
   const unrealizedPnl =
@@ -239,13 +225,13 @@ export function NexusTradeHub({
         : null;
 
   return (
-    <NexusAgentProvider value={agentRuntime}>
+    <NexusAgentWalletProvider>
       <div className="overflow-hidden rounded-2xl border border-cyan-300/25 bg-white/[0.04] shadow-[0_0_32px_-8px_rgba(103,232,249,0.4)] backdrop-blur-xl">
         <div className="border-b border-cyan-300/15 px-4 py-3">
           <div className="mb-3 flex items-center gap-2">
             <ArrowDownUp className="h-5 w-5 text-cyan-200" />
             <span className="text-base font-semibold text-cyan-50">Arc Trade · Agent</span>
-            {agentRuntime.enabled && (
+            {agentLive && (
               <span className="ml-auto rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                 LIVE
               </span>
@@ -283,24 +269,25 @@ export function NexusTradeHub({
       <div className="space-y-3 p-4">
         {!trade && tradeTab !== "agent" ? (
           <p className="text-center text-sm text-white/60">Select a token from the feed to trade.</p>
-        ) : tradeTab === "agent" ? (
-          <>
-            {marketToken && (
-              <div className="flex justify-end">
-                <NexusTokenChatButton token={marketToken} onOpenTrade={setTab} />
-              </div>
-            )}
-            <NexusTradeBalanceBar symbol={trade?.symbol} position={position} />
-            <NexusAutopilotPanel
-              token={marketToken}
-              onTradeComplete={onTradeComplete}
-              embedded
-              onRuntimeChange={setAgentRuntime}
-            />
-          </>
-        ) : !trade ? (
-          <p className="text-center text-sm text-white/60">Select a token from the feed to trade.</p>
         ) : (
+          <>
+            <div className={tradeTab !== "agent" ? "hidden" : "space-y-3"} aria-hidden={tradeTab !== "agent"}>
+              {marketToken && (
+                <div className="flex justify-end">
+                  <NexusTokenChatButton token={marketToken} onOpenTrade={setTab} />
+                </div>
+              )}
+              <NexusTradeBalanceBar symbol={trade?.symbol} position={position} />
+              <NexusAutopilotPanel
+                token={marketToken}
+                onTradeComplete={onTradeComplete}
+                embedded
+                onAgentLiveChange={setAgentLive}
+              />
+            </div>
+            {tradeTab !== "agent" && !trade ? (
+              <p className="text-center text-sm text-white/60">Select a token from the feed to trade.</p>
+            ) : tradeTab !== "agent" && trade ? (
           <>
             <div className="flex items-center justify-between gap-2 rounded-xl bg-black/25 px-3 py-2.5">
               <div>
@@ -464,10 +451,12 @@ export function NexusTradeHub({
                 Demo fills · real Arc USDC fee tx · prices from DexScreener
               </p>
             </>
-          )}
-        </div>
+            ) : null}
+          </>
+        )}
       </div>
-    </NexusAgentProvider>
+      </div>
+    </NexusAgentWalletProvider>
   );
 }
 
