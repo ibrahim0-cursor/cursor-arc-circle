@@ -399,7 +399,6 @@ export function NexusConsole() {
         selected={selectedToken}
         onSelect={(t) => setSelectedToken(t)}
       />
-      {displayDecision && <NexusTokenDetail decision={displayDecision} />}
       <NexusTokenMetrics token={selectedToken} />
       <NexusTokenChart
         chainId={selectedToken?.chainId}
@@ -417,6 +416,7 @@ export function NexusConsole() {
         agentAction={displayDecision?.action}
         onIntelUpdate={handleBirdeyeIntel}
       />
+      {displayDecision && <NexusTokenDetail decision={displayDecision} />}
     </div>
   );
 

@@ -152,21 +152,33 @@ function buildReasoningFactors(
   return factors;
 }
 
+function scoreFactorEdge(factors: ReasoningFactor[]) {
+  let bull = 0;
+  let bear = 0;
+  for (const f of factors) {
+    const w = f.weight ?? 10;
+    if (f.impact === "bullish") bull += w;
+    else if (f.impact === "bearish") bear += w;
+  }
+  return { bull, bear, edge: bull - bear };
+}
+
 function buildWhyAction(
   action: NexusDecision["action"],
   token: TrendingToken,
   factors: ReasoningFactor[],
+  edge: number,
 ): string {
-  const bullish = factors.filter((f) => f.impact === "bullish").length;
-  const bearish = factors.filter((f) => f.impact === "bearish").length;
+  const top = [...factors].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).slice(0, 3);
+  const cites = top.map((f) => `${f.label} (${f.detail})`).join("; ");
 
   if (action === "HOLD") {
-    return `NEXUS recommends HOLD on ${token.symbol} because signals are mixed (${bullish} bullish vs ${bearish} bearish factors). No clear edge — waiting for momentum or liquidity confirmation before deploying capital.`;
+    return `${token.symbol} @ ${token.priceUsd < 1 ? token.priceUsd.toFixed(4) : `$${token.priceUsd.toFixed(2)}`}: ${cites}. Net edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)} — mixed tape, no high-conviction entry.`;
   }
   if (action === "BUY") {
-    return `NEXUS recommends BUY on ${token.symbol} because ${bullish} bullish factors outweigh risk (${bearish} bearish). Momentum, liquidity, and flow support a tactical long with defined risk limits.`;
+    return `${token.symbol}: ${cites}. Bullish edge +${edge.toFixed(0)} with ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h — tactical long while liquidity supports size.`;
   }
-  return `NEXUS recommends SELL on ${token.symbol} because ${bearish} bearish factors dominate. Downside risk from momentum decay, sniper activity, or concentration exceeds reward — reduce exposure now.`;
+  return `${token.symbol}: ${cites}. Bearish edge ${edge.toFixed(0)} after ${token.change24h.toFixed(1)}% 24h move — trim risk before deeper drawdown.`;
 }
 
 function heuristicDecision(
@@ -181,55 +193,72 @@ function heuristicDecision(
   | "whyAction"
   | "reasoningFactors"
 > {
-  let action: NexusDecision["action"] = "HOLD";
-  let confidence = 55;
-  let riskScore = 50;
-
-  const factors = buildReasoningFactors(token, intel, action);
-
+  const draftFactors = buildReasoningFactors(token, intel, "HOLD");
+  const { edge } = scoreFactorEdge(draftFactors);
   const ta = intel.technical;
   const taScore = ta?.score ?? 50;
 
-  if (taScore > 65 && token.liquidityUsd > 100_000 && (intel.sniperCount ?? 0) < 10) {
+  const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
+  const flowRatio = (token.txns24h?.buys ?? intel.buy24h ?? 0) / Math.max(token.txns24h?.sells ?? intel.sell24h ?? 1, 1);
+
+  let action: NexusDecision["action"] = "HOLD";
+  if (edge > 28 && taScore >= 58 && token.liquidityUsd > 40_000 && flowRatio > 1.05) {
     action = "BUY";
-    confidence = Math.min(88, 68 + Math.floor((taScore - 50) / 3));
-    riskScore = Math.max(20, 45 - Math.floor((taScore - 50) / 4));
-  } else if (taScore < 35 || token.change24h < -12 || (intel.sniperCount ?? 0) > 15) {
+  } else if (edge < -22 || taScore < 42 || token.change24h < -18) {
     action = "SELL";
-    confidence = Math.min(85, 65 + Math.floor((50 - taScore) / 4));
-    riskScore = Math.min(85, 55 + Math.floor((50 - taScore) / 3));
-  } else if (token.change24h > 8 && token.liquidityUsd > 250_000 && (intel.sniperCount ?? 0) < 8) {
+  } else if (edge > 18 && token.change24h > 12 && token.liquidityUsd > 80_000) {
     action = "BUY";
-    confidence = 72;
-    riskScore = 38;
-  } else if (token.change24h < -10 || (intel.sniperCount ?? 0) > 15) {
+  } else if (edge < -14 && (intel.sniperCount ?? 0) > 6) {
     action = "SELL";
-    confidence = 68;
-    riskScore = 62;
-  } else if (token.volume24h > 500_000 && Math.abs(token.change24h) < 4) {
-    action = "HOLD";
-    confidence = 61;
-    riskScore = 42;
-  } else {
-    action = "HOLD";
-    confidence = 58;
-    riskScore = 48;
+  } else if (Math.abs(token.change24h) > 25 && turnover > 2) {
+    action = token.change24h > 0 ? "BUY" : "SELL";
   }
 
   const finalFactors = buildReasoningFactors(token, intel, action);
-  const reasoning =
-    action === "BUY"
-      ? `Technical score ${taScore}/100 with ${intel.technical?.macdSignal ?? "neutral"} MACD. Momentum and liquidity support entry.`
-      : action === "SELL"
-        ? `Technical score ${taScore}/100 — bearish MACD/RSI or elevated sniper/insider risk. Preserve capital.`
-        : `Mixed TA (${taScore}/100) — RSI ${intel.technical?.rsi?.toFixed(0) ?? "N/A"}, MACD ${intel.technical?.macdSignal ?? "neutral"}. Wait for clearer edge.`;
+  const { edge: finalEdge } = scoreFactorEdge(finalFactors);
+
+  const confidence = Math.round(
+    Math.min(
+      94,
+      Math.max(
+        36,
+        44 +
+          Math.abs(finalEdge) * 0.55 +
+          (taScore - 50) * 0.35 +
+          Math.min(12, turnover * 4) +
+          (flowRatio > 1.3 ? 6 : flowRatio < 0.7 ? -6 : 0) +
+          (action === "BUY" && token.change24h > 0 ? token.change24h * 0.15 : 0) +
+          (action === "SELL" && token.change24h < 0 ? Math.abs(token.change24h) * 0.12 : 0),
+      ),
+    ),
+  );
+
+  const riskScore = Math.round(
+    Math.min(
+      92,
+      Math.max(
+        12,
+        48 -
+          finalEdge * 0.4 +
+          (token.liquidityUsd < 25_000 ? 18 : token.liquidityUsd < 80_000 ? 8 : -4) +
+          (intel.sniperCount ?? 0) * 1.8 +
+          (intel.top10HolderPercent ?? 0) * 0.25 +
+          (intel.isMintable ? 10 : 0) +
+          (intel.isFreezable ? 12 : 0) +
+          (turnover > 8 ? 6 : 0),
+      ),
+    ),
+  );
+
+  const top = [...finalFactors].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).slice(0, 4);
+  const reasoning = top.map((f) => `${f.label}: ${f.detail}`).join(" · ");
 
   return {
     action,
     confidence,
     riskScore,
     reasoning,
-    whyAction: buildWhyAction(action, token, finalFactors),
+    whyAction: buildWhyAction(action, token, finalFactors, finalEdge),
     reasoningFactors: finalFactors,
   };
 }
@@ -255,13 +284,13 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
   try {
     const completion = await client.chat.completions.create({
       model: getAiModel(),
-      temperature: 0.2,
+      temperature: 0.45,
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
           content:
-            "You are NEXUS, a professional crypto trading agent. Analyze like a desk trader: news, mcap, FDV, liquidity, turnover, buy/sell flow, RSI, MACD, trend. Return JSON: action (BUY|SELL|HOLD), confidence (0-100), riskScore (0-100), reasoning (2-3 sentences citing metrics), whyAction (one clear sentence for the user).",
+            "You are NEXUS, a professional crypto trading agent. Each token analysis MUST be unique — cite specific numbers from the payload (price, % change, liquidity, volume, RSI, MACD, news headlines). Never reuse the same confidence/risk for different tokens. Return JSON: action (BUY|SELL|HOLD), confidence (0-100), riskScore (0-100), reasoning (2-3 sentences with unique metrics), whyAction (one sentence naming this token's edge).",
         },
         {
           role: "user",
@@ -287,13 +316,14 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
 
     const action = parsed.action ?? fallback.action;
     const factors = buildReasoningFactors(token, intelMerged, action);
+    const { edge } = scoreFactorEdge(factors);
 
     return {
       action,
       confidence: Math.min(100, Math.max(0, parsed.confidence ?? fallback.confidence)),
       riskScore: Math.min(100, Math.max(0, parsed.riskScore ?? fallback.riskScore)),
       reasoning: parsed.reasoning ?? fallback.reasoning,
-      whyAction: parsed.whyAction ?? buildWhyAction(action, token, factors),
+      whyAction: parsed.whyAction ?? buildWhyAction(action, token, factors, edge),
       reasoningFactors: factors,
     };
   } catch (error) {
@@ -388,21 +418,111 @@ export async function analyzeTokenSignal(
   return heuristicDecision(token, enriched);
 }
 
-/** Batch analyze trending tokens for live agent feed (fast — no Birdeye) */
+async function aiFeedBatch(
+  batch: { token: TrendingToken; intel: TokenIntel }[],
+): Promise<Map<string, AgentSignal>> {
+  const out = new Map<string, AgentSignal>();
+  const client = getAiClient();
+  if (!client || batch.length === 0) return out;
+
+  const payload = batch.map(({ token, intel }) => ({
+    symbol: token.symbol,
+    chainId: token.chainId,
+    priceUsd: token.priceUsd,
+    change24h: token.change24h,
+    volume24h: token.volume24h,
+    liquidityUsd: token.liquidityUsd,
+    marketCap: token.marketCap ?? intel.marketCap,
+    fdv: token.fdv,
+    buys: token.txns24h?.buys,
+    sells: token.txns24h?.sells,
+    rsi: intel.technical?.rsi,
+    macd: intel.technical?.macdSignal,
+    trend: intel.technical?.trendLine,
+    taScore: intel.technical?.score,
+  }));
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: getAiModel(),
+      temperature: 0.5,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Analyze EACH token independently. Return JSON { signals: [{ symbol, action, confidence, riskScore, reasoning, whyAction }] } — one row per input symbol. Use different confidence/risk per token based on its metrics. No generic copy-paste.",
+        },
+        { role: "user", content: JSON.stringify(payload) },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const parsed = JSON.parse(raw) as {
+      signals?: Array<{
+        symbol?: string;
+        action?: NexusDecision["action"];
+        confidence?: number;
+        riskScore?: number;
+        reasoning?: string;
+        whyAction?: string;
+      }>;
+    };
+    for (const row of parsed.signals ?? []) {
+      if (!row.symbol) continue;
+      const match = batch.find((b) => b.token.symbol.toUpperCase() === row.symbol!.toUpperCase());
+      if (!match) continue;
+      const factors = buildReasoningFactors(match.token, match.intel, row.action ?? "HOLD");
+      const { edge } = scoreFactorEdge(factors);
+      out.set(match.token.tokenAddress.toLowerCase(), {
+        action: row.action ?? "HOLD",
+        confidence: Math.min(100, Math.max(0, row.confidence ?? 50)),
+        riskScore: Math.min(100, Math.max(0, row.riskScore ?? 50)),
+        reasoning: row.reasoning ?? "",
+        whyAction: row.whyAction ?? buildWhyAction(row.action ?? "HOLD", match.token, factors, edge),
+        reasoningFactors: factors,
+      });
+    }
+  } catch (e) {
+    console.warn("Feed batch AI failed:", e);
+  }
+  return out;
+}
+
+/** Batch analyze trending tokens — unique scoring + AI on top-volume slice */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
+  const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const aiLimit = getAiClient() ? 24 : 0;
+
+  const aiMap = new Map<string, AgentSignal>();
+  if (aiLimit > 0) {
+    const prep = sorted.slice(0, aiLimit).map((token) => ({
+      token,
+      intel: token.intel ?? buildLocalTokenIntel(token),
+    }));
+    for (let i = 0; i < prep.length; i += 6) {
+      const chunk = prep.slice(i, i + 6);
+      const chunkMap = await aiFeedBatch(chunk);
+      chunkMap.forEach((v, k) => aiMap.set(k, v));
+    }
+  }
+
   return Promise.all(
     tokens.map(async (token) => {
       const intel = token.intel ?? buildLocalTokenIntel(token);
-      let signal = heuristicDecision(token, intel);
+      const key = token.tokenAddress.toLowerCase();
+      let signal = aiMap.get(key) ?? heuristicDecision(token, intel);
       const security = scoreTokenSecurity(token, intel);
       if (security.honeypotRisk && signal.action === "BUY") {
+        const factors = buildReasoningFactors(token, intel, "HOLD");
+        const { edge } = scoreFactorEdge(factors);
         signal = {
           ...signal,
           action: "HOLD",
-          confidence: Math.min(signal.confidence, 45),
+          confidence: Math.min(signal.confidence, 44),
           whyAction: `Security block: ${security.label}. ${signal.whyAction}`,
-          riskScore: Math.max(signal.riskScore, 75),
+          riskScore: Math.max(signal.riskScore, 76),
+          reasoningFactors: factors,
         };
       }
       return { token: { ...token, intel }, intel, signal, security };
