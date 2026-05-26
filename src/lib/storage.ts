@@ -228,30 +228,90 @@ export async function addPrismPrediction(prediction: PrismPrediction) {
   return prediction;
 }
 
-export async function getDemoPositions(wallet: string) {
-  const all = await readJson<DemoPosition[]>("demo-positions.json", []);
-  return all.filter((p) => p.wallet.toLowerCase() === wallet.toLowerCase() && p.tokenAmount > 0);
+type DemoPortfolioStore = {
+  positions: DemoPosition[];
+  trades: DemoTradeRecord[];
+};
+
+async function readDemoPortfolio(wallet: string): Promise<DemoPortfolioStore> {
+  const key = wallet.toLowerCase();
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("demo_portfolios")
+      .select("positions, trades")
+      .eq("wallet", key)
+      .maybeSingle();
+
+    if (!error && data) {
+      return {
+        positions: (data.positions as DemoPosition[]) ?? [],
+        trades: (data.trades as DemoTradeRecord[]) ?? [],
+      };
+    }
+    if (error && !error.message.includes("does not exist")) {
+      console.warn("Supabase demo portfolio read:", error.message);
+    }
+  }
+
+  const allPos = await readJson<DemoPosition[]>("demo-positions.json", []);
+  const allTrades = await readJson<DemoTradeRecord[]>("demo-trades.json", []);
+  return {
+    positions: allPos.filter((p) => p.wallet.toLowerCase() === key),
+    trades: allTrades.filter((t) => t.wallet.toLowerCase() === key),
+  };
 }
 
-async function getAllDemoPositions() {
-  return readJson<DemoPosition[]>("demo-positions.json", []);
+async function writeDemoPortfolio(wallet: string, positions: DemoPosition[], trades: DemoTradeRecord[]) {
+  const key = wallet.toLowerCase();
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error } = await supabase.from("demo_portfolios").upsert(
+      {
+        wallet: key,
+        positions,
+        trades: trades.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "wallet" },
+    );
+    if (!error) {
+      await syncDemoPortfolioJson(key, positions, trades);
+      return;
+    }
+    console.warn("Supabase demo portfolio write:", error.message);
+  }
+
+  await syncDemoPortfolioJson(key, positions, trades);
+}
+
+async function syncDemoPortfolioJson(
+  walletKey: string,
+  positions: DemoPosition[],
+  trades: DemoTradeRecord[],
+) {
+  const allPos = await readJson<DemoPosition[]>("demo-positions.json", []);
+  const allTrades = await readJson<DemoTradeRecord[]>("demo-trades.json", []);
+  const othersPos = allPos.filter((p) => p.wallet.toLowerCase() !== walletKey);
+  const othersTrades = allTrades.filter((t) => t.wallet.toLowerCase() !== walletKey);
+  await writeJson("demo-positions.json", [...positions, ...othersPos].slice(0, 500));
+  await writeJson("demo-trades.json", [...trades, ...othersTrades].slice(0, 500));
+}
+
+export async function getDemoPositions(wallet: string) {
+  const { positions } = await readDemoPortfolio(wallet);
+  return positions.filter((p) => p.tokenAmount > 0);
 }
 
 export async function getDemoTrades(wallet: string, limit = 30) {
-  const all = await readJson<DemoTradeRecord[]>("demo-trades.json", []);
-  return all
-    .filter((t) => t.wallet.toLowerCase() === wallet.toLowerCase())
-    .slice(0, limit);
+  const { trades } = await readDemoPortfolio(wallet);
+  return trades.slice(0, limit);
 }
 
 export async function saveDemoTrade(trade: DemoTradeRecord, walletPositions: DemoPosition[]) {
-  const trades = await readJson<DemoTradeRecord[]>("demo-trades.json", []);
-  trades.unshift(trade);
-  await writeJson("demo-trades.json", trades.slice(0, 500));
-
-  const all = await getAllDemoPositions();
-  const others = all.filter((p) => p.wallet.toLowerCase() !== trade.wallet.toLowerCase());
-  await writeJson("demo-positions.json", [...walletPositions, ...others].slice(0, 500));
+  const { trades } = await readDemoPortfolio(trade.wallet);
+  const nextTrades = [trade, ...trades].slice(0, 500);
+  await writeDemoPortfolio(trade.wallet, walletPositions, nextTrades);
   return trade;
 }
 

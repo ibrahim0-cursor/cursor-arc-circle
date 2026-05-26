@@ -87,7 +87,12 @@ export function NexusPortfolio({
     : "No positions";
 
   return (
-    <NexusCollapsible label="Portfolio" hint={hint}>
+    <NexusCollapsible
+      key={`portfolio-${positions.length}-${address}`}
+      label={`Portfolio${positions.length ? ` (${positions.length})` : ""}`}
+      hint={hint}
+      defaultOpen={positions.length > 0}
+    >
       <div className="space-y-2">
         {loading && positions.length === 0 ? (
           <div className="flex items-center gap-2 py-2 text-xs text-white/45">

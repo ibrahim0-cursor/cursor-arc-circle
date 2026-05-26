@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import {
   ArrowDownUp,
@@ -37,8 +37,11 @@ function asTradeToken(token: TradeToken) {
     chainId: token.chainId,
     priceUsd: token.priceUsd,
     pairAddress: token.pairAddress,
+    icon: "icon" in token ? token.icon : undefined,
   };
 }
+
+type AmountMode = "usdc" | "token";
 
 const TRADE_NETWORK = "arc" as const;
 const BUY_PRESETS = [10, 25, 50, 100] as const;
@@ -79,6 +82,7 @@ export function NexusTradeHub({
   const trade = asTradeToken(token);
   const side = tradeTab === "sell" ? "sell" : "buy";
   const [amount, setAmount] = useState("25");
+  const [amountMode, setAmountMode] = useState<AmountMode>("usdc");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<{ hash: string; block?: number } | null>(null);
@@ -88,21 +92,27 @@ export function NexusTradeHub({
   const tokenBalance = position?.tokenAmount ?? 0;
 
   useEffect(() => {
-    async function loadPosition() {
-      if (!address || !trade) return;
-      const res = await fetch(`/api/nexus/demo/portfolio?wallet=${address}&t=${Date.now()}`, {
-        cache: "no-store",
-      });
-      const data = await res.json();
-      const pos = (data.positions ?? []).find(
-        (p: DemoPosition) =>
-          p.tokenAddress.toLowerCase() === trade.tokenAddress.toLowerCase() &&
-          p.tradeNetwork === TRADE_NETWORK,
-      );
-      setPosition(pos ?? null);
-    }
-    loadPosition();
-  }, [address, trade?.tokenAddress, lastTx]);
+    setAmountMode(side === "buy" ? "usdc" : "token");
+    setAmount(side === "buy" ? "25" : "0");
+  }, [side, trade?.tokenAddress]);
+
+  const loadPosition = useCallback(async () => {
+    if (!address || !trade) return;
+    const res = await fetch(`/api/nexus/demo/portfolio?wallet=${address}&t=${Date.now()}`, {
+      cache: "no-store",
+    });
+    const data = await res.json();
+    const pos = (data.positions ?? []).find(
+      (p: DemoPosition) =>
+        p.tokenAddress.toLowerCase() === trade.tokenAddress.toLowerCase() &&
+        p.tradeNetwork === TRADE_NETWORK,
+    );
+    setPosition(pos ?? null);
+  }, [address, trade]);
+
+  useEffect(() => {
+    void loadPosition();
+  }, [loadPosition, lastTx]);
 
   const livePrice = trade?.priceUsd ?? 0;
   const unrealizedPnl =
@@ -114,38 +124,60 @@ export function NexusTradeHub({
 
   const amountNum = Math.max(0, Number(amount) || 0);
 
+  const resolved = useMemo(() => {
+    if (!trade || amountNum <= 0 || livePrice <= 0) {
+      return { usdcAmount: 0, tokenAmount: 0 };
+    }
+    if (side === "buy") {
+      if (amountMode === "usdc") {
+        return { usdcAmount: amountNum, tokenAmount: amountNum / livePrice };
+      }
+      return { usdcAmount: amountNum * livePrice, tokenAmount: amountNum };
+    }
+    if (amountMode === "token") {
+      return { usdcAmount: amountNum * livePrice, tokenAmount: amountNum };
+    }
+    return { usdcAmount: amountNum, tokenAmount: amountNum / livePrice };
+  }, [trade, side, amountNum, livePrice, amountMode]);
+
   const quote = useMemo(() => {
     if (!trade || amountNum <= 0) return null;
     return buildDemoQuote({
       side,
-      usdcAmount: side === "buy" ? amountNum : undefined,
-      tokenAmount: side === "sell" ? amountNum : undefined,
+      usdcAmount: side === "buy" ? resolved.usdcAmount : undefined,
+      tokenAmount: side === "sell" ? resolved.tokenAmount : undefined,
       priceUsd: livePrice,
       position,
     });
-  }, [trade, side, amountNum, livePrice, position]);
+  }, [trade, side, amountNum, livePrice, position, resolved]);
 
   function applyPct(pct: number) {
     if (side === "buy") {
-      const spend = (usdcBalance * pct) / 100;
-      setAmount(formatAmount(Math.max(0, spend - feeUsd)));
+      if (amountMode === "usdc") {
+        const spend = (usdcBalance * pct) / 100;
+        setAmount(formatAmount(Math.max(0, spend - feeUsd)));
+      } else if (livePrice > 0) {
+        const maxTokens = usdcBalance / livePrice;
+        setAmount(formatAmount((maxTokens * pct) / 100));
+      }
       return;
     }
-    if (side === "sell") {
+    if (amountMode === "token") {
       setAmount(formatAmount((tokenBalance * pct) / 100));
-      return;
+    } else if (livePrice > 0) {
+      setAmount(formatAmount(((tokenBalance * livePrice) * pct) / 100));
     }
   }
 
   function applyBuyPreset(usdc: number) {
     setTab("buy");
+    setAmountMode("usdc");
     setAmount(String(usdc));
   }
 
   function applySellUsdcReceive(targetUsdc: number) {
-    if (livePrice <= 0) return;
-    const tokens = Math.min(tokenBalance, targetUsdc / livePrice);
-    setAmount(formatAmount(tokens));
+    setAmountMode("usdc");
+    setAmount(String(targetUsdc));
   }
 
   async function executeDemoTrade() {
@@ -153,12 +185,12 @@ export function NexusTradeHub({
       setError("Enter an amount greater than 0");
       return;
     }
-    if (side === "buy" && amountNum > usdcBalance) {
+    if (side === "buy" && resolved.usdcAmount > usdcBalance) {
       setError("Insufficient USDC balance on Arc");
       return;
     }
-    if (side === "sell" && amountNum > tokenBalance) {
-      setError("Insufficient token balance");
+    if (side === "sell" && resolved.tokenAmount > tokenBalance + 1e-9) {
+      setError(`Insufficient ${trade.symbol} — you have ${tokenBalance.toFixed(4)}`);
       return;
     }
 
@@ -181,14 +213,21 @@ export function NexusTradeHub({
           tokenAddress: trade.tokenAddress,
           sourceChain: trade.chainId,
           tradeNetwork: TRADE_NETWORK,
-          usdcAmount: side === "buy" ? amountNum : undefined,
-          tokenAmount: side === "sell" ? amountNum : undefined,
+          usdcAmount: side === "buy" ? resolved.usdcAmount : undefined,
+          tokenAmount: side === "sell" ? resolved.tokenAmount : undefined,
           priceUsd: livePrice,
           arcFeeTxHash: fee.txHash,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Demo trade failed");
+
+      const pos = (data.positions ?? []).find(
+        (p: DemoPosition) =>
+          p.tokenAddress.toLowerCase() === trade.tokenAddress.toLowerCase() &&
+          p.tradeNetwork === TRADE_NETWORK,
+      );
+      setPosition(pos ?? null);
 
       setLastTx({ hash: fee.txHash, block: fee.blockNumber });
       toast({
@@ -358,29 +397,56 @@ export function NexusTradeHub({
                       </button>
                     ))}
                   </div>
-                  <p className="mt-1.5 text-[11px] text-white/45">
-                    Sets {trade.symbol} amount to receive ~USDC above (wallet balance capped).
-                  </p>
                 </div>
               )}
 
-              <p className="nexus-caption flex items-center gap-1.5">
-                {side === "buy" ? (
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-300" />
-                ) : (
-                  <Coins className="h-3.5 w-3.5 text-rose-300" />
-                )}
-                {side === "buy"
-                  ? "Spend USDC"
-                  : `Sell ${trade.symbol} or use USDC presets · % of holdings`}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="nexus-caption flex items-center gap-1.5">
+                  {amountMode === "usdc" ? (
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-300" />
+                  ) : (
+                    <Coins className="h-3.5 w-3.5 text-cyan-300" />
+                  )}
+                  {side === "buy" ? "Buy amount" : "Sell amount"}
+                </p>
+                <div className="inline-flex rounded-lg border border-white/15 p-0.5 text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setAmountMode("token")}
+                    className={`rounded-md px-2.5 py-1 transition ${
+                      amountMode === "token" ? "bg-cyan-500/25 text-cyan-100" : "text-white/50"
+                    }`}
+                  >
+                    {trade.symbol}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAmountMode("usdc")}
+                    className={`rounded-md px-2.5 py-1 transition ${
+                      amountMode === "usdc" ? "bg-emerald-500/25 text-emerald-100" : "text-white/50"
+                    }`}
+                  >
+                    USDC
+                  </button>
+                </div>
+              </div>
+
               <input
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full min-h-[48px] rounded-xl border border-cyan-300/20 bg-black/30 px-4 text-lg font-medium text-white outline-none focus:border-cyan-300/50"
-                placeholder="0"
+                placeholder={amountMode === "usdc" ? "USDC amount" : `${trade.symbol} amount`}
               />
+
+              {amountNum > 0 && livePrice > 0 && (
+                <p className="text-[11px] text-white/50">
+                  {side === "buy" ? "≈ " : "≈ "}
+                  {amountMode === "usdc"
+                    ? `${resolved.tokenAmount.toFixed(4)} ${trade.symbol}`
+                    : `${formatUsd(resolved.usdcAmount)} USDC`}
+                </p>
+              )}
               <div className="grid grid-cols-4 gap-2">
                 {PCT_OPTIONS.map((pct) => (
                   <button
@@ -396,7 +462,8 @@ export function NexusTradeHub({
 
               {side === "sell" && amountNum > 0 && livePrice > 0 && (
                 <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-100">
-                  Receive ≈ {formatUsd(amountNum * livePrice)} USDC
+                  Receive ≈ {formatUsd(resolved.usdcAmount)} USDC · sell {resolved.tokenAmount.toFixed(4)}{" "}
+                  {trade.symbol}
                 </p>
               )}
 
