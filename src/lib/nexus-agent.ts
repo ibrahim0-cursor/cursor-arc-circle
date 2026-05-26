@@ -5,12 +5,7 @@ import { checkSwappable } from "./swappable";
 import { fetchTokenIntel } from "./birdeye";
 import { birdeyeChainFor } from "./testnet-chains";
 import { anchorDecisionPayload } from "./arc";
-import {
-  addNexusDecision,
-  type NexusDecision,
-  type ReasoningFactor,
-  type TokenIntel,
-} from "./storage";
+import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
 
 function getOpenAI() {
   const key = process.env.OPENAI_API_KEY;
@@ -305,4 +300,27 @@ export async function getTokenDecision(chainId: string, tokenAddress: string) {
   const token = await fetchTokenPair(chainId, tokenAddress);
   if (!token) throw new Error("Token not found");
   return buildDecision(token);
+}
+
+export type { AgentSignal } from "./storage";
+
+export async function analyzeTokenSignal(
+  token: TrendingToken,
+  intel?: TokenIntel,
+  deep = false,
+): Promise<AgentSignal> {
+  const enriched = intel ?? (await enrichToken(token));
+  if (deep) return aiDecision(token, enriched);
+  return heuristicDecision(token, enriched);
+}
+
+/** Batch analyze trending tokens for live agent feed */
+export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
+  return Promise.all(
+    tokens.map(async (token) => {
+      const intel = (token as TrendingToken & { intel?: TokenIntel }).intel ?? (await enrichToken(token));
+      const signal = await analyzeTokenSignal(token, intel, false);
+      return { token, intel, signal };
+    }),
+  );
 }

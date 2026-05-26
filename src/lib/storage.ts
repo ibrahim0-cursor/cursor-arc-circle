@@ -22,6 +22,24 @@ export type TokenIntel = {
   trade24h?: number;
   isMintable?: boolean;
   isFreezable?: boolean;
+  whaleCount?: number;
+  sniperWallets?: string[];
+};
+
+export type TokenTx = {
+  hash?: string;
+  type: string;
+  side: "buy" | "sell" | "unknown";
+  amountUsd: number;
+  trader: string;
+  timestamp: string;
+};
+
+export type TokenWhale = {
+  address: string;
+  balance: number;
+  pct: number;
+  label: string;
 };
 
 export type NexusDecision = {
@@ -55,6 +73,15 @@ export type NexusDecision = {
 };
 
 export type { DemoPosition, DemoTradeRecord };
+
+export type AgentSignal = {
+  action: "BUY" | "SELL" | "HOLD";
+  confidence: number;
+  riskScore: number;
+  reasoning: string;
+  whyAction: string;
+  reasoningFactors: ReasoningFactor[];
+};
 
 export type PrismPrediction = {
   id: string;
