@@ -2,11 +2,10 @@
 
 import { motion } from "framer-motion";
 import {
-  Check,
-  Copy,
   Crosshair,
   ExternalLink,
-  ShieldAlert,
+  Copy,
+  Check,
   TrendingDown,
   TrendingUp,
   Minus,
@@ -15,6 +14,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatCompact, formatPct, formatUsd, truncateHash } from "@/lib/utils";
 import type { NexusDecision } from "@/lib/storage";
+import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 
 export function NexusDecisionCard({
   decision,
@@ -32,8 +32,6 @@ export function NexusDecisionCard({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
-
-  const factors = decision.reasoningFactors ?? [];
 
   return (
     <motion.button
@@ -111,55 +109,22 @@ export function NexusDecisionCard({
         )}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Metric label="MCap" value={formatCompact(decision.intel?.marketCap ?? 0)} />
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Metric label="MCap" value={decision.intel?.marketCap ? formatCompact(decision.intel.marketCap) : "—"} />
         <Metric label="Liquidity" value={formatCompact(decision.liquidityUsd ?? 0)} />
         <Metric
           label="Snipers"
-          value={decision.intel?.sniperCount?.toString() ?? "—"}
+          value={decision.intel?.sniperCount != null ? String(decision.intel.sniperCount) : "—"}
           warn={(decision.intel?.sniperCount ?? 0) > 5}
         />
         <Metric
           label="Holders"
-          value={decision.intel?.holderCount?.toLocaleString() ?? "—"}
+          value={decision.intel?.holderCount != null ? decision.intel.holderCount.toLocaleString() : "—"}
         />
       </div>
 
-      <div className="mt-4 rounded-xl border border-white/8 bg-black/20 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200/70">
-          Why {decision.action}?
-        </p>
-        <p className="mt-2 text-sm leading-7 text-white/75">
-          {decision.whyAction ?? decision.reasoning}
-        </p>
-      </div>
-
-      {factors.length > 0 && (
-        <div className="mt-3 space-y-2">
-          {factors.slice(0, 4).map((factor) => (
-            <div
-              key={factor.label}
-              className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.03] px-3 py-2 text-xs"
-            >
-              <div className="flex items-center gap-2 text-white/70">
-                <ImpactIcon impact={factor.impact} />
-                <span className="font-medium">{factor.label}</span>
-                <span className="text-white/40">· {factor.detail}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-white/40">
-        <span>Confidence {decision.confidence}%</span>
-        <span>Risk {decision.riskScore}/100</span>
-        {(decision.intel?.top10HolderPercent ?? 0) > 30 && (
-          <span className="inline-flex items-center gap-1 text-amber-300">
-            <ShieldAlert className="h-3 w-3" /> High concentration
-          </span>
-        )}
-        {decision.arcTxHash && <span>Arc {truncateHash(decision.arcTxHash)}</span>}
+      <div className="mt-3 text-[11px] text-white/40">
+        Confidence {decision.confidence}% · Risk {decision.riskScore}/100
       </div>
     </motion.button>
   );
@@ -193,55 +158,53 @@ function ImpactIcon({ impact }: { impact: "bullish" | "bearish" | "neutral" }) {
 export function NexusTokenDetail({ decision }: { decision: NexusDecision | null }) {
   if (!decision) {
     return (
-      <div className="flex h-full min-h-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-8 text-center text-white/45">
-        <Crosshair className="mb-3 h-8 w-8 text-cyan-300/50" />
-        <p>Select a token to view live chart, reasoning breakdown, and swap panel.</p>
+      <div className="flex min-h-[80px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-white/45">
+        <Crosshair className="mb-2 h-6 w-6 text-cyan-300/50" />
+        Select a token for verdict and intel
       </div>
     );
   }
 
   const factors = decision.reasoningFactors ?? [];
+  const bullish = factors.filter((f) => f.impact === "bullish").length;
+  const bearish = factors.filter((f) => f.impact === "bearish").length;
+  const summaryHint = `${decision.action} · ${decision.confidence}% conf · risk ${decision.riskScore} · ${bullish}↑ ${bearish}↓`;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-transparent p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/60">Agent verdict</p>
-            <p className="mt-1 text-4xl font-bold">{decision.action}</p>
-            <p className="mt-1 text-white/60">
-              {decision.symbol} · {formatUsd(decision.priceUsd)}
-            </p>
-          </div>
-          <div className="text-right text-sm text-white/55">
-            <p>Confidence {decision.confidence}%</p>
-            <p>Risk {decision.riskScore}/100</p>
-          </div>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={decision.action === "BUY" ? "buy" : decision.action === "SELL" ? "sell" : "hold"}
+          >
+            {decision.action}
+          </Badge>
+          <span className="text-sm font-medium">
+            {decision.symbol} · {formatUsd(decision.priceUsd)}
+          </span>
         </div>
-        <p className="mt-4 text-sm leading-7 text-white/75">{decision.whyAction}</p>
+        <span className="text-[11px] text-white/45">
+          {decision.confidence}% · risk {decision.riskScore}
+        </span>
       </div>
 
-      {factors.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
-            Reasoning breakdown
-          </p>
-          <div className="space-y-2">
+      <NexusCollapsible label="Agent reasoning" hint={summaryHint}>
+        <p className="text-sm leading-6 text-white/75">{decision.whyAction ?? decision.reasoning}</p>
+        {factors.length > 0 && (
+          <div className="mt-2 space-y-1.5">
             {factors.map((f) => (
-              <div key={f.label} className="flex items-start justify-between gap-3 rounded-xl bg-white/[0.03] p-3">
-                <div className="flex items-start gap-2">
+              <div key={f.label} className="flex items-start justify-between gap-2 rounded-lg bg-white/[0.03] px-2 py-1.5 text-[11px]">
+                <div className="flex min-w-0 items-start gap-1.5">
                   <ImpactIcon impact={f.impact} />
-                  <div>
-                    <p className="text-sm font-medium text-white/85">{f.label}</p>
-                    <p className="text-xs text-white/50">{f.detail}</p>
-                  </div>
+                  <span className="text-white/75">
+                    <span className="font-medium">{f.label}</span> · {f.detail}
+                  </span>
                 </div>
-                <span className="text-xs text-white/35">w{f.weight}</span>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </NexusCollapsible>
     </div>
   );
 }

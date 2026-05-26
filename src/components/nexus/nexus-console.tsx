@@ -105,9 +105,62 @@ export function NexusConsole() {
           t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
           t.chainId === prev.chainId,
       );
-      return updated ?? prev;
+      if (!updated) return prev;
+      return {
+        ...updated,
+        intel: {
+          ...updated.intel,
+          holderCount: prev.intel?.holderCount ?? updated.intel?.holderCount,
+          sniperCount: prev.intel?.sniperCount ?? updated.intel?.sniperCount,
+          whaleCount: prev.intel?.whaleCount ?? updated.intel?.whaleCount,
+          insiderCount: prev.intel?.insiderCount ?? updated.intel?.insiderCount,
+          top10HolderPercent: prev.intel?.top10HolderPercent ?? updated.intel?.top10HolderPercent,
+        },
+      };
     });
   }, []);
+
+  useEffect(() => {
+    if (!selectedToken?.chainId || !selectedToken?.tokenAddress) return;
+    let cancelled = false;
+
+    (async () => {
+      const params = new URLSearchParams({
+        chainId: selectedToken.chainId,
+        address: selectedToken.tokenAddress,
+        buys: String(selectedToken.txns24h?.buys ?? 0),
+        sells: String(selectedToken.txns24h?.sells ?? 0),
+        volume: String(selectedToken.volume24h ?? 0),
+      });
+      const res = await fetch(`/api/nexus/token/detect?${params}&t=${Date.now()}`);
+      const data = await res.json();
+      if (cancelled || !res.ok || !data.summary?.birdeyeLive) return;
+
+      setSelectedToken((prev) => {
+        if (
+          !prev ||
+          prev.tokenAddress.toLowerCase() !== selectedToken.tokenAddress.toLowerCase()
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          intel: {
+            ...prev.intel,
+            holderCount: data.summary.holderCount,
+            sniperCount: data.summary.sniperCount,
+            whaleCount: data.summary.whaleCount,
+            insiderCount: data.summary.insiderCount,
+            top10HolderPercent: data.summary.top10Pct,
+          },
+        };
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedToken?.chainId, selectedToken?.tokenAddress, selectedToken?.txns24h?.buys, selectedToken?.txns24h?.sells, selectedToken?.volume24h]);
 
   async function runScan() {
     setScanning(true);

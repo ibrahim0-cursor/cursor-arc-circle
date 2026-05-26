@@ -225,10 +225,10 @@ export function NexusTrendingFeed({
             <div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-white/45">
               <span>Vol {formatCompact(token.volume24h)}</span>
               <span>Liq {formatCompact(token.liquidityUsd)}</span>
-              <span>Snipers {token.intel?.sniperCount ?? 0}</span>
+              <span>Snipers {token.intel?.sniperCount != null ? token.intel.sniperCount : "—"}</span>
               <span>
                 Holders{" "}
-                {token.intel?.holderCount ? formatCompact(token.intel.holderCount) : "—"}
+                {token.intel?.holderCount != null ? formatCompact(token.intel.holderCount) : "—"}
               </span>
             </div>
           </motion.button>

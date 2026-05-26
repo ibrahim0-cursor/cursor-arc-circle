@@ -46,16 +46,16 @@ function buildReasoningFactors(
     });
   }
 
-  if (intel.sniperCount !== undefined) {
+  if (intel.sniperCount !== undefined && intel.sniperCount > 0) {
     factors.push({
       label: "Sniper Activity",
-      detail: `${intel.sniperCount} sniper wallets detected`,
+      detail: `${intel.sniperCount} sniper wallets (Birdeye)`,
       impact: intel.sniperCount > 10 ? "bearish" : intel.sniperCount > 3 ? "neutral" : "bullish",
       weight: intel.sniperCount * 2,
     });
   }
 
-  if (intel.holderCount) {
+  if (intel.holderCount && intel.holderCount > 0) {
     factors.push({
       label: "Holder Base",
       detail: `${intel.holderCount.toLocaleString()} unique holders`,

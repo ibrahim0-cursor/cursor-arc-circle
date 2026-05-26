@@ -1,9 +1,8 @@
 "use client";
 
 import { Activity, TrendingDown, TrendingUp } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatUsd } from "@/lib/utils";
+import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import type { TechnicalSnapshot } from "@/lib/storage";
 import type { TechnicalAnalysis } from "@/lib/technical-analysis";
 
@@ -20,98 +19,69 @@ export function NexusTAPanel({
   const support = "support" in ta ? ta.support : undefined;
   const resistance = "resistance" in ta ? ta.resistance : undefined;
 
+  const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100`;
+
   return (
-    <Card className="border-emerald-400/20 bg-gradient-to-b from-emerald-400/[0.05] to-transparent">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-emerald-300" />
-            <h2 className="text-lg font-medium">Technical Analysis</h2>
-          </div>
-          <Badge variant="nexus">TA Score {technical.score}/100</Badge>
+    <NexusCollapsible label="Technical analysis" hint={hint}>
+      <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <Stat label="RSI" value={technical.rsi.toFixed(1)} sub={technical.rsiSignal} />
+          <Stat label="MACD" value={technical.macd.toFixed(2)} sub={technical.macdSignal} />
+          <Stat label="Score" value={`${technical.score}/100`} sub={technical.trend.replace("_", " ")} />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Metric
-            label="RSI"
-            value={technical.rsi.toFixed(1)}
-            sub={technical.rsiSignal}
-            color={
-              technical.rsiSignal === "overbought"
-                ? "text-rose-300"
-                : technical.rsiSignal === "oversold"
-                  ? "text-emerald-300"
-                  : "text-white/70"
-            }
-          />
-          <Metric
-            label="MACD"
-            value={technical.macd.toFixed(2)}
-            sub={technical.macdSignal}
-            color={
-              technical.macdSignal === "bullish"
-                ? "text-emerald-300"
-                : technical.macdSignal === "bearish"
-                  ? "text-rose-300"
-                  : "text-white/70"
-            }
-          />
-          <Metric label="Trend" value={technical.trend.replace("_", " ")} icon />
-          {priceUsd && support !== undefined && resistance !== undefined && (
-            <Metric label="S/R" value={`${formatUsd(support)} – ${formatUsd(resistance)}`} />
-          )}
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/70">
-          <p className="text-[10px] uppercase tracking-wider text-white/40">Trend line read</p>
-          <p className="mt-1">{technical.trendLine}</p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-xs">
+        {priceUsd && support !== undefined && resistance !== undefined && (
+          <p className="text-[11px] text-white/50">
+            Support {formatUsd(support)} · Resistance {formatUsd(resistance)}
+          </p>
+        )}
+        <p className="text-[11px] leading-5 text-white/60">{technical.trendLine}</p>
+        <div className="flex flex-wrap gap-1.5">
           {technical.macdSignal === "bullish" && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-emerald-200">
-              <TrendingUp className="h-3 w-3" /> MACD bullish crossover
-            </span>
+            <Tag icon={<TrendingUp className="h-3 w-3" />} text="MACD bullish" color="emerald" />
           )}
           {technical.macdSignal === "bearish" && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-1 text-rose-200">
-              <TrendingDown className="h-3 w-3" /> MACD bearish crossover
-            </span>
+            <Tag icon={<TrendingDown className="h-3 w-3" />} text="MACD bearish" color="rose" />
           )}
-          {technical.rsiSignal === "oversold" && (
-            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-cyan-200">
-              RSI oversold — bounce watch
-            </span>
-          )}
+          {technical.rsiSignal === "oversold" && <Tag text="RSI oversold" color="cyan" />}
+          {technical.rsiSignal === "overbought" && <Tag text="RSI overbought" color="rose" />}
         </div>
-      </CardContent>
-    </Card>
+        <p className="text-[10px] text-white/35">
+          <Activity className="mr-1 inline h-3 w-3" />
+          Derived from live DexScreener price changes (m5/h1/h6/h24)
+        </p>
+      </div>
+    </NexusCollapsible>
   );
 }
 
-function Metric({
-  label,
-  value,
-  sub,
-  color,
-  icon,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-  icon?: boolean;
-}) {
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wider text-white/40">{label}</p>
-      <p className={`mt-1 text-sm font-semibold capitalize ${color ?? "text-white/85"}`}>
-        {icon && value.includes("up") ? <TrendingUp className="mr-1 inline h-3.5 w-3.5" /> : null}
-        {icon && value.includes("down") ? <TrendingDown className="mr-1 inline h-3.5 w-3.5" /> : null}
-        {value}
-      </p>
+    <div className="rounded-lg border border-white/8 bg-white/[0.02] px-2 py-1.5">
+      <p className="text-[10px] uppercase text-white/40">{label}</p>
+      <p className="text-sm font-medium text-white/85">{value}</p>
       {sub && <p className="text-[10px] capitalize text-white/45">{sub}</p>}
     </div>
+  );
+}
+
+function Tag({
+  text,
+  icon,
+  color,
+}: {
+  text: string;
+  icon?: React.ReactNode;
+  color: "emerald" | "rose" | "cyan";
+}) {
+  const styles = {
+    emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+    rose: "border-rose-400/30 bg-rose-400/10 text-rose-200",
+    cyan: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${styles[color]}`}>
+      {icon}
+      {text}
+    </span>
   );
 }

@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Crosshair, Fish, Loader2, Radar, Target, UserX, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Crosshair, Fish, Loader2, Target, UserX, Users } from "lucide-react";
 import { formatCompact, formatUsd, truncateHash } from "@/lib/utils";
+import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { WalletScoreChip } from "@/components/nexus/nexus-wallet-score";
 import type { TokenTx, TokenWhale, TokenInsider } from "@/lib/storage";
 import type { WalletScore } from "@/lib/wallet-score";
@@ -24,6 +23,7 @@ type Detection = {
     holderCount?: number;
     birdeyeConnected?: boolean;
     birdeyeLive?: boolean;
+    dataSource?: "birdeye" | "birdeye_pending" | "unavailable";
   };
 };
 
@@ -74,15 +74,24 @@ export function NexusTokenDetectPanel({
     };
   }, [chainId, tokenAddress, txns24h?.buys, txns24h?.sells, volume24h]);
 
-  if (!chainId || !tokenAddress) {
-    return (
-      <Card className="border-white/10">
-        <CardContent className="py-8 text-center text-sm text-white/50">
-          Select a token for full intel — holders, whales, snipers, insiders, live txs
-        </CardContent>
-      </Card>
-    );
-  }
+  if (!chainId || !tokenAddress) return null;
+
+  const s = data?.summary;
+  const sourceLabel =
+    s?.birdeyeLive
+      ? "Birdeye live"
+      : s?.birdeyeConnected
+        ? "Birdeye · no data yet"
+        : "Add BIRDEYE_API_KEY";
+
+  const hint = [
+    s?.holderCount != null ? `${formatCompact(s.holderCount)} holders` : null,
+    s?.sniperCount != null ? `${s.sniperCount} snipers` : null,
+    s?.whaleCount != null ? `${s.whaleCount} whales` : null,
+    sourceLabel,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const tabs = [
     { id: "txs" as const, label: "Txs", icon: Target },
@@ -93,45 +102,21 @@ export function NexusTokenDetectPanel({
   ];
 
   return (
-    <Card className="border-violet-400/20 bg-gradient-to-b from-violet-400/[0.05] to-transparent">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Radar className="h-5 w-5 text-violet-300" />
-            <div>
-              <h2 className="text-lg font-medium">Token Intel</h2>
-              <p className="text-xs text-white/45">
-                {symbol} ·{" "}
-                {data?.summary.birdeyeLive
-                  ? "Birdeye live data"
-                  : data?.summary.birdeyeConnected
-                    ? "Birdeye connected · loading or rate-limited"
-                    : "DexScreener flow estimates"}
-              </p>
-            </div>
-          </div>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-white/40" />}
+    <NexusCollapsible label={`Token intel · ${symbol ?? "token"}`} hint={hint || "Loading…"}>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-[10px] text-white/40">
+          <span>{sourceLabel}</span>
+          {loading && <Loader2 className="h-3 w-3 animate-spin" />}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-          <Badge variant="nexus">{data?.summary.holderCount?.toLocaleString() ?? "—"} holders</Badge>
-          <Badge variant="nexus">{data?.summary.sniperCount ?? 0} snipers</Badge>
-          <Badge variant="default" className="border border-violet-400/30 bg-violet-400/10">
-            {data?.summary.whaleCount ?? 0} whales
-          </Badge>
-          <Badge variant="default" className="border border-amber-400/30 bg-amber-400/10 text-amber-200">
-            {data?.summary.insiderCount ?? 0} insiders
-          </Badge>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] ${
-                tab === id ? "bg-violet-400/15 text-violet-100" : "text-white/50 hover:text-white/70"
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] ${
+                tab === id ? "bg-violet-400/15 text-violet-100" : "text-white/50"
               }`}
             >
               <Icon className="h-3 w-3" />
@@ -139,111 +124,87 @@ export function NexusTokenDetectPanel({
             </button>
           ))}
         </div>
-      </CardHeader>
 
-      <CardContent className="max-h-72 space-y-2 overflow-y-auto">
-        {tab === "txs" &&
-          (data?.trades.length ? (
-            data.trades.map((tx, i) => (
-              <Row
-                key={tx.hash ?? i}
-                left={
-                  <span className={tx.side === "buy" ? "text-emerald-300" : tx.side === "sell" ? "text-rose-300" : ""}>
-                    {tx.side.toUpperCase()} · {truncateHash(tx.trader, 6, 4)}
-                  </span>
-                }
-                right={
-                  <>
-                    <p className="font-medium">{formatUsd(tx.amountUsd)}</p>
-                    <p className="text-white/35">{new Date(tx.timestamp).toLocaleTimeString()}</p>
-                  </>
-                }
-              />
-            ))
-          ) : (
-            <Empty text="Scanning live swap flow…" />
-          ))}
+        <div className="max-h-40 space-y-1 overflow-y-auto">
+          {tab === "txs" &&
+            (data?.trades.length ? (
+              data.trades.map((tx, i) => (
+                <Row
+                  key={tx.hash ?? i}
+                  left={
+                    <span className={tx.side === "buy" ? "text-emerald-300" : tx.side === "sell" ? "text-rose-300" : ""}>
+                      {tx.side.toUpperCase()} · {truncateHash(tx.trader, 6, 4)}
+                    </span>
+                  }
+                  right={
+                    <>
+                      {formatUsd(tx.amountUsd)}
+                      <span className="text-white/35"> · {new Date(tx.timestamp).toLocaleTimeString()}</span>
+                    </>
+                  }
+                />
+              ))
+            ) : (
+              <Empty text="No live swaps from Birdeye for this token yet." />
+            ))}
 
-        {tab === "snipers" &&
-          (data?.snipers.length ? (
-            data.snipers.map((s, i) => (
-              <Row
-                key={s.address + i}
-                left={<span className="text-rose-200">{s.label}</span>}
-                right={<span className="font-mono">{truncateHash(s.address, 8, 6)}</span>}
-                score={data.walletScores.find((w) => w.address.toLowerCase() === s.address.toLowerCase())}
-              />
-            ))
-          ) : (
-            <Empty text="No snipers detected — lower front-run risk" />
-          ))}
+          {tab === "snipers" &&
+            (data?.snipers.length ? (
+              data.snipers.map((sn, i) => (
+                <Row
+                  key={sn.address + i}
+                  left={sn.label}
+                  right={truncateHash(sn.address, 8, 6)}
+                  score={data.walletScores.find((w) => w.address.toLowerCase() === sn.address.toLowerCase())}
+                />
+              ))
+            ) : (
+              <Empty text="No sniper wallets flagged (Birdeye security)." />
+            ))}
 
-        {tab === "whales" &&
-          (data?.whales.length ? (
-            data.whales.map((w, i) => (
-              <Row
-                key={w.address + i}
-                left={
-                  <div>
-                    <p className="font-medium text-cyan-100">{w.label}</p>
-                    <p className="font-mono text-white/45">{truncateHash(w.address, 8, 6)}</p>
-                  </div>
-                }
-                right={
-                  <>
-                    <p>{formatCompact(w.balance)}</p>
-                    <p className="text-white/45">{w.pct.toFixed(2)}%</p>
-                  </>
-                }
-                score={data.walletScores.find((wsc) => wsc.address.toLowerCase() === w.address.toLowerCase())}
-              />
-            ))
-          ) : (
-            <Empty text="Loading whale data…" />
-          ))}
+          {tab === "whales" &&
+            (data?.whales.length ? (
+              data.whales.map((w, i) => (
+                <Row
+                  key={w.address + i}
+                  left={`${w.label} · ${truncateHash(w.address, 6, 4)}`}
+                  right={`${formatCompact(w.balance)} · ${w.pct.toFixed(1)}%`}
+                  score={data.walletScores.find((wsc) => wsc.address.toLowerCase() === w.address.toLowerCase())}
+                />
+              ))
+            ) : (
+              <Empty text="No whale holder data from Birdeye." />
+            ))}
 
-        {tab === "insiders" &&
-          (data?.insiders.length ? (
-            data.insiders.map((ins, i) => (
-              <Row
-                key={ins.address + i}
-                left={
-                  <div>
-                    <p className={ins.risk === "high" ? "text-rose-200" : "text-amber-200"}>{ins.label}</p>
-                    <p className="font-mono text-white/45">{truncateHash(ins.address, 8, 6)}</p>
-                  </div>
-                }
-                right={<p>{ins.pct.toFixed(1)}% · {ins.risk} risk</p>}
-              />
-            ))
-          ) : (
-            <Empty text="No insider wallets flagged" />
-          ))}
+          {tab === "insiders" &&
+            (data?.insiders.length ? (
+              data.insiders.map((ins, i) => (
+                <Row
+                  key={ins.address + i}
+                  left={`${ins.label} · ${truncateHash(ins.address, 6, 4)}`}
+                  right={`${ins.pct.toFixed(1)}% · ${ins.risk}`}
+                />
+              ))
+            ) : (
+              <Empty text="No insider wallets flagged." />
+            ))}
 
-        {tab === "holders" &&
-          (data?.holders.length ? (
-            data.holders.map((h, i) => (
-              <Row
-                key={h.address + i}
-                left={
-                  <span>
-                    #{h.rank ?? i + 1} · {truncateHash(h.address, 8, 6)}
-                  </span>
-                }
-                right={
-                  <>
-                    <p>{formatCompact(h.balance)}</p>
-                    <p className="text-white/45">{h.pct.toFixed(2)}%</p>
-                  </>
-                }
-                score={data.walletScores.find((w) => w.address.toLowerCase() === h.address.toLowerCase())}
-              />
-            ))
-          ) : (
-            <Empty text="Holder breakdown loading…" />
-          ))}
-      </CardContent>
-    </Card>
+          {tab === "holders" &&
+            (data?.holders.length ? (
+              data.holders.map((h, i) => (
+                <Row
+                  key={h.address + i}
+                  left={`#${h.rank ?? i + 1} · ${truncateHash(h.address, 8, 6)}`}
+                  right={`${formatCompact(h.balance)} · ${h.pct.toFixed(1)}%`}
+                  score={data.walletScores.find((w) => w.address.toLowerCase() === h.address.toLowerCase())}
+                />
+              ))
+            ) : (
+              <Empty text="No holder breakdown from Birdeye." />
+            ))}
+        </div>
+      </div>
+    </NexusCollapsible>
   );
 }
 
@@ -257,10 +218,10 @@ function Row({
   score?: WalletScore;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/25 px-3 py-2 text-xs">
-      <div className="min-w-0 flex-1">{left}</div>
-      <div className="flex shrink-0 items-center gap-2 text-right">
-        <div>{right}</div>
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-white/6 bg-black/20 px-2 py-1.5 text-[11px]">
+      <span className="min-w-0 truncate text-white/75">{left}</span>
+      <div className="flex shrink-0 items-center gap-1.5 text-white/55">
+        {right}
         {score && <WalletScoreChip score={score} />}
       </div>
     </div>
@@ -268,5 +229,5 @@ function Row({
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="text-sm text-white/45">{text}</p>;
+  return <p className="py-2 text-[11px] text-white/45">{text}</p>;
 }

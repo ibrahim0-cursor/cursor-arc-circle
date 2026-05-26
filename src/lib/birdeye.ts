@@ -217,81 +217,32 @@ export async function fetchTokenDetection(
     detected: true,
   }));
 
-  const syntheticTxs: TokenTx[] =
-    trades.length > 0
-      ? trades
-      : [
-          ...(fallback?.buys
-            ? Array.from({ length: Math.min(5, Math.ceil(fallback.buys / 100)) }).map((_, i) => ({
-                type: "swap",
-                side: "buy" as const,
-                amountUsd: (fallback.volume24h ?? 1000) / Math.max(fallback.buys ?? 1, 1),
-                trader: `0x${(i + 1).toString(16).padStart(8, "0")}…`,
-                timestamp: new Date(Date.now() - i * 120_000).toISOString(),
-              }))
-            : []),
-          ...(fallback?.sells
-            ? Array.from({ length: Math.min(3, Math.ceil(fallback.sells / 100)) }).map((_, i) => ({
-                type: "swap",
-                side: "sell" as const,
-                amountUsd: (fallback.volume24h ?? 1000) / Math.max(fallback.sells ?? 1, 1),
-                trader: `0x${(i + 9).toString(16).padStart(8, "0")}…`,
-                timestamp: new Date(Date.now() - (i + 5) * 90_000).toISOString(),
-              }))
-            : []),
-        ];
-
-  const whaleList = whales.length ? whales : estimateWhalesFromFlow(fallback, address);
-  const sniperList = snipers.length ? snipers : estimateSnipersFromFlow(fallback, security?.sniperCount);
+  const whaleList = whales;
+  const sniperList = snipers;
   const insiderList = buildInsiders(whaleList, sniperList, security?.top10HolderPercent);
+  const birdeyeLive = trades.length > 0 || whales.length > 0 || snipers.length > 0;
 
   return {
     chain,
-    trades: syntheticTxs.slice(0, 20),
+    trades: trades.slice(0, 20),
     whales: whaleList,
     snipers: sniperList,
     insiders: insiderList,
     holders: whaleList.slice(0, 15).map((w, i) => ({ ...w, rank: i + 1 })),
     walletScores: buildWalletScores(whaleList, sniperList, security),
     summary: {
-      sniperCount: security?.sniperCount ?? sniperList.length,
-      whaleCount: whaleList.length,
-      insiderCount: insiderList.length,
+      sniperCount: security?.sniperCount ?? (snipers.length || undefined),
+      whaleCount: whales.length || undefined,
+      insiderCount: insiderList.length || undefined,
       top10Pct: security?.top10HolderPercent,
       buy24h: overview?.buy24h ?? fallback?.buys,
       sell24h: overview?.sell24h ?? fallback?.sells,
       holderCount: security?.holderCount ?? overview?.holder,
       birdeyeConnected: hasBirdeyeKey(),
-      birdeyeLive: whales.length > 0 || snipers.length > 0 || trades.length > 0,
+      birdeyeLive,
+      dataSource: birdeyeLive ? ("birdeye" as const) : hasBirdeyeKey() ? ("birdeye_pending" as const) : ("unavailable" as const),
     },
   };
-}
-
-function estimateWhalesFromFlow(
-  fallback?: { buys?: number; sells?: number; volume24h?: number },
-  tokenAddress?: string,
-): TokenWhale[] {
-  if (!fallback?.volume24h) return [];
-  const seed = tokenAddress?.slice(2, 10) ?? "0000";
-  return Array.from({ length: 5 }).map((_, i) => ({
-    address: `0x${seed}${i.toString(16).padStart(4, "0")}${"a".repeat(28)}`.slice(0, 42),
-    balance: (fallback.volume24h ?? 0) / (1000 * (i + 1)),
-    pct: Math.max(1, 8 - i * 1.2),
-    label: i === 0 ? "Estimated top holder" : "Estimated whale",
-  }));
-}
-
-function estimateSnipersFromFlow(
-  fallback?: { buys?: number; sells?: number },
-  count?: number,
-): Array<{ address: string; label: string; detected: boolean }> {
-  const n =
-    count ?? (fallback?.buys && fallback.buys > 500 ? Math.min(5, Math.ceil(fallback.buys / 500)) : 0);
-  return Array.from({ length: n }).map((_, i) => ({
-    address: `0xsniper${i}${"b".repeat(32)}`.slice(0, 42),
-    label: `Flow sniper #${i + 1}`,
-    detected: true,
-  }));
 }
 
 function buildInsiders(
