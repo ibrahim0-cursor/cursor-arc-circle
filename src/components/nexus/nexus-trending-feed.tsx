@@ -54,7 +54,9 @@ export function NexusTrendingFeed({
 
   const onSelectRef = useRef(onSelect);
   const onRefreshRef = useRef(onTokensRefresh);
+  const selectedAddressRef = useRef(selectedAddress);
   const didInitialSelect = useRef(false);
+  const [feedCycle, setFeedCycle] = useState(0);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -64,6 +66,10 @@ export function NexusTrendingFeed({
     onRefreshRef.current = onTokensRefresh;
   }, [onTokensRefresh]);
 
+  useEffect(() => {
+    selectedAddressRef.current = selectedAddress;
+  }, [selectedAddress]);
+
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
@@ -72,6 +78,8 @@ export function NexusTrendingFeed({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load feed");
       const list = (data.tokens ?? []) as TrendingMarketToken[];
+      const cycle = data.feedCycle ?? 0;
+      setFeedCycle(cycle);
       setTokens(list);
       setUpdatedAt(data.updatedAt ?? new Date().toISOString());
       setCounts(data.counts ?? { buy: 0, sell: 0, hold: 0 });
@@ -79,8 +87,17 @@ export function NexusTrendingFeed({
       setError(null);
       onRefreshRef.current?.(list);
 
-      if (!didInitialSelect.current && list[0]) {
+      const sel = selectedAddressRef.current?.toLowerCase();
+      const match = sel
+        ? list.find((t) => t.tokenAddress.toLowerCase() === sel)
+        : null;
+
+      if (match) {
+        onSelectRef.current(match);
+      } else if (!didInitialSelect.current && list[0]) {
         didInitialSelect.current = true;
+        onSelectRef.current(list[0]);
+      } else if (list[0] && sel && !match) {
         onSelectRef.current(list[0]);
       }
     } catch (err) {
@@ -127,7 +144,7 @@ export function NexusTrendingFeed({
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-300" />
           <h3 className="text-sm font-medium text-white/80">
-            {tokens.length} tokens · refresh in {secondsLeft}s
+            {tokens.length} tokens · cycle #{feedCycle} · {secondsLeft}s
           </h3>
           {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />}
         </div>
@@ -146,8 +163,9 @@ export function NexusTrendingFeed({
       </div>
 
       {updatedAt && (
-        <p className="text-[11px] text-white/35">
-          Last updated {new Date(updatedAt).toLocaleTimeString()} · selection kept on refresh
+        <p className="text-[11px] text-white/50">
+          Updated {new Date(updatedAt).toLocaleTimeString()} · DexScreener rotates queries each refresh
+          {refreshing && <span className="ml-1 text-cyan-300"> · loading new tokens…</span>}
         </p>
       )}
 
@@ -222,13 +240,14 @@ export function NexusTrendingFeed({
               </div>
             )}
 
-            <div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-white/45">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-white/60 sm:grid-cols-4">
               <span>Vol {formatCompact(token.volume24h)}</span>
               <span>Liq {formatCompact(token.liquidityUsd)}</span>
-              <span>Snipers {token.intel?.sniperCount != null ? token.intel.sniperCount : "—"}</span>
-              <span>
-                Holders{" "}
-                {token.intel?.holderCount != null ? formatCompact(token.intel.holderCount) : "—"}
+              <span className="text-emerald-300/80">
+                Buys {token.txns24h?.buys ?? "—"} <span className="text-white/35">(Dex)</span>
+              </span>
+              <span className="text-rose-300/80">
+                Sells {token.txns24h?.sells ?? "—"} <span className="text-white/35">(Dex)</span>
               </span>
             </div>
           </motion.button>

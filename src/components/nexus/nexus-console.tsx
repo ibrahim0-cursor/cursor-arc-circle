@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
-import { Bot, CheckCircle2, Loader2, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
+import {
+  Bot,
+  Brain,
+  CheckCircle2,
+  Database,
+  Loader2,
+  Radio,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -17,10 +25,15 @@ import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
 import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
 import { NexusWalletScoreButton } from "@/components/nexus/nexus-wallet-score";
+import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
+import { NexusWalletBar } from "@/components/nexus/nexus-wallet-bar";
+import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
+import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import type { NexusDecision } from "@/lib/storage";
 
-const SAVED_SCANS_KEY = "nexus-saved-scans";
+const AGENT_MEMORY_KEY = "nexus-agent-memory";
+const SAVED_SCANS_KEY = AGENT_MEMORY_KEY;
 
 function persistSavedScans(decisions: NexusDecision[]) {
   try {
@@ -30,9 +43,18 @@ function persistSavedScans(decisions: NexusDecision[]) {
   }
 }
 
+const LEGACY_SAVED_SCANS_KEY = "nexus-saved-scans";
+
 function readSavedScansCache(): NexusDecision[] {
   try {
-    return JSON.parse(localStorage.getItem(SAVED_SCANS_KEY) ?? "[]") as NexusDecision[];
+    const raw = localStorage.getItem(SAVED_SCANS_KEY);
+    if (raw) return JSON.parse(raw) as NexusDecision[];
+    const legacy = localStorage.getItem(LEGACY_SAVED_SCANS_KEY);
+    if (!legacy) return [];
+    const parsed = JSON.parse(legacy) as NexusDecision[];
+    persistSavedScans(parsed);
+    localStorage.removeItem(LEGACY_SAVED_SCANS_KEY);
+    return parsed;
   } catch {
     return [];
   }
@@ -76,6 +98,7 @@ export function NexusConsole() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"live" | "saved">("live");
+  const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
 
   const loadSaved = useCallback(async () => {
     const res = await fetch(`/api/nexus/decisions?t=${Date.now()}`);
@@ -95,26 +118,37 @@ export function NexusConsole() {
 
   const liveDecision = selectedToken ? tokenToDecision(selectedToken) : null;
   const selectedSaved = savedDecisions.find((d) => d.id === selectedSavedId) ?? null;
-  const displayDecision = activeTab === "saved" && selectedSaved ? selectedSaved : liveDecision;
+  const displayDecision =
+    activeTab === "saved"
+      ? selectedSaved
+      : liveDecision ?? (selectedToken ? tokenToDecision(selectedToken) : null);
+
+  useEffect(() => {
+    if (activeTab === "saved" && savedDecisions.length > 0 && !selectedSavedId) {
+      setSelectedSavedId(savedDecisions[0].id);
+    }
+  }, [activeTab, savedDecisions, selectedSavedId]);
 
   const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
     setSelectedToken((prev) => {
-      if (!prev) return prev;
-      const updated = tokens.find(
-        (t) =>
-          t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
-          t.chainId === prev.chainId,
-      );
-      if (!updated) return prev;
+      const match = prev
+        ? tokens.find(
+            (t) =>
+              t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
+              t.chainId === prev.chainId,
+          )
+        : null;
+      const next = match ?? tokens[0] ?? prev;
+      if (!next) return prev;
       return {
-        ...updated,
+        ...next,
         intel: {
-          ...updated.intel,
-          holderCount: prev.intel?.holderCount ?? updated.intel?.holderCount,
-          sniperCount: prev.intel?.sniperCount ?? updated.intel?.sniperCount,
-          whaleCount: prev.intel?.whaleCount ?? updated.intel?.whaleCount,
-          insiderCount: prev.intel?.insiderCount ?? updated.intel?.insiderCount,
-          top10HolderPercent: prev.intel?.top10HolderPercent ?? updated.intel?.top10HolderPercent,
+          ...next.intel,
+          holderCount: prev?.intel?.holderCount ?? next.intel?.holderCount,
+          sniperCount: prev?.intel?.sniperCount ?? next.intel?.sniperCount,
+          whaleCount: prev?.intel?.whaleCount ?? next.intel?.whaleCount,
+          insiderCount: prev?.intel?.insiderCount ?? next.intel?.insiderCount,
+          top10HolderPercent: prev?.intel?.top10HolderPercent ?? next.intel?.top10HolderPercent,
         },
       };
     });
@@ -126,47 +160,26 @@ export function NexusConsole() {
     return { [selectedToken.tokenAddress.toLowerCase()]: selectedToken.priceUsd };
   }, [selectedToken?.tokenAddress, selectedToken?.priceUsd]);
 
-  useEffect(() => {
-    if (!selectedToken?.chainId || !selectedToken?.tokenAddress) return;
-    let cancelled = false;
-
-    (async () => {
-      const params = new URLSearchParams({
-        chainId: selectedToken.chainId,
-        address: selectedToken.tokenAddress,
-        buys: String(selectedToken.txns24h?.buys ?? 0),
-        sells: String(selectedToken.txns24h?.sells ?? 0),
-        volume: String(selectedToken.volume24h ?? 0),
-      });
-      const res = await fetch(`/api/nexus/token/detect?${params}&t=${Date.now()}`);
-      const data = await res.json();
-      if (cancelled || !res.ok || !data.summary?.birdeyeLive) return;
-
-      setSelectedToken((prev) => {
-        if (
-          !prev ||
-          prev.tokenAddress.toLowerCase() !== selectedToken.tokenAddress.toLowerCase()
-        ) {
-          return prev;
-        }
-        return {
-          ...prev,
-          intel: {
-            ...prev.intel,
-            holderCount: data.summary.holderCount,
-            sniperCount: data.summary.sniperCount,
-            whaleCount: data.summary.whaleCount,
-            insiderCount: data.summary.insiderCount,
-            top10HolderPercent: data.summary.top10Pct,
-          },
-        };
-      });
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedToken?.chainId, selectedToken?.tokenAddress, selectedToken?.txns24h?.buys, selectedToken?.txns24h?.sells, selectedToken?.volume24h]);
+  const handleBirdeyeIntel = useCallback((summary: {
+    holderCount?: number;
+    sniperCount?: number;
+    whaleCount?: number;
+    insiderCount?: number;
+    top10Pct?: number;
+  }) => {
+    setSelectedToken((prev) => {
+      if (!prev) return prev;
+      const { top10Pct, ...rest } = summary;
+      return {
+        ...prev,
+        intel: {
+          ...prev.intel,
+          ...rest,
+          top10HolderPercent: top10Pct ?? prev.intel?.top10HolderPercent,
+        },
+      };
+    });
+  }, []);
 
   async function runScan() {
     setScanning(true);
@@ -191,7 +204,9 @@ export function NexusConsole() {
       setSavedDecisions(merged);
       persistSavedScans(merged);
       if (merged[0]) setSelectedSavedId(merged[0].id);
-      setSuccessMsg(`Deep scan saved ${data.count ?? decisions.length} tokens with RSI/MACD + whale intel on Arc`);
+      setSuccessMsg(
+        `Agent Memory saved ${data.count ?? decisions.length} tokens — open Agent Memory tab`,
+      );
       setActiveTab("saved");
       await loadSaved();
     } catch (err) {
@@ -259,11 +274,130 @@ export function NexusConsole() {
     }
   }
 
+  const feedPanel = (
+    <Card className="border-white/10">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("live");
+              setSelectedSavedId(null);
+            }}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
+              activeTab === "live" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"
+            }`}
+          >
+            <Radio className="h-4 w-4" />
+            Live Feed
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("saved")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
+              activeTab === "saved" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"
+            }`}
+          >
+            <Database className="h-4 w-4" />
+            Memory ({savedDecisions.length})
+          </button>
+        </div>
+      </CardHeader>
+      <CardContent className="max-h-[70vh] space-y-4 overflow-y-auto pr-1 lg:max-h-[85vh]">
+        {activeTab === "live" ? (
+          <NexusTrendingFeed
+            selectedAddress={selectedToken?.tokenAddress}
+            onSelect={(t) => {
+              setSelectedToken(t);
+              setMobilePanel("chart");
+            }}
+            onTokensRefresh={handleFeedRefresh}
+          />
+        ) : savedDecisions.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
+            <Bot className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
+            Run <strong className="text-white/70">Memory Scan</strong> to store 20 token analyses on Arc.
+          </div>
+        ) : (
+          savedDecisions.map((decision) => (
+            <NexusDecisionCard
+              key={decision.id}
+              decision={{
+                ...decision,
+                chainId: decision.chainId ?? "unknown",
+                whyAction: decision.whyAction ?? decision.reasoning,
+                reasoningFactors: decision.reasoningFactors ?? [],
+                intel: decision.intel ?? {},
+              }}
+              selected={selectedSavedId === decision.id}
+              onSelect={() => {
+                setActiveTab("saved");
+                setSelectedSavedId(decision.id);
+                setSelectedToken({
+                  symbol: decision.symbol,
+                  name: decision.name ?? decision.symbol,
+                  tokenAddress: decision.token,
+                  chainId: decision.chainId,
+                  pairAddress: decision.pairAddress ?? "",
+                  priceUsd: decision.priceUsd,
+                  change24h: decision.change24h,
+                  volume24h: decision.volume24h ?? 0,
+                  liquidityUsd: decision.liquidityUsd ?? 0,
+                  icon: decision.icon,
+                  url: decision.dexUrl ?? "",
+                  intel: decision.intel,
+                  agent: {
+                    action: decision.action,
+                    confidence: decision.confidence,
+                    riskScore: decision.riskScore,
+                    reasoning: decision.reasoning,
+                    whyAction: decision.whyAction,
+                    reasoningFactors: decision.reasoningFactors,
+                  },
+                });
+                setMobilePanel("chart");
+              }}
+            />
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const chartPanel = (
+    <div className="space-y-3">
+      <NexusTokenChart chainId={selectedToken?.chainId} pairAddress={selectedToken?.pairAddress} />
+      {displayDecision && <NexusTokenDetail decision={displayDecision} />}
+      <NexusTAPanel technical={displayDecision?.technical ?? selectedToken?.intel?.technical} priceUsd={selectedToken?.priceUsd} />
+      <NexusTokenDetectPanel
+        chainId={selectedToken?.chainId}
+        tokenAddress={selectedToken?.tokenAddress}
+        symbol={selectedToken?.symbol}
+        txns24h={selectedToken?.txns24h}
+        volume24h={selectedToken?.volume24h}
+        onIntelUpdate={handleBirdeyeIntel}
+      />
+    </div>
+  );
+
+  const tradePanel = (
+    <div className="space-y-3">
+      <NexusDemoTradePanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
+      <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
+    </div>
+  );
+
+  const agentPanel = (
+    <div className="space-y-3">
+      <NexusAutopilotPanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
+    </div>
+  );
+
   return (
     <div className="relative min-h-screen text-white">
       <MeshBackground variant="nexus" />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:py-10">
+      <div className="relative mx-auto max-w-[1400px] px-4 py-6 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:py-10 lg:pb-10">
         <div className="mb-8 overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-6 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
@@ -273,22 +407,39 @@ export function NexusConsole() {
                   RSI · MACD · Whales
                 </Badge>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Full Crypto Intelligence</h1>
-              <p className="mt-3 text-white/60">
-                Live feed with <strong className="text-white">RSI, MACD, trend lines</strong>, sniper/whale/insider
-                detection, and AI <strong className="text-white">BUY · SELL · HOLD</strong> signals. Arc USDC fees (~$
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">Crypto Intelligence</h1>
+              <p className="mt-3 text-base leading-relaxed text-white/80">
+                Live feed with <strong className="font-semibold text-white">RSI, MACD, trend lines</strong>, sniper/whale/insider
+                detection, and AI <strong className="font-semibold text-white">BUY · SELL · HOLD</strong> signals. Arc USDC fees (~$
                 {feeUsd}/tx).
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <WalletConnectButton />
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <NexusWalletScoreButton />
-              <Button variant="outline" onClick={runScan} disabled={scanning || arcFeePending}>
-                {scanning || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Deep Scan (20)
+              <Button
+                variant="outline"
+                className="min-h-[44px] w-full gap-2 sm:w-auto"
+                onClick={runScan}
+                disabled={scanning || arcFeePending}
+              >
+                {scanning || arcFeePending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Database className="h-4 w-4" />
+                )}
+                Memory Scan
               </Button>
-              <Button variant="nexus" onClick={runDeepAnalyze} disabled={loading || arcFeePending || !selectedToken}>
-                {loading || arcFeePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              <Button
+                variant="nexus"
+                className="min-h-[44px] w-full gap-2 sm:w-auto"
+                onClick={runDeepAnalyze}
+                disabled={loading || arcFeePending || !selectedToken}
+              >
+                {loading || arcFeePending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Brain className="h-4 w-4" />
+                )}
                 AI Analyze
               </Button>
             </div>
@@ -311,7 +462,13 @@ export function NexusConsole() {
           </div>
         </div>
 
+        <div className="mb-4">
+          <NexusWalletBar />
+        </div>
         <ArcSettlementBanner txHash={lastArcFeeTx ?? undefined} />
+        <div className="mb-4">
+          <NexusIntegrationsBanner />
+        </div>
 
         {successMsg && (
           <div className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
@@ -325,96 +482,23 @@ export function NexusConsole() {
           </div>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-          <Card className="border-white/10">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("live")}
-                  className={`rounded-lg px-3 py-1.5 text-sm ${activeTab === "live" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"}`}
-                >
-                  Live Feed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("saved")}
-                  className={`rounded-lg px-3 py-1.5 text-sm ${activeTab === "saved" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"}`}
-                >
-                  Saved Scans ({savedDecisions.length})
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent className="max-h-[85vh] space-y-4 overflow-y-auto pr-1">
-              {activeTab === "live" ? (
-                <NexusTrendingFeed
-                  selectedAddress={selectedToken?.tokenAddress}
-                  onSelect={setSelectedToken}
-                  onTokensRefresh={handleFeedRefresh}
-                />
-              ) : savedDecisions.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
-                  <Bot className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
-                  Run <strong className="text-white/70">Deep Scan (20)</strong> to save full analysis on Arc.
-                </div>
-              ) : (
-                savedDecisions.map((decision) => (
-                  <NexusDecisionCard
-                    key={decision.id}
-                    decision={{
-                      ...decision,
-                      chainId: decision.chainId ?? "unknown",
-                      whyAction: decision.whyAction ?? decision.reasoning,
-                      reasoningFactors: decision.reasoningFactors ?? [],
-                      intel: decision.intel ?? {},
-                    }}
-                    selected={selectedSavedId === decision.id}
-                    onSelect={() => {
-                      setSelectedSavedId(decision.id);
-                      setSelectedToken({
-                        symbol: decision.symbol,
-                        name: decision.name ?? decision.symbol,
-                        tokenAddress: decision.token,
-                        chainId: decision.chainId,
-                        pairAddress: decision.pairAddress ?? "",
-                        priceUsd: decision.priceUsd,
-                        change24h: decision.change24h,
-                        volume24h: decision.volume24h ?? 0,
-                        liquidityUsd: decision.liquidityUsd ?? 0,
-                        icon: decision.icon,
-                        url: decision.dexUrl ?? "",
-                        intel: decision.intel,
-                        agent: {
-                          action: decision.action,
-                          confidence: decision.confidence,
-                          riskScore: decision.riskScore,
-                          reasoning: decision.reasoning,
-                          whyAction: decision.whyAction,
-                          reasoningFactors: decision.reasoningFactors,
-                        },
-                      });
-                    }}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
+        <div className="lg:hidden">
+          {mobilePanel === "feed" && feedPanel}
+          {mobilePanel === "chart" && chartPanel}
+          {mobilePanel === "trade" && tradePanel}
+          {mobilePanel === "agent" && agentPanel}
+        </div>
 
+        <div className="hidden gap-4 lg:grid lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+          {feedPanel}
           <div className="space-y-3">
-            <NexusTokenChart chainId={selectedToken?.chainId} pairAddress={selectedToken?.pairAddress} />
-            {displayDecision && <NexusTokenDetail decision={displayDecision} />}
-            <NexusTAPanel technical={displayDecision?.technical ?? selectedToken?.intel?.technical} priceUsd={selectedToken?.priceUsd} />
-            <NexusTokenDetectPanel
-              chainId={selectedToken?.chainId}
-              tokenAddress={selectedToken?.tokenAddress}
-              symbol={selectedToken?.symbol}
-              txns24h={selectedToken?.txns24h}
-              volume24h={selectedToken?.volume24h}
-            />
-            <NexusDemoTradePanel token={selectedToken} onTradeComplete={() => setPortfolioKey((k) => k + 1)} />
-            <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
+            {chartPanel}
+            {tradePanel}
+            {agentPanel}
           </div>
         </div>
+
+        <NexusMobileDock active={mobilePanel} onChange={setMobilePanel} />
       </div>
     </div>
   );

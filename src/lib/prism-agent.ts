@@ -97,30 +97,6 @@ async function aiPrediction(input: {
   const systemPrompt =
     "You are PRISM, a macro and geopolitical forecasting agent. Return strict JSON with keys: probability (0-100), confidence (0-100), kellyFraction (0-1), horizon (string), summary (1 sentence), reasoning (2 sentences), sources (array of short strings).";
 
-  if (anthropic) {
-    try {
-      const response = await anthropic.messages.create({
-        model: process.env.ANTHROPIC_MODEL ?? "claude-3-5-haiku-latest",
-        max_tokens: 800,
-        temperature: 0.2,
-        system: systemPrompt,
-        messages: [{ role: "user", content: payload }],
-      });
-
-      const textBlock = response.content.find((block) => block.type === "text");
-      const raw = textBlock?.type === "text" ? textBlock.text : "{}";
-      const parsed = parsePrismJson(raw, fallback);
-
-      return {
-        event: input.event,
-        category: input.category,
-        ...parsed,
-      };
-    } catch (error) {
-      console.warn("Anthropic unavailable, falling back:", error);
-    }
-  }
-
   if (openai) {
     try {
       const completion = await openai.chat.completions.create({
@@ -142,7 +118,31 @@ async function aiPrediction(input: {
         ...parsed,
       };
     } catch (error) {
-      console.warn("OpenAI unavailable for PRISM, using heuristic:", error);
+      console.warn("OpenAI unavailable for PRISM, trying Anthropic/heuristic:", error);
+    }
+  }
+
+  if (anthropic) {
+    try {
+      const response = await anthropic.messages.create({
+        model: process.env.ANTHROPIC_MODEL ?? "claude-3-5-haiku-latest",
+        max_tokens: 800,
+        temperature: 0.2,
+        system: systemPrompt,
+        messages: [{ role: "user", content: payload }],
+      });
+
+      const textBlock = response.content.find((block) => block.type === "text");
+      const raw = textBlock?.type === "text" ? textBlock.text : "{}";
+      const parsed = parsePrismJson(raw, fallback);
+
+      return {
+        event: input.event,
+        category: input.category,
+        ...parsed,
+      };
+    } catch (error) {
+      console.warn("Anthropic unavailable, falling back:", error);
     }
   }
 

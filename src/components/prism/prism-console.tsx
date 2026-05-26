@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Globe2, Loader2, Radar, Sparkles, Target } from "lucide-react";
+import { Globe2, Loader2, Radar, Sparkles, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MeshBackground } from "@/components/layout/mesh-background";
-import { truncateHash } from "@/lib/utils";
+import { formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
 
 type EventOption = {
@@ -16,19 +16,37 @@ type EventOption = {
   category: "macro" | "geopolitical" | "markets";
 };
 
+type GlobalMarket = {
+  btcPrice: number;
+  btcChange24h: number;
+  ethPrice: number;
+  ethChange24h: number;
+  totalMarketCapUsd: number;
+  marketCapChange24h: number;
+};
+
 export function PrismConsole() {
   const [events, setEvents] = useState<EventOption[]>([]);
   const [selected, setSelected] = useState<string>("fed-cut-june");
   const [customEvent, setCustomEvent] = useState("");
   const [predictions, setPredictions] = useState<PrismPrediction[]>([]);
   const [loading, setLoading] = useState(false);
-  const [latestIntel, setLatestIntel] = useState<{ gdelt: Array<{ title: string; source: string }>; news: Array<{ title: string; source: string }> } | null>(null);
+  const [market, setMarket] = useState<GlobalMarket | null>(null);
+  const [latestIntel, setLatestIntel] = useState<{
+    gdelt: Array<{ title: string; source: string }>;
+    news: Array<{ title: string; source: string }>;
+  } | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/prism/predictions");
-    setPredictions(await res.json());
-    const eventsRes = await fetch("/api/prism/events");
+    const [predRes, eventsRes, marketRes] = await Promise.all([
+      fetch("/api/prism/predictions"),
+      fetch("/api/prism/events"),
+      fetch("/api/market/global"),
+    ]);
+    setPredictions(await predRes.json());
     setEvents(await eventsRes.json());
+    const m = await marketRes.json();
+    if (m.btcPrice) setMarket(m);
   }, []);
 
   useEffect(() => {
@@ -56,45 +74,71 @@ export function PrismConsole() {
   return (
     <div className="relative min-h-screen text-white">
       <MeshBackground variant="prism" />
-      <div className="relative mx-auto max-w-7xl px-6 py-10">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="relative mx-auto max-w-7xl px-4 py-6 pb-12 sm:px-6 sm:py-10">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <Badge variant="prism">PRISM</Badge>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-              Macro & Geopolitical Oracle
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+              Macro Oracle
             </h1>
-            <p className="mt-2 max-w-2xl text-white/60">
-              GDELT crisis intelligence + live news + Claude reasoning → calibrated probabilities and Kelly sizing.
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base">
+              Live macro context + GDELT + news → clear probability &amp; Kelly size. Tap an event, hit Forecast.
             </p>
           </div>
-          <Button variant="prism" onClick={analyze} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <Button
+            variant="prism"
+            onClick={analyze}
+            disabled={loading}
+            className="min-h-[48px] w-full shrink-0 text-base sm:w-auto"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
             Generate Forecast
           </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="space-y-6">
+        {market && (
+          <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+            <MacroChip
+              label="BTC"
+              price={market.btcPrice}
+              change={market.btcChange24h}
+            />
+            <MacroChip label="ETH" price={market.ethPrice} change={market.ethChange24h} />
+            <MacroChip
+              label="Total cap"
+              price={market.totalMarketCapUsd}
+              change={market.marketCapChange24h}
+              compact
+            />
+            <div className="col-span-2 flex items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-100/80 sm:col-span-1">
+              CoinGecko · live
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+          <div className="space-y-4 sm:space-y-6">
             <Card className="border-violet-400/20">
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-lg font-medium">Event universe</h2>
+                  <h2 className="text-base font-semibold sm:text-lg">Choose event</h2>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2">
                 {events.map((event) => (
                   <button
                     key={event.id}
+                    type="button"
                     onClick={() => setSelected(event.id)}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                    className={`w-full min-h-[52px] rounded-xl border px-4 py-3 text-left transition active:scale-[0.99] ${
                       selected === event.id
-                        ? "border-violet-400/40 bg-violet-400/10"
-                        : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]"
+                        ? "border-violet-400/45 bg-violet-500/15"
+                        : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium text-white/90">{event.label}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-white sm:text-base">{event.label}</span>
                       <Badge variant="prism">{event.category}</Badge>
                     </div>
                   </button>
@@ -102,20 +146,20 @@ export function PrismConsole() {
                 <textarea
                   value={customEvent}
                   onChange={(e) => setCustomEvent(e.target.value)}
-                  placeholder="Or enter a custom macro / geopolitical event…"
-                  className="min-h-28 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-violet-400/40"
+                  placeholder="Or type your own event…"
+                  className="min-h-[88px] w-full rounded-xl border border-white/12 bg-black/25 px-4 py-3 text-base text-white outline-none placeholder:text-white/35 focus:border-violet-400/45"
                 />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <Radar className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-lg font-medium">Intelligence layer</h2>
+                  <h2 className="text-base font-semibold sm:text-lg">Intel feed</h2>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="max-h-[40vh] space-y-2 overflow-y-auto sm:max-h-none">
                 {(latestIntel?.gdelt ?? []).slice(0, 4).map((item, index) => (
                   <IntelRow key={`g-${index}`} source={item.source} title={item.title} />
                 ))}
@@ -123,36 +167,42 @@ export function PrismConsole() {
                   <IntelRow key={`n-${index}`} source={item.source} title={item.title} />
                 ))}
                 {!latestIntel && (
-                  <p className="text-sm text-white/50">Run a forecast to populate GDELT and NewsAPI signals.</p>
+                  <p className="py-4 text-center text-sm text-white/55">
+                    Tap <strong className="text-violet-200">Generate Forecast</strong> to load GDELT + news.
+                  </p>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          <div className="space-y-6">
-            <Card className="overflow-hidden border-violet-400/20">
+          <div className="space-y-4 sm:space-y-6">
+            <Card className="overflow-hidden border-violet-400/25">
               <CardContent className="p-0">
-                <div className="bg-gradient-to-br from-violet-500/20 via-amber-400/10 to-transparent p-8">
-                  <p className="text-sm uppercase tracking-[0.22em] text-violet-200/70">Latest probability</p>
-                  <div className="mt-4 flex items-end gap-4">
-                    <p className="text-7xl font-semibold leading-none">{latest?.probability ?? "—"}</p>
-                    <p className="pb-2 text-2xl text-white/50">{latest ? "%" : ""}</p>
+                <div className="bg-gradient-to-br from-violet-500/25 via-fuchsia-500/10 to-transparent p-6 sm:p-8">
+                  <p className="text-xs font-medium uppercase tracking-widest text-violet-200/80">
+                    Probability
+                  </p>
+                  <div className="mt-3 flex items-end gap-2">
+                    <p className="text-6xl font-bold leading-none sm:text-7xl">{latest?.probability ?? "—"}</p>
+                    {latest && <p className="pb-2 text-2xl text-white/50">%</p>}
                   </div>
-                  <p className="mt-4 max-w-xl text-lg text-white/75">{latest?.event ?? "Select an event to begin."}</p>
+                  <p className="mt-4 text-base leading-relaxed text-white/85 sm:text-lg">
+                    {latest?.event ?? "Select an event to start."}
+                  </p>
                   {latest && (
-                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <div className="mt-5 grid grid-cols-3 gap-2">
                       <MiniStat label="Confidence" value={`${latest.confidence}%`} />
-                      <MiniStat label="Kelly size" value={`${(latest.kellyFraction * 100).toFixed(1)}%`} />
+                      <MiniStat label="Kelly" value={`${(latest.kellyFraction * 100).toFixed(1)}%`} />
                       <MiniStat label="Horizon" value={latest.horizon} />
                     </div>
                   )}
                 </div>
                 {latest && (
-                  <div className="space-y-4 p-8">
-                    <p className="text-white/80">{latest.summary}</p>
-                    <p className="text-sm leading-7 text-white/60">{latest.reasoning}</p>
+                  <div className="space-y-3 p-5 sm:p-8">
+                    <p className="nexus-lead">{latest.summary}</p>
+                    <p className="text-sm leading-relaxed text-white/70 sm:text-base">{latest.reasoning}</p>
                     {latest.arcTxHash && (
-                      <p className="text-xs text-white/40">Arc anchor · {truncateHash(latest.arcTxHash)}</p>
+                      <p className="text-xs text-white/45">Arc · {truncateHash(latest.arcTxHash, 10, 8)}</p>
                     )}
                   </div>
                 )}
@@ -160,29 +210,29 @@ export function PrismConsole() {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <Globe2 className="h-5 w-5 text-violet-300" />
-                  <h2 className="text-lg font-medium">Prediction ledger</h2>
+                  <h2 className="text-base font-semibold sm:text-lg">History</h2>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="max-h-[50vh] space-y-3 overflow-y-auto">
                 {predictions.length === 0 ? (
-                  <p className="text-white/50">No forecasts yet.</p>
+                  <p className="text-sm text-white/55">No forecasts yet.</p>
                 ) : (
                   predictions.map((prediction, index) => (
                     <motion.div
                       key={prediction.id}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="rounded-2xl border border-white/10 bg-black/20 p-4"
+                      transition={{ delay: index * 0.02 }}
+                      className="rounded-xl border border-white/10 bg-black/25 p-4"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-medium text-white/90">{prediction.event}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium text-white">{prediction.event}</p>
                         <Badge variant="prism">{prediction.probability}%</Badge>
                       </div>
-                      <p className="mt-2 text-sm text-white/55">{prediction.summary}</p>
+                      <p className="mt-2 text-sm text-white/60 line-clamp-2">{prediction.summary}</p>
                     </motion.div>
                   ))
                 )}
@@ -195,20 +245,46 @@ export function PrismConsole() {
   );
 }
 
+function MacroChip({
+  label,
+  price,
+  change,
+  compact,
+}: {
+  label: string;
+  price: number;
+  change: number;
+  compact?: boolean;
+}) {
+  const up = change >= 0;
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-wider text-white/45">{label}</p>
+      <p className="mt-0.5 text-sm font-bold text-white sm:text-base">
+        {compact ? formatCompact(price) : `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+      </p>
+      <p className={`mt-0.5 flex items-center gap-0.5 text-xs font-medium ${up ? "text-emerald-300" : "text-rose-300"}`}>
+        {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+        {formatPct(change)}
+      </p>
+    </div>
+  );
+}
+
 function IntelRow({ source, title }: { source: string; title: string }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-white/35">{source}</p>
-      <p className="mt-1 text-sm text-white/75">{title}</p>
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-white/45">{source}</p>
+      <p className="mt-1 text-sm leading-snug text-white/85">{title}</p>
     </div>
   );
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">{label}</p>
-      <p className="mt-1 font-medium text-white">{value}</p>
+    <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wider text-white/45">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }

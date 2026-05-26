@@ -20,9 +20,5 @@ export function mirrorTestnetForSource(_sourceChain: string): DemoTradeNetworkId
   return "arc";
 }
 
-export function birdeyeChainFor(sourceChain: string) {
-  if (sourceChain === "solana") return "solana";
-  if (sourceChain === "base") return "base";
-  if (sourceChain === "arbitrum") return "arbitrum";
-  return "ethereum";
-}
+/** @deprecated use birdeyeChainFor from @/lib/birdeye-client */
+export { birdeyeChainFor } from "./birdeye-client";

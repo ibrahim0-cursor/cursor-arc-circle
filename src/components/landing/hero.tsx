@@ -9,69 +9,70 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export function LandingHero() {
   return (
-    <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-16">
+    <section className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-14">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
+        transition={{ duration: 0.6 }}
         className="max-w-4xl"
       >
-        <Badge className="mb-6">Agora Agents Hackathon · Circle × Arc</Badge>
-        <h1 className="text-5xl font-semibold leading-[1.02] tracking-tight text-white md:text-7xl">
-          Agents that trade.
-          <span className="block bg-gradient-to-r from-cyan-300 via-white to-violet-300 bg-clip-text text-transparent">
-            Oracles that predict.
+        <Badge variant="prism" className="mb-4">
+          Agora Agents · Circle × Arc
+        </Badge>
+        <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
+          ARC CIRCLE
+          <span className="mt-2 block bg-gradient-to-r from-violet-300 via-fuchsia-200 to-cyan-300 bg-clip-text text-3xl text-transparent sm:text-4xl md:text-5xl">
+            PRISM forecasts. NEXUS trades.
           </span>
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">
-          ARC CIRCLE ships two production-grade AI agents —{" "}
-          <strong className="text-white">NEXUS</strong> for testnet demo trading with live DexScreener + Birdeye feeds
-          and <strong className="text-white">PRISM</strong> for macro and geopolitical forecasting. All fees settle in
-          Arc USDC.
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
+          Mobile-friendly agent suite: <strong className="text-white">PRISM</strong> turns live macro news into
+          probabilities. <strong className="text-white">NEXUS</strong> gives clear BUY/SELL/HOLD with one-tap demo
+          trades on Arc (25% · 50% · 75% · MAX).
         </p>
-        <div className="mt-10 flex flex-wrap gap-4">
-          <Link href="/nexus">
-            <Button variant="nexus" size="lg">
-              Launch NEXUS <ArrowRight className="h-4 w-4" />
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link href="/prism" className="w-full sm:w-auto">
+            <Button variant="prism" size="lg" className="min-h-[48px] w-full text-base sm:w-auto">
+              Open PRISM <Sparkles className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/prism">
-            <Button variant="prism" size="lg">
-              Launch PRISM <Sparkles className="h-4 w-4" />
+          <Link href="/nexus" className="w-full sm:w-auto">
+            <Button variant="nexus" size="lg" className="min-h-[48px] w-full text-base sm:w-auto">
+              Open NEXUS <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
         </div>
       </motion.div>
 
-      <div className="mt-16 grid gap-6 md:grid-cols-3">
+      <div className="mt-12 grid gap-4 sm:grid-cols-3 sm:gap-6">
         {[
           {
+            icon: Sparkles,
+            title: "PRISM oracle",
+            copy: "GDELT + news + AI forecasts with Kelly sizing — built for mobile.",
+          },
+          {
             icon: LineChart,
-            title: "Real market intelligence",
-            copy: "DexScreener, GDELT, NewsAPI, and long-form AI reasoning stitched into one operator console.",
+            title: "Real market data",
+            copy: "DexScreener prices, CoinGecko macro, Birdeye intel — labeled so nothing looks fake.",
           },
           {
             icon: Shield,
-            title: "Arc + Circle settlement",
-            copy: "Demo trade trending tokens on testnet — buy, sell, swap back to Arc USDC with sub-second finality.",
-          },
-          {
-            icon: BrainCircuit,
-            title: "Built to win UI/UX",
-            copy: "Premium glass interface designed for judges, demo day, and live user traction in under two weeks.",
+            title: "Arc USDC fees",
+            copy: "Connect wallet, trade with % buttons, settle fees on Arc testnet.",
           },
         ].map((item, index) => (
           <motion.div
             key={item.title}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 * index, duration: 0.6 }}
+            transition={{ delay: 0.1 * index }}
           >
             <Card className="h-full">
-              <CardContent className="pt-6">
-                <item.icon className="mb-4 h-6 w-6 text-cyan-300" />
-                <h3 className="text-lg font-medium text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-white/55">{item.copy}</p>
+              <CardContent className="p-5 sm:pt-6">
+                <item.icon className="mb-3 h-6 w-6 text-violet-300" />
+                <h3 className="text-base font-semibold text-white sm:text-lg">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/65">{item.copy}</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -83,42 +84,57 @@ export function LandingHero() {
 
 export function ProductShowcase() {
   return (
-    <section className="mx-auto max-w-7xl px-6 pb-24">
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="overflow-hidden border-cyan-400/20 bg-gradient-to-br from-cyan-400/[0.08] to-transparent">
-          <CardContent className="p-8">
-            <Badge variant="nexus">NEXUS</Badge>
-            <h2 className="mt-4 text-3xl font-semibold text-white">Autonomous Trading Agent</h2>
-            <p className="mt-3 text-white/60">
-              Scans trending pairs, reasons over liquidity and momentum, and publishes BUY / SELL / HOLD
-              decisions with confidence, risk score, and Arc-anchored audit trails.
+    <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-24">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+        <Card className="order-1 overflow-hidden border-violet-400/25 bg-gradient-to-br from-violet-500/[0.12] to-transparent lg:order-1">
+          <CardContent className="p-6 sm:p-8">
+            <Badge variant="prism">Featured · PRISM</Badge>
+            <h2 className="mt-4 text-2xl font-semibold text-white sm:text-3xl">Macro & Geopolitical Oracle</h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/70 sm:text-base">
+              Pick Fed, oil, or custom events. See live BTC/ETH macro context, GDELT crisis signals, and calibrated
+              probabilities with shareable reasoning.
             </p>
-            <ul className="mt-6 space-y-3 text-sm text-white/70">
-              <li className="flex items-center gap-2"><Waves className="h-4 w-4 text-cyan-300" /> DexScreener live market feed</li>
-              <li className="flex items-center gap-2"><Waves className="h-4 w-4 text-cyan-300" /> OpenAI decision engine</li>
-              <li className="flex items-center gap-2"><Waves className="h-4 w-4 text-cyan-300" /> Circle agent wallet + Arc anchoring</li>
+            <ul className="mt-5 space-y-2.5 text-sm text-white/75">
+              <li className="flex items-center gap-2">
+                <Waves className="h-4 w-4 shrink-0 text-violet-300" /> CoinGecko + GDELT (free APIs)
+              </li>
+              <li className="flex items-center gap-2">
+                <Waves className="h-4 w-4 shrink-0 text-violet-300" /> OpenAI / Claude forecasts
+              </li>
+              <li className="flex items-center gap-2">
+                <Waves className="h-4 w-4 shrink-0 text-violet-300" /> Mobile-first forecast UI
+              </li>
             </ul>
-            <Link href="/nexus" className="mt-8 inline-block">
-              <Button variant="nexus">Open NEXUS Console</Button>
+            <Link href="/prism" className="mt-6 block sm:mt-8">
+              <Button variant="prism" className="min-h-[48px] w-full sm:w-auto">
+                Launch PRISM
+              </Button>
             </Link>
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-violet-400/20 bg-gradient-to-br from-violet-400/[0.08] to-transparent">
-          <CardContent className="p-8">
-            <Badge variant="prism">PRISM</Badge>
-            <h2 className="mt-4 text-3xl font-semibold text-white">Macro & Geopolitical Oracle</h2>
-            <p className="mt-3 text-white/60">
-              Synthesizes GDELT crisis signals and live news into calibrated probabilities, Kelly sizing,
-              and conviction cards for Fed, oil, conflict, and policy events.
+        <Card className="order-2 overflow-hidden border-cyan-400/20 bg-gradient-to-br from-cyan-400/[0.08] to-transparent">
+          <CardContent className="p-6 sm:p-8">
+            <Badge variant="nexus">NEXUS</Badge>
+            <h2 className="mt-4 text-2xl font-semibold text-white sm:text-3xl">Trading Agent</h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/70 sm:text-base">
+              Live feed, agent verdict, Birdeye intel when connected, and demo buy/sell with 25/50/75/MAX sizing.
             </p>
-            <ul className="mt-6 space-y-3 text-sm text-white/70">
-              <li className="flex items-center gap-2"><Waves className="h-4 w-4 text-violet-300" /> Claude long-reasoning forecasts</li>
-              <li className="flex items-center gap-2"><Waves className="h-4 w-4 text-violet-300" /> GDELT + NewsAPI intelligence layer</li>
-              <li className="flex items-center gap-2"><Waves className="h-4 w-4 text-violet-300" /> Shareable prediction ledger on Arc</li>
+            <ul className="mt-5 space-y-2.5 text-sm text-white/75">
+              <li className="flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 shrink-0 text-cyan-300" /> DexScreener live feed
+              </li>
+              <li className="flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 shrink-0 text-cyan-300" /> One-tap % trade sizing
+              </li>
+              <li className="flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 shrink-0 text-cyan-300" /> Arc fee + demo portfolio P&L
+              </li>
             </ul>
-            <Link href="/prism" className="mt-8 inline-block">
-              <Button variant="prism">Open PRISM Oracle</Button>
+            <Link href="/nexus" className="mt-6 block sm:mt-8">
+              <Button variant="nexus" className="min-h-[48px] w-full sm:w-auto">
+                Launch NEXUS
+              </Button>
             </Link>
           </CardContent>
         </Card>

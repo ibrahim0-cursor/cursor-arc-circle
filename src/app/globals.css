@@ -24,6 +24,46 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Touch-friendly tap targets on mobile */
+@media (max-width: 640px) {
+  button,
+  a.rounded-xl,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* NEXUS panels — higher contrast body copy */
+.nexus-panel-body {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: rgba(245, 247, 251, 0.92);
+}
+
+.nexus-lead {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: rgba(245, 247, 251, 0.95);
+}
+
+.nexus-muted {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(245, 247, 251, 0.72);
+}
+
+.nexus-caption {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(245, 247, 251, 0.55);
 }
 
 ::selection {

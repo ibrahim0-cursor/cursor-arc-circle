@@ -11,15 +11,9 @@ export function buildLocalTokenIntel(token: TrendingToken): TokenIntel {
     token.liquidityUsd,
   );
 
-  const buys = token.txns24h?.buys ?? 0;
-  const sells = token.txns24h?.sells ?? 0;
-
   return {
     marketCap: token.marketCap,
     fdv: token.fdv,
-    buy24h: buys,
-    sell24h: sells,
-    trade24h: buys + sells,
     technical: {
       rsi: ta.rsi,
       rsiSignal: ta.rsiSignal,

@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       mode: "live-agent-feed",
       settlement: "Arc Testnet USDC",
       updatedAt: new Date().toISOString(),
+      feedCycle: Math.floor(Date.now() / 45_000),
       refreshSeconds: 45,
       counts,
       tokens: feed,

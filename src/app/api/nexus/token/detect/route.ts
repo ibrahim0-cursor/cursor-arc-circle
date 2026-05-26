@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { fetchTokenDetection } from "@/lib/birdeye";
+import { hasBirdeyeKey } from "@/lib/birdeye-client";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,12 +19,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const detection = await fetchTokenDetection(address, chainId, {
-      buys: buys || undefined,
-      sells: sells || undefined,
-      volume24h: volume || undefined,
+    const detection = await fetchTokenDetection(address, chainId);
+    return NextResponse.json({
+      ...detection,
+      serverHasKey: hasBirdeyeKey(),
     });
-    return NextResponse.json(detection);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Detection failed" },

@@ -145,10 +145,29 @@ export async function fetchSwappableTokens(limit = 8, preferredChain?: string) {
     .slice(0, limit);
 }
 
-/** Trending tokens for demo trading — live DexScreener + optional Birdeye intel */
+function shuffleWithSeed<T>(items: T[], seed: number): T[] {
+  const arr = [...items];
+  let s = seed >>> 0;
+  for (let i = arr.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** Trending tokens for demo trading — live DexScreener, rotated queries each ~45s */
 export async function fetchTrendingMarketTokens(limit = 20) {
   const tokens: TrendingToken[] = [];
   const seen = new Set<string>();
+  const cycle = Math.floor(Date.now() / 45_000);
+  const querySets = [
+    ["trending", "volume", "hot"],
+    ["new", "launch", "surge"],
+    ["meme", "ai", "defi"],
+    ["usdc", "swap", "pair"],
+  ];
+  const queries = querySets[cycle % querySets.length];
 
   function addToken(token: TrendingToken | null) {
     if (!token || token.priceUsd <= 0) return;
@@ -162,10 +181,12 @@ export async function fetchTrendingMarketTokens(limit = 20) {
     fetch("https://api.dexscreener.com/token-boosts/top/v1", { cache: "no-store" }),
     fetch("https://api.dexscreener.com/token-boosts/latest/v1", { cache: "no-store" }),
     fetch("https://api.dexscreener.com/token-profiles/latest/v1", { cache: "no-store" }),
-    ...WALLET_SWAP_CHAINS.map((chain) =>
-      fetch(`https://api.dexscreener.com/latest/dex/search?q=${chain}%20trending`, {
-        cache: "no-store",
-      }),
+    ...WALLET_SWAP_CHAINS.flatMap((chain) =>
+      queries.map((q) =>
+        fetch(`https://api.dexscreener.com/latest/dex/search?q=${chain}%20${q}`, {
+          cache: "no-store",
+        }),
+      ),
     ),
   ];
 
@@ -192,9 +213,10 @@ export async function fetchTrendingMarketTokens(limit = 20) {
     }
   }
 
-  const sorted = tokens
-    .sort((a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd)
-    .slice(0, limit);
+  const sorted = shuffleWithSeed(
+    tokens.sort((a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd),
+    cycle,
+  ).slice(0, limit);
 
   return sorted.map((token) => ({
     ...token,

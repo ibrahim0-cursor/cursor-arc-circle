@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+  Brain,
   Crosshair,
   ExternalLink,
   Copy,
@@ -150,9 +151,44 @@ function Metric({
 }
 
 function ImpactIcon({ impact }: { impact: "bullish" | "bearish" | "neutral" }) {
-  if (impact === "bullish") return <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />;
-  if (impact === "bearish") return <TrendingDown className="h-3.5 w-3.5 text-rose-400" />;
-  return <Minus className="h-3.5 w-3.5 text-white/40" />;
+  if (impact === "bullish") return <TrendingUp className="h-4 w-4 text-emerald-400" />;
+  if (impact === "bearish") return <TrendingDown className="h-4 w-4 text-rose-400" />;
+  return <Minus className="h-4 w-4 text-white/50" />;
+}
+
+function FactorRow({
+  label,
+  detail,
+  impact,
+}: {
+  label: string;
+  detail: string;
+  impact: "bullish" | "bearish" | "neutral";
+}) {
+  const border =
+    impact === "bullish"
+      ? "border-l-emerald-400"
+      : impact === "bearish"
+        ? "border-l-rose-400"
+        : "border-l-white/25";
+  const bg =
+    impact === "bullish"
+      ? "bg-emerald-500/[0.06]"
+      : impact === "bearish"
+        ? "bg-rose-500/[0.06]"
+        : "bg-white/[0.04]";
+
+  return (
+    <div
+      className={`flex items-start gap-3 rounded-xl border border-white/8 border-l-[3px] px-3 py-2.5 ${border} ${bg}`}
+    >
+      <ImpactIcon impact={impact} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-white">{label}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-white/78">{detail}</p>
+      </div>
+    </div>
+  );
 }
 
 export function NexusTokenDetail({ decision }: { decision: NexusDecision | null }) {
@@ -172,35 +208,39 @@ export function NexusTokenDetail({ decision }: { decision: NexusDecision | null 
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-400/30 bg-gradient-to-r from-cyan-500/10 to-violet-500/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <Badge
             variant={decision.action === "BUY" ? "buy" : decision.action === "SELL" ? "sell" : "hold"}
           >
             {decision.action}
           </Badge>
-          <span className="text-sm font-medium">
+          <span className="text-base font-semibold text-white">
             {decision.symbol} · {formatUsd(decision.priceUsd)}
           </span>
         </div>
-        <span className="text-[11px] text-white/45">
-          {decision.confidence}% · risk {decision.riskScore}
+        <span className="text-xs font-medium text-white/75">
+          Confidence <span className="text-cyan-200">{decision.confidence}%</span>
+          <span className="mx-1.5 text-white/30">·</span>
+          Risk <span className="text-amber-200">{decision.riskScore}/100</span>
         </span>
       </div>
 
-      <NexusCollapsible label="Agent reasoning" hint={summaryHint}>
-        <p className="text-sm leading-6 text-white/75">{decision.whyAction ?? decision.reasoning}</p>
+      <NexusCollapsible
+        label="Agent reasoning"
+        hint={summaryHint}
+        variant="reasoning"
+        icon={Brain}
+        defaultOpen
+      >
+        <p className="nexus-lead rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] px-3 py-2.5">
+          {decision.whyAction ?? decision.reasoning}
+        </p>
         {factors.length > 0 && (
-          <div className="mt-2 space-y-1.5">
+          <div className="mt-3 space-y-2">
+            <p className="nexus-caption">Signal breakdown</p>
             {factors.map((f) => (
-              <div key={f.label} className="flex items-start justify-between gap-2 rounded-lg bg-white/[0.03] px-2 py-1.5 text-[11px]">
-                <div className="flex min-w-0 items-start gap-1.5">
-                  <ImpactIcon impact={f.impact} />
-                  <span className="text-white/75">
-                    <span className="font-medium">{f.label}</span> · {f.detail}
-                  </span>
-                </div>
-              </div>
+              <FactorRow key={f.label} label={f.label} detail={f.detail} impact={f.impact} />
             ))}
           </div>
         )}
