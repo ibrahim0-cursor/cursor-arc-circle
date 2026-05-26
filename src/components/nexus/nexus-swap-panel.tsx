@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import { ArrowDownUp, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { jupiterSwapUrl, zeroXSwapUrl } from "@/lib/dexscreener";
 import { evmChainId, isEvmChain } from "@/lib/swap";
+import { chainIdFromWallet } from "@/lib/swappable";
 import type { NexusDecision } from "@/lib/storage";
 
 export function NexusSwapPanel({ decision }: { decision: NexusDecision | null }) {
   const { address, isConnected } = useAccount();
+  const walletChainId = useChainId();
+  const walletChain = chainIdFromWallet(walletChainId);
   const [amount, setAmount] = useState("25");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [loading, setLoading] = useState(false);
@@ -76,6 +79,9 @@ export function NexusSwapPanel({ decision }: { decision: NexusDecision | null })
         : decision.dexUrl
     : "#";
 
+  const chainMismatch =
+    decision && walletChain && decision.chainId !== walletChain;
+
   return (
     <Card className="border-cyan-400/25 bg-gradient-to-b from-cyan-400/[0.06] to-transparent">
       <CardHeader>
@@ -134,7 +140,14 @@ export function NexusSwapPanel({ decision }: { decision: NexusDecision | null })
               />
             </div>
 
-            {isConnected ? (
+            {chainMismatch && (
+              <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+                Token is on <strong>{decision.chainId}</strong> but wallet is on{" "}
+                <strong>{walletChain}</strong>. Switch network in MetaMask to trade this token.
+              </p>
+            )}
+
+            {isConnected && !chainMismatch ? (
               <div className="space-y-2">
                 <Button variant="nexus" className="w-full" onClick={getQuote} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -153,7 +166,11 @@ export function NexusSwapPanel({ decision }: { decision: NexusDecision | null })
                 )}
               </div>
             ) : (
-              <p className="text-sm text-white/55">Connect wallet to quote and execute swaps.</p>
+              <p className="text-sm text-white/55">
+                {chainMismatch
+                  ? "Switch to the token chain to enable swap."
+                  : "Connect wallet to quote and execute swaps."}
+              </p>
             )}
 
             {error && <p className="text-sm text-rose-300">{error}</p>}

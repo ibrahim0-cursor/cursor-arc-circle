@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { randomUUID } from "crypto";
-import { fetchTrendingTokens, type TrendingToken } from "./dexscreener";
+import { fetchSwappableTokens, type TrendingToken } from "./dexscreener";
+import { checkSwappable } from "./swappable";
 import { fetchTokenIntel } from "./birdeye";
 import { anchorDecisionPayload } from "./arc";
 import {
@@ -227,6 +228,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
 }
 
 async function buildDecision(token: TrendingToken): Promise<NexusDecision> {
+  const swapCheck = checkSwappable(token);
   const intel = await enrichToken(token);
   const core = await aiDecision(token, intel);
   const payload = JSON.stringify({ product: "NEXUS", token: token.tokenAddress, ...core });
@@ -247,30 +249,41 @@ async function buildDecision(token: TrendingToken): Promise<NexusDecision> {
     volume24h: token.volume24h,
     liquidityUsd: token.liquidityUsd,
     intel,
+    swappable: swapCheck.ok,
+    swapCriteriaMet: swapCheck.reasons,
     ...core,
     arcTxHash: anchor.txHash,
     arcBlockNumber: anchor.blockNumber,
   };
 }
 
-export async function runNexusScan(limit = 5) {
-  const tokens = await fetchTrendingTokens(limit);
-  const decisions: NexusDecision[] = [];
+export async function runNexusScan(limit = 6, preferredChain?: string) {
+  const tokens = await fetchSwappableTokens(limit, preferredChain);
+  if (tokens.length === 0) {
+    throw new Error(
+      preferredChain
+        ? `No wallet-swappable tokens on ${preferredChain}. Try Base or Ethereum.`
+        : "No wallet-swappable tokens found matching liquidity criteria.",
+    );
+  }
 
-  for (const token of tokens.slice(0, limit)) {
+  const decisions: NexusDecision[] = [];
+  for (const token of tokens) {
     const decision = await buildDecision(token);
     await addNexusDecision(decision);
     decisions.push(decision);
   }
 
-  return { tokens, decisions };
+  return { tokens, decisions, criteria: preferredChain ?? "base|ethereum|arbitrum" };
 }
 
-export async function runNexusDecisionForSymbol(symbol: string) {
-  const tokens = await fetchTrendingTokens(20);
+export async function runNexusDecisionForSymbol(symbol: string, preferredChain?: string) {
+  const tokens = await fetchSwappableTokens(24, preferredChain);
   const token =
     tokens.find((item) => item.symbol.toLowerCase() === symbol.toLowerCase()) ?? tokens[0];
-  if (!token) throw new Error("No market data available");
+  if (!token) {
+    throw new Error("No swappable tokens available for your wallet chain");
+  }
 
   const decision = await buildDecision(token);
   await addNexusDecision(decision);

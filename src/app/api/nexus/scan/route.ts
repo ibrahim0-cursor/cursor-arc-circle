@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { runNexusScan } from "@/lib/nexus-agent";
+import { chainIdFromWallet } from "@/lib/swappable";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const result = await runNexusScan(5);
+    const body = (await request.json().catch(() => ({}))) as {
+      walletChainId?: number;
+      chain?: string;
+    };
+    const preferredChain =
+      body.chain ?? (body.walletChainId ? chainIdFromWallet(body.walletChainId) : undefined);
+
+    const result = await runNexusScan(6, preferredChain);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

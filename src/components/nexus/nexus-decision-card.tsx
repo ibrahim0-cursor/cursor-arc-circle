@@ -66,6 +66,11 @@ export function NexusDecisionCard({
               >
                 {decision.action}
               </Badge>
+              {decision.swappable !== false && (
+                <Badge variant="nexus" className="normal-case tracking-normal">
+                  Wallet swap
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-white/45">{decision.name ?? decision.chainId}</p>
           </div>
@@ -90,8 +95,8 @@ export function NexusDecisionCard({
           {copied ? <Check className="h-3 w-3 text-emerald-300" /> : <Copy className="h-3 w-3" />}
           {truncateHash(decision.token, 8, 6)}
         </button>
-        <span className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] uppercase text-white/45">
-          {decision.chainId}
+        <span className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1.5 text-[11px] text-emerald-200">
+          0x {decision.chainId}
         </span>
         {decision.dexUrl && (
           <a

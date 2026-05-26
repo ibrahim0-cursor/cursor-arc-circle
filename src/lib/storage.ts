@@ -45,7 +45,8 @@ export type NexusDecision = {
   arcTxHash?: string;
   arcBlockNumber?: number;
   volume24h?: number;
-  liquidityUsd?: number;
+  swappable?: boolean;
+  swapCriteriaMet?: string[];
 };
 
 export type PrismPrediction = {
