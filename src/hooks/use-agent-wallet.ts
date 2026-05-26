@@ -1,104 +1,106 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useBalance } from "wagmi";
-import { ARC_TESTNET_ID } from "@/lib/arc-chain";
+import { useAccount } from "wagmi";
 
-const STORAGE_KEY = "nexus-agent-wallet-v1";
+const STORAGE_KEY = "nexus-agent-wallet-v2";
 
 export type AgentWallet = {
-  walletId: string;
   address: string;
-  demo: boolean;
+  source: string;
+  configured: boolean;
+  balanceUsdc: number;
 };
 
-function readStored(): AgentWallet | null {
+function clearLegacyDemo() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AgentWallet;
+    const raw = localStorage.getItem("nexus-agent-wallet-v1");
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as { address?: string };
+    if (parsed.address?.startsWith("0xDemo")) {
+      localStorage.removeItem("nexus-agent-wallet-v1");
+      localStorage.removeItem(STORAGE_KEY);
+    }
   } catch {
-    return null;
+    /* ignore */
   }
 }
 
-function writeStored(wallet: AgentWallet) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(wallet));
-}
-
 export function useAgentWallet() {
+  const { address: owner } = useAccount();
   const [wallet, setWallet] = useState<AgentWallet | null>(null);
-  const [apiBalance, setApiBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { data: onChainBalance } = useBalance({
-    address: wallet?.address as `0x${string}` | undefined,
-    chainId: ARC_TESTNET_ID,
-    query: { enabled: Boolean(wallet?.address && !wallet.address.startsWith("0xDemo")) },
-  });
-
-  const refreshBalance = useCallback(async (w: AgentWallet) => {
-    try {
-      const res = await fetch(
-        `/api/circle/wallet?walletId=${encodeURIComponent(w.walletId)}`,
-        { cache: "no-store" },
-      );
-      const data = await res.json();
-      const list = data.balances ?? [];
-      const usdc = list.find(
-        (b: { currency?: string }) => (b.currency ?? "").toUpperCase() === "USDC",
-      );
-      if (usdc?.amount != null) {
-        setApiBalance(Number(usdc.amount));
-        return;
-      }
-    } catch {
-      /* fallback to on-chain */
-    }
-    setApiBalance(null);
-  }, []);
-
-  const ensureWallet = useCallback(async () => {
-    const stored = readStored();
-    if (stored) {
-      setWallet(stored);
-      await refreshBalance(stored);
-      setLoading(false);
-      return stored;
-    }
-
-    const res = await fetch("/api/circle/wallet", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok || !data.address) {
+  const refreshBalance = useCallback(async () => {
+    if (!owner) {
       setLoading(false);
       return null;
     }
 
-    const next: AgentWallet = {
-      walletId: data.walletId ?? `demo-${Date.now()}`,
-      address: data.address,
-      demo: Boolean(data.demo),
-    };
-    writeStored(next);
-    setWallet(next);
-    await refreshBalance(next);
-    setLoading(false);
-    return next;
-  }, [refreshBalance]);
+    clearLegacyDemo();
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/nexus/agent/vault?owner=${encodeURIComponent(owner)}`,
+        { cache: "no-store" },
+      );
+      const data = await res.json();
+      const next: AgentWallet = {
+        address: data.address ?? "",
+        source: data.source ?? "unconfigured",
+        configured: Boolean(data.configured && data.address),
+        balanceUsdc: Number(data.balanceUsdc ?? 0),
+      };
+      setWallet(next);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    } catch {
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [owner]);
+
+  const syncDeposits = useCallback(async () => {
+    if (!owner) throw new Error("Connect wallet first");
+    const res = await fetch("/api/nexus/agent/vault", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ owner, action: "sync" }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Sync failed");
+    await refreshBalance();
+    return data;
+  }, [owner, refreshBalance]);
+
+  const creditDepositTx = useCallback(
+    async (txHash: string) => {
+      if (!owner) throw new Error("Connect wallet first");
+      const res = await fetch("/api/nexus/agent/vault", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner, action: "credit_tx", txHash }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not verify deposit");
+      await refreshBalance();
+      return data;
+    },
+    [owner, refreshBalance],
+  );
 
   useEffect(() => {
-    void ensureWallet();
-  }, [ensureWallet]);
-
-  const usdcBalance =
-    apiBalance ??
-    (onChainBalance ? Number(onChainBalance.formatted) : wallet?.demo ? 0 : 0);
+    void refreshBalance();
+  }, [refreshBalance]);
 
   return {
     wallet,
     loading,
-    usdcBalance,
-    refreshBalance: () => (wallet ? refreshBalance(wallet) : Promise.resolve()),
-    ensureWallet,
+    usdcBalance: wallet?.balanceUsdc ?? 0,
+    refreshBalance,
+    syncDeposits,
+    creditDepositTx,
+    ensureWallet: refreshBalance,
   };
 }

@@ -1,5 +1,7 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import type { AgentVaultLedger } from "./agent-vault";
+import { emptyLedger } from "./agent-vault";
 import type { DemoPosition, DemoTradeRecord } from "./demo-trading";
 import { getSupabase } from "./supabase";
 
@@ -251,4 +253,64 @@ export async function saveDemoTrade(trade: DemoTradeRecord, walletPositions: Dem
   const others = all.filter((p) => p.wallet.toLowerCase() !== trade.wallet.toLowerCase());
   await writeJson("demo-positions.json", [...walletPositions, ...others].slice(0, 500));
   return trade;
+}
+
+type AgentVaultStore = {
+  ledgers: Record<string, AgentVaultLedger>;
+  lastScannedBlock?: string;
+};
+
+async function readVaultStore(): Promise<AgentVaultStore> {
+  return readJson<AgentVaultStore>("agent-vault-ledger.json", { ledgers: {} });
+}
+
+async function writeVaultStore(store: AgentVaultStore) {
+  await writeJson("agent-vault-ledger.json", store);
+}
+
+export async function getAgentVaultLedger(ownerWallet: string): Promise<AgentVaultLedger> {
+  const store = await readVaultStore();
+  const key = ownerWallet.toLowerCase();
+  return store.ledgers[key] ?? emptyLedger(ownerWallet);
+}
+
+export async function saveAgentVaultLedger(ledger: AgentVaultLedger) {
+  const store = await readVaultStore();
+  store.ledgers[ledger.ownerWallet.toLowerCase()] = ledger;
+  await writeVaultStore(store);
+  return ledger;
+}
+
+export async function creditAgentVault(
+  ownerWallet: string,
+  amountUsdc: number,
+  txHash: string,
+): Promise<AgentVaultLedger> {
+  const ledger = await getAgentVaultLedger(ownerWallet);
+  if (ledger.creditedTxHashes.includes(txHash.toLowerCase())) return ledger;
+
+  ledger.balanceUsdc += amountUsdc;
+  ledger.totalDeposited += amountUsdc;
+  ledger.creditedTxHashes.push(txHash.toLowerCase());
+  ledger.deposits.unshift({
+    txHash,
+    amountUsdc,
+    at: new Date().toISOString(),
+  });
+  ledger.updatedAt = new Date().toISOString();
+  return saveAgentVaultLedger(ledger);
+}
+
+export async function debitAgentVault(
+  ownerWallet: string,
+  amountUsdc: number,
+): Promise<AgentVaultLedger> {
+  const ledger = await getAgentVaultLedger(ownerWallet);
+  if (ledger.balanceUsdc < amountUsdc) {
+    throw new Error(`Insufficient agent vault balance (have $${ledger.balanceUsdc.toFixed(2)}, need $${amountUsdc.toFixed(2)})`);
+  }
+  ledger.balanceUsdc -= amountUsdc;
+  ledger.totalSpent += amountUsdc;
+  ledger.updatedAt = new Date().toISOString();
+  return saveAgentVaultLedger(ledger);
 }

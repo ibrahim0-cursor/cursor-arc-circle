@@ -207,25 +207,34 @@ export function NexusAutopilotPanel({
       else if (agent?.reasoning) setLastReasoning(agent.reasoning);
 
       const signal = t.agent ?? agent;
-      if (!signal) {
-        pushLog("No signal — skipped", "error");
-        return;
-      }
-      if (signal.confidence < cfg.minConfidence) {
-        pushLog(`Wait · ${signal.action} ${signal.confidence}% (need ${cfg.minConfidence}%)`, "info");
-        return;
-      }
+      const dcaBuy = cfg.mode === "buy_only";
 
       let side: "buy" | "sell" | null = null;
-      if (cfg.mode === "buy_only" && signal.action === "BUY") side = "buy";
-      else if (cfg.mode === "sell_only" && signal.action === "SELL") side = "sell";
-      else if (cfg.mode === "follow_agent") {
-        if (signal.action === "BUY") side = "buy";
-        if (signal.action === "SELL") side = "sell";
-      }
-      if (!side) {
-        pushLog(`Signal ${signal.action} — no trade`, "info");
+      if (dcaBuy) {
+        side = "buy";
+        setLastReasoning(
+          (prev) =>
+            prev ??
+            `Scheduled DCA buy · ${cfg.scheduleMode === "once" ? "one-time" : cfg.interval} · $${cfg.amountMode === "custom_usdc" ? cfg.customUsdc : "pct"} USDC`,
+        );
+      } else if (!signal) {
+        pushLog("No signal — skipped", "error");
         return;
+      } else {
+        if (signal.confidence < cfg.minConfidence) {
+          pushLog(`Wait · ${signal.action} ${signal.confidence}% (need ${cfg.minConfidence}%)`, "info");
+          return;
+        }
+        if (cfg.mode === "buy_only" && signal.action === "BUY") side = "buy";
+        else if (cfg.mode === "sell_only" && signal.action === "SELL") side = "sell";
+        else if (cfg.mode === "follow_agent") {
+          if (signal.action === "BUY") side = "buy";
+          if (signal.action === "SELL") side = "sell";
+        }
+        if (!side) {
+          pushLog(`Signal ${signal.action} — no trade`, "info");
+          return;
+        }
       }
 
       if (side === "buy" && !hasDeposit) {
@@ -251,8 +260,8 @@ export function NexusAutopilotPanel({
         t.priceUsd,
       );
 
-      if (side === "buy" && (!usdcAmount || usdcAmount < 0.5)) {
-        pushLog("Buy size too small — check deposit", "error");
+      if (side === "buy" && (!usdcAmount || usdcAmount < 0.05)) {
+        pushLog("Buy size too small (min $0.05 USDC) — check amount settings", "error");
         return;
       }
       if (side === "sell" && (!tokenAmount || tokenAmount <= 0)) {
@@ -274,12 +283,15 @@ export function NexusAutopilotPanel({
           tokenAmount,
           priceUsd: t.priceUsd,
           arcFeeTxHash: fee.txHash,
+          useAgentVault: side === "buy",
         }),
       });
       const tradeData = await tradeRes.json();
       if (!tradeRes.ok) throw new Error(tradeData.error ?? "Trade failed");
 
-      pushLog(`Auto ${side.toUpperCase()} · ${signal.action} ${signal.confidence}%`, "trade");
+      await refreshBalance();
+      const sigLabel = signal ? `${signal.action} ${signal.confidence}%` : "DCA schedule";
+      pushLog(`Auto ${side.toUpperCase()} · ${sigLabel} · vault $${(tradeData.agentBalanceUsdc ?? agentUsdc).toFixed(2)}`, "trade");
       toast({ type: "success", title: "Autopilot trade", message: `${side.toUpperCase()} ${t.symbol}` });
       onTradeComplete?.();
       if (cfg.scheduleMode === "once") {

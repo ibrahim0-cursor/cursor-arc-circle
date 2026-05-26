@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { applyDemoTrade, buildDemoQuote, type DemoTradeSide } from "@/lib/demo-trading";
 import { demoNetworkById, type DemoTradeNetworkId } from "@/lib/testnet-chains";
-import { getDemoPositions, saveDemoTrade } from "@/lib/storage";
+import { debitAgentVault, getAgentVaultLedger, getDemoPositions, saveDemoTrade } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       tokenAmount?: number;
       priceUsd: number;
       arcFeeTxHash: string;
+      useAgentVault?: boolean;
     };
 
     if (!body.wallet || !body.arcFeeTxHash) {
@@ -24,6 +25,22 @@ export async function POST(request: Request) {
     }
 
     demoNetworkById(body.tradeNetwork);
+
+    if (body.useAgentVault && body.side === "buy") {
+      const spend = body.usdcAmount ?? 0;
+      if (spend < 0.01) {
+        return NextResponse.json({ error: "Buy amount too small" }, { status: 400 });
+      }
+      const ledger = await getAgentVaultLedger(body.wallet);
+      if (ledger.balanceUsdc < spend) {
+        return NextResponse.json(
+          {
+            error: `Agent vault balance $${ledger.balanceUsdc.toFixed(2)} — deposit USDC on Arc Testnet and tap Sync deposits`,
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const positions = await getDemoPositions(body.wallet);
     const position = positions.find(
@@ -59,10 +76,17 @@ export async function POST(request: Request) {
     const { positions: nextPositions } = applyDemoTrade([...positions], trade);
     await saveDemoTrade(trade, nextPositions);
 
+    let agentBalanceUsdc: number | undefined;
+    if (body.useAgentVault && body.side === "buy") {
+      const debited = await debitAgentVault(body.wallet, trade.usdcAmount);
+      agentBalanceUsdc = debited.balanceUsdc;
+    }
+
     return NextResponse.json({
       trade,
       quote,
       positions: nextPositions,
+      agentBalanceUsdc,
       settlement: "Arc Testnet USDC",
       network: demoNetworkById(body.tradeNetwork).label,
     });

@@ -105,10 +105,10 @@ export function autopilotIntervalMs(config: AutopilotConfig): number {
 
 export function estimateRequiredUsdc(config: AutopilotConfig, balance: number): number {
   if (config.amountMode === "custom_usdc") {
-    return Math.max(0.5, Number(config.customUsdc) || 0) + 0.02;
+    return Math.max(0.05, Number(config.customUsdc) || 0) + 0.02;
   }
   if (config.amountMode === "percent") {
-    return Math.max(0.5, (balance * config.percent) / 100) + 0.02;
+    return Math.max(0.05, (balance * config.percent) / 100) + 0.02;
   }
-  return 0.52;
+  return 0.07;
 }
