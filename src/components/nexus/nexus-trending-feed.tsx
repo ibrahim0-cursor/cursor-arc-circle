@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
+  BarChart3,
   Bot,
   Flame,
   Loader2,
@@ -13,7 +14,9 @@ import {
   ShieldCheck,
   TrendingDown,
   TrendingUp,
+  Waves,
 } from "lucide-react";
+import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
@@ -51,11 +54,13 @@ export function NexusTrendingFeed({
   selectedAddress,
   onSelect,
   onTokensRefresh,
+  onOpenTrade,
   showAgent = true,
 }: {
   selectedAddress?: string;
   onSelect: (token: TrendingMarketToken) => void;
   onTokensRefresh?: (tokens: TrendingMarketToken[]) => void;
+  onOpenTrade?: (tab: "buy" | "sell" | "agent") => void;
   showAgent?: boolean;
 }) {
   const [tokens, setTokens] = useState<TrendingMarketToken[]>([]);
@@ -83,38 +88,73 @@ export function NexusTrendingFeed({
     selectedAddressRef.current = selectedAddress;
   }, [selectedAddress]);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await fetch(`/api/nexus/feed?limit=100&t=${Date.now()}`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load feed");
-      const list = (data.tokens ?? []) as TrendingMarketToken[];
-      const cycle = data.feedCycle ?? 0;
-      setFeedCycle(cycle);
-      setUpdatedAt(data.updatedAt ?? new Date().toISOString());
-      setCounts(data.counts ?? { buy: 0, sell: 0, hold: 0 });
-      setSecondsLeft(REFRESH_MS / 1000);
-      setError(null);
-
-      setTokens((prev) => {
-        const merged = mergeFeedTokens(prev, list, MAX_FEED);
-        onRefreshRef.current?.(merged);
-        return merged;
-      });
-
-      if (!userPickedRef.current && !didInitialPick.current && list[0]) {
-        didInitialPick.current = true;
-        onSelectRef.current(list[0]);
-      }
-    } catch (err) {
-      if (!silent) setError(err instanceof Error ? err.message : "Feed load failed");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const applyFeed = useCallback((list: TrendingMarketToken[], data: { feedCycle?: number; updatedAt?: string; counts?: typeof counts }) => {
+    setFeedCycle(data.feedCycle ?? 0);
+    setUpdatedAt(data.updatedAt ?? new Date().toISOString());
+    setCounts(data.counts ?? { buy: 0, sell: 0, hold: 0 });
+    setSecondsLeft(REFRESH_MS / 1000);
+    setError(null);
+    setTokens((prev) => {
+      const merged = mergeFeedTokens(prev, list, MAX_FEED);
+      onRefreshRef.current?.(merged);
+      return merged;
+    });
+    if (!userPickedRef.current && !didInitialPick.current && list[0]) {
+      didInitialPick.current = true;
+      onSelectRef.current(list[0]);
     }
   }, []);
+
+  const fetchFeed = useCallback(async (quick: boolean, timeoutMs: number) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const q = quick ? "&quick=1" : "";
+    const lim = quick ? 50 : 60;
+    try {
+      const res = await fetch(`/api/nexus/feed?limit=${lim}${q}&t=${Date.now()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load feed");
+      return { list: (data.tokens ?? []) as TrendingMarketToken[], data };
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
+
+  const load = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
+      try {
+        const { list, data } = await fetchFeed(true, 28_000);
+        applyFeed(list, data);
+        if (!silent) {
+          void (async () => {
+            try {
+              const full = await fetchFeed(false, 52_000);
+              applyFeed(full.list, full.data);
+            } catch {
+              /* keep quick feed */
+            }
+          })();
+        }
+      } catch (err) {
+        const msg =
+          err instanceof Error && err.name === "AbortError"
+            ? "Feed timed out — retry or check Vercel function limits"
+            : err instanceof Error
+              ? err.message
+              : "Feed load failed";
+        if (!silent) setError(msg);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [applyFeed, fetchFeed],
+  );
 
   useEffect(() => {
     load();
@@ -145,8 +185,12 @@ export function NexusTrendingFeed({
 
   if (error && tokens.length === 0) {
     return (
-      <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 p-6 text-sm text-rose-200">
-        {error}
+      <div className="space-y-3 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-6 text-sm text-rose-200">
+        <p>{error}</p>
+        <Button variant="outline" size="sm" onClick={() => load()}>
+          <RefreshCw className="mr-2 h-3.5 w-3.5" />
+          Retry feed
+        </Button>
       </div>
     );
   }
@@ -176,10 +220,12 @@ export function NexusTrendingFeed({
       </div>
 
       <p className="text-[11px] text-white/50">
-        New tokens merge in each refresh — your pick stays selected. Security scan on every token.
+        New tokens merge in each refresh — your pick stays selected. Tap <strong className="text-violet-200">Chat</strong> on
+        any token for help.
         {refreshing && <span className="ml-1 text-cyan-300"> Updating prices…</span>}
       </p>
 
+      <div className="max-h-[min(62vh,720px)] space-y-2 overflow-y-auto pr-1">
       {tokens.map((token) => {
         const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
         const agent = token.agent;
@@ -198,17 +244,18 @@ export function NexusTrendingFeed({
             }`}
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 {token.icon ? (
-                  <img src={token.icon} alt="" className="h-10 w-10 rounded-xl border border-white/10" />
+                  <img src={token.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white/10" />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
                     {token.symbol.slice(0, 2)}
                   </div>
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{token.symbol}</span>
+                    <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[32px] !px-2 !py-1" />
                     {agent && (
                       <Badge
                         variant={
@@ -274,15 +321,28 @@ export function NexusTrendingFeed({
               </div>
             )}
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-white/60 sm:grid-cols-4">
-              <span>Vol {formatCompact(token.volume24h)}</span>
-              <span>Liq {formatCompact(token.liquidityUsd)}</span>
-              <span className="text-emerald-300/80">Buys {token.txns24h?.buys ?? "—"}</span>
-              <span className="text-rose-300/80">Sells {token.txns24h?.sells ?? "—"}</span>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+              <span className="flex items-center gap-1 text-white/55">
+                <Waves className="h-3 w-3 text-cyan-300/70" />
+                Vol {formatCompact(token.volume24h)}
+              </span>
+              <span className="flex items-center gap-1 text-white/55">
+                <BarChart3 className="h-3 w-3 text-violet-300/70" />
+                Liq {formatCompact(token.liquidityUsd)}
+              </span>
+              <span className="flex items-center gap-1 font-medium text-emerald-300">
+                <TrendingUp className="h-3 w-3" />
+                Buys {token.txns24h?.buys ?? "—"}
+              </span>
+              <span className="flex items-center gap-1 font-medium text-rose-300">
+                <TrendingDown className="h-3 w-3" />
+                Sells {token.txns24h?.sells ?? "—"}
+              </span>
             </div>
           </motion.button>
         );
       })}
+      </div>
     </div>
   );
 }

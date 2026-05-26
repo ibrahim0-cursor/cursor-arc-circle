@@ -20,7 +20,12 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const walletId = new URL(request.url).searchParams.get("walletId");
+  if (walletId) {
+    const balances = await getCircleBalances(walletId);
+    return NextResponse.json(balances);
+  }
   const arc = await getArcStatus();
   const circle = await getCircleStatus();
   return NextResponse.json({ arc, circle });

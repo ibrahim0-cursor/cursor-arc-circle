@@ -288,11 +288,32 @@ function MacroChip({
   );
 }
 
+function sentimentFromTitle(title: string): "bullish" | "bearish" | "neutral" | "risk" {
+  const t = title.toLowerCase();
+  if (/crash|war|sanction|hack|collapse|fear|recession|downgrade|strike/i.test(t)) return "risk";
+  if (/surge|rally|record|approval|cut|stimulus|peace|deal|growth|beat/i.test(t)) return "bullish";
+  if (/drop|fall|selloff|inflation|hike|tightening|loss/i.test(t)) return "bearish";
+  return "neutral";
+}
+
 function IntelRow({ source, title }: { source: string; title: string }) {
+  const mood = sentimentFromTitle(title);
+  const styles = {
+    bullish: "border-emerald-400/30 bg-emerald-500/10",
+    bearish: "border-rose-400/30 bg-rose-500/10",
+    risk: "border-amber-400/35 bg-amber-500/12",
+    neutral: "border-violet-400/20 bg-violet-500/8",
+  };
+  const labels = { bullish: "Risk-on", bearish: "Risk-off", risk: "Headline risk", neutral: "Macro" };
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-white/45">{source}</p>
-      <p className="mt-1 text-sm leading-snug text-white/85">{title}</p>
+    <div className={`rounded-xl border px-3 py-2.5 ${styles[mood]}`}>
+      <div className="flex flex-wrap items-center justify-between gap-1">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-white/45">{source}</p>
+        <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">
+          {labels[mood]}
+        </span>
+      </div>
+      <p className="mt-1 text-sm leading-snug text-white/90">{title}</p>
     </div>
   );
 }

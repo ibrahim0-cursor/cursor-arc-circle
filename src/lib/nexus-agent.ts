@@ -494,12 +494,44 @@ async function aiFeedBatch(
   return out;
 }
 
+function finalizeFeedSignal(
+  token: TrendingToken,
+  intel: TokenIntel,
+  signal: AgentSignal,
+  security: ReturnType<typeof import("./token-security").scoreTokenSecurity>,
+) {
+  if (security.honeypotRisk && signal.action === "BUY") {
+    const factors = buildReasoningFactors(token, intel, "HOLD");
+    return {
+      ...signal,
+      action: "HOLD" as const,
+      confidence: Math.min(signal.confidence, 44),
+      whyAction: `Security block: ${security.label}. ${signal.whyAction}`,
+      riskScore: Math.max(signal.riskScore, 76),
+      reasoningFactors: factors,
+    };
+  }
+  return signal;
+}
+
+/** Fast path: heuristic + security only (no Groq batch) — loads in under 15s on Vercel */
+export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
+  const { scoreTokenSecurity } = await import("./token-security");
+  return tokens.map((token) => {
+    const intel = token.intel ?? buildLocalTokenIntel(token);
+    const security = scoreTokenSecurity(token, intel);
+    let signal = heuristicDecision(token, intel);
+    signal = finalizeFeedSignal(token, intel, signal, security);
+    return { token: { ...token, intel }, intel, signal, security };
+  });
+}
+
 /** Batch analyze trending tokens — unique scoring + AI on top-volume slice */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
   const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
   const cycle = Math.floor(Date.now() / 45_000);
-  const aiCap = getAiClient() ? 18 : 0;
+  const aiCap = getAiClient() ? 10 : 0;
   const aiMap = new Map<string, AgentSignal>();
 
   if (aiCap > 0) {
@@ -522,18 +554,7 @@ export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
       const key = token.tokenAddress.toLowerCase();
       let signal = aiMap.get(key) ?? heuristicDecision(token, intel);
       const security = scoreTokenSecurity(token, intel);
-      if (security.honeypotRisk && signal.action === "BUY") {
-        const factors = buildReasoningFactors(token, intel, "HOLD");
-        const { edge } = scoreFactorEdge(factors);
-        signal = {
-          ...signal,
-          action: "HOLD",
-          confidence: Math.min(signal.confidence, 44),
-          whyAction: `Security block: ${security.label}. ${signal.whyAction}`,
-          riskScore: Math.max(signal.riskScore, 76),
-          reasoningFactors: factors,
-        };
-      }
+      signal = finalizeFeedSignal(token, intel, signal, security);
       return { token: { ...token, intel }, intel, signal, security };
     }),
   );

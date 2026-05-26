@@ -191,7 +191,7 @@ export function NexusTokenDetectPanel({
       hint={`${symbol ?? "Token"} · ${flowBias} · ${sourceLabel}`}
       variant="intel"
       icon={Radar}
-      defaultOpen
+      defaultOpen={false}
     >
       <div className="space-y-3">
         <motion.div

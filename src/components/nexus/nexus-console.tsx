@@ -99,6 +99,12 @@ export function NexusConsole() {
   const [scanning, setScanning] = useState(false);
   const [activeTab, setActiveTab] = useState<"live" | "saved">("live");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
+  const [tradeTab, setTradeTab] = useState<"buy" | "sell" | "agent">("buy");
+  const [actionBanner, setActionBanner] = useState<{
+    title: string;
+    message: string;
+    type: "success" | "info";
+  } | null>(null);
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
   const [heroCompact, setHeroCompact] = useState(true);
 
@@ -165,9 +171,15 @@ export function NexusConsole() {
   }, []);
 
   const livePrices = useMemo(() => {
-    if (!selectedToken?.tokenAddress || selectedToken.priceUsd <= 0) return {};
-    return { [selectedToken.tokenAddress.toLowerCase()]: selectedToken.priceUsd };
-  }, [selectedToken?.tokenAddress, selectedToken?.priceUsd]);
+    const map: Record<string, number> = {};
+    for (const t of feedTokens) {
+      if (t.tokenAddress && t.priceUsd > 0) map[t.tokenAddress.toLowerCase()] = t.priceUsd;
+    }
+    if (selectedToken?.tokenAddress && selectedToken.priceUsd > 0) {
+      map[selectedToken.tokenAddress.toLowerCase()] = selectedToken.priceUsd;
+    }
+    return map;
+  }, [feedTokens, selectedToken?.tokenAddress, selectedToken?.priceUsd]);
 
   const handleBirdeyeIntel = useCallback((summary: {
     holderCount?: number;
@@ -215,10 +227,15 @@ export function NexusConsole() {
       setActiveTab("saved");
       setMobilePanel("feed");
       scrollToMobileContent();
+      setActionBanner({
+        type: "success",
+        title: "Memory scan complete",
+        message: `${count} tokens saved with Arc fee. Open Memory tab — tap any row for full report.`,
+      });
       toast({
         type: "success",
         title: "Memory scan complete",
-        message: `${count} tokens saved — view in Memory tab`,
+        message: `${count} tokens saved — Memory tab`,
       });
       await loadSaved();
     } catch (err) {
@@ -279,10 +296,15 @@ export function NexusConsole() {
       );
       setMobilePanel("chart");
       scrollToMobileContent();
+      setActionBanner({
+        type: "success",
+        title: `AI: ${agent.action} ${agent.confidence}%`,
+        message: (agent.whyAction ?? agent.reasoning)?.slice(0, 160) ?? "Deep report ready in chart panel.",
+      });
       toast({
         type: "success",
         title: "AI report generated",
-        message: `${agent.action} · ${agent.confidence}% confidence — view chart panel`,
+        message: `${agent.action} · ${agent.confidence}% — chart panel`,
       });
       if (data.saved && data.agent) {
         const saved = data.agent as NexusDecision;
@@ -339,6 +361,11 @@ export function NexusConsole() {
               scrollToMobileContent();
             }}
             onTokensRefresh={handleFeedRefresh}
+            onOpenTrade={(tab) => {
+              setTradeTab(tab);
+              setMobilePanel("trade");
+              scrollToMobileContent();
+            }}
           />
         ) : savedDecisions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
@@ -429,6 +456,8 @@ export function NexusConsole() {
       />
       <NexusTradeHub
         token={selectedToken}
+        activeTab={tradeTab}
+        onTabChange={setTradeTab}
         onTradeComplete={() => setPortfolioKey((k) => k + 1)}
       />
       <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
@@ -439,7 +468,7 @@ export function NexusConsole() {
     <div className="relative min-h-screen text-white" data-nexus-page>
       <MeshBackground variant="nexus" />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:py-10 lg:pb-10">
+      <div className="relative mx-auto max-w-[1400px] px-4 py-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:py-8 lg:pb-8">
         <div className="mb-4 overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-4 sm:mb-8 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
             <div className="max-w-2xl flex-1">
@@ -467,6 +496,7 @@ export function NexusConsole() {
               <Button
                 variant="outline"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
+                title="Pays Arc fee · scans 20 tokens · saves to Memory tab"
                 onClick={runScan}
                 disabled={scanning || arcFeePending}
               >
@@ -480,6 +510,7 @@ export function NexusConsole() {
               <Button
                 variant="nexus"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
+                title="Deep AI on selected token · saves report · opens chart"
                 onClick={runDeepAnalyze}
                 disabled={loading || arcFeePending || !selectedToken}
               >
@@ -514,6 +545,27 @@ export function NexusConsole() {
           <NexusWalletBar />
         </div>
         <ArcSettlementBanner txHash={lastArcFeeTx ?? undefined} />
+        {actionBanner && (
+          <div
+            className={`mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border px-4 py-3 ${
+              actionBanner.type === "success"
+                ? "border-emerald-400/35 bg-emerald-500/10"
+                : "border-cyan-400/35 bg-cyan-500/10"
+            }`}
+          >
+            <div>
+              <p className="text-sm font-semibold text-white">{actionBanner.title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-white/75">{actionBanner.message}</p>
+            </div>
+            <button
+              type="button"
+              className="text-xs text-white/50 underline"
+              onClick={() => setActionBanner(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         <div className="mb-4">
           <NexusIntegrationsBanner />
         </div>

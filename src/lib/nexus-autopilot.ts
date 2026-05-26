@@ -27,8 +27,11 @@ export const AUTOPILOT_INTERVALS: Record<
 
 export type AutopilotAmountMode = "percent" | "custom_usdc" | "custom_token";
 
+export type AutopilotScheduleMode = "recurring" | "once";
+
 export type AutopilotConfig = {
   enabled: boolean;
+  scheduleMode: AutopilotScheduleMode;
   interval: AutopilotInterval;
   customIntervalMinutes: string;
   percent: number;
@@ -55,6 +58,7 @@ const STORAGE_KEY = "nexus-autopilot-v2";
 export function defaultAutopilot(): AutopilotConfig {
   return {
     enabled: false,
+    scheduleMode: "recurring",
     interval: "15m",
     customIntervalMinutes: "60",
     percent: 25,
@@ -74,7 +78,10 @@ export function loadAutopilot(): AutopilotConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("nexus-autopilot-v1");
     if (!raw) return defaultAutopilot();
-    return { ...defaultAutopilot(), ...JSON.parse(raw) };
+    const merged = { ...defaultAutopilot(), ...JSON.parse(raw) } as AutopilotConfig;
+    if (!merged.scheduleMode) merged.scheduleMode = "recurring";
+    if (merged.minConfidence < 50 || merged.minConfidence > 95) merged.minConfidence = 55;
+    return merged;
   } catch {
     return defaultAutopilot();
   }

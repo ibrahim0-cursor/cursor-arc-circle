@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAccount, useBalance } from "wagmi";
-import { ARC_TESTNET_ID } from "@/lib/arc-chain";
+import { useAccount } from "wagmi";
+import { useAgentWallet } from "@/hooks/use-agent-wallet";
+import type { NexusAgentRuntime } from "@/components/nexus/nexus-agent-context";
 import {
   AutopilotAmountMode,
   AUTOPILOT_INTERVALS,
@@ -17,7 +18,6 @@ import {
 } from "@/lib/nexus-autopilot";
 import {
   Bot,
-  Brain,
   Calendar,
   ChevronDown,
   ChevronUp,
@@ -25,7 +25,6 @@ import {
   Coins,
   DollarSign,
   Loader2,
-  Pause,
   Percent,
   Play,
   Settings2,
@@ -34,13 +33,12 @@ import {
   Timer,
   TrendingDown,
   TrendingUp,
-  Wallet,
-  XCircle,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
+import { NexusExecutionPanel } from "@/components/nexus/nexus-execution-panel";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
 const PCT_OPTIONS = [25, 50, 75, 100] as const;
@@ -63,23 +61,26 @@ export function NexusAutopilotPanel({
   token,
   onTradeComplete,
   embedded = false,
+  onRuntimeChange,
 }: {
   token: TrendingMarketToken | null;
   onTradeComplete?: () => void;
   embedded?: boolean;
+  onRuntimeChange?: (runtime: NexusAgentRuntime) => void;
 }) {
   const toast = useToast();
   const { address, isConnected } = useAccount();
-  const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
+  const { usdcBalance: agentUsdc, refreshBalance } = useAgentWallet();
   const { payArcFee, ensureArcNetwork, isPending: arcPending } = useArcSettlement();
   const [config, setConfig] = useState<AutopilotConfig>(() => loadAutopilot());
   const [logs, setLogs] = useState<AutopilotLog[]>([]);
   const [lastReasoning, setLastReasoning] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [nextIn, setNextIn] = useState(0);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(true);
   const [resolvedToken, setResolvedToken] = useState<TrendingMarketToken | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedRef = useRef(false);
   const configRef = useRef(config);
   const tokenRef = useRef(token);
   const resolvedRef = useRef(resolvedToken);
@@ -94,9 +95,8 @@ export function NexusAutopilotPanel({
     resolvedRef.current = resolvedToken;
   }, [resolvedToken]);
 
-  const usdcBalance = Number(balance?.formatted ?? 0);
-  const requiredUsdc = estimateRequiredUsdc(config, usdcBalance);
-  const hasDeposit = usdcBalance >= requiredUsdc;
+  const requiredUsdc = estimateRequiredUsdc(config, agentUsdc);
+  const hasDeposit = agentUsdc >= requiredUsdc;
 
   const persist = useCallback((next: AutopilotConfig) => {
     setConfig(next);
@@ -166,7 +166,7 @@ export function NexusAutopilotPanel({
         if (cfg.amountMode === "custom_token" && cfg.customAmountUnit === "usdc") {
           return { usdcAmount: Math.max(0, Number(cfg.customToken) || 0) };
         }
-        const avail = Math.max(0, usdcBalance - 0.02);
+        const avail = Math.max(0, agentUsdc - 0.02);
         return { usdcAmount: Math.max(0.5, (avail * cfg.percent) / 100) };
       }
       if (cfg.amountMode === "custom_token") {
@@ -178,7 +178,7 @@ export function NexusAutopilotPanel({
       }
       return { tokenAmount: (positionAmount * cfg.percent) / 100 };
     },
-    [usdcBalance],
+    [agentUsdc],
   );
 
   const runCycle = useCallback(async () => {
@@ -229,7 +229,8 @@ export function NexusAutopilotPanel({
       }
 
       if (side === "buy" && !hasDeposit) {
-        pushLog(`Need ~$${requiredUsdc.toFixed(2)} USDC on Arc — deposit first`, "error");
+        pushLog(`Need ~$${requiredUsdc.toFixed(2)} USDC in agent vault — deposit first`, "error");
+        void refreshBalance();
         return;
       }
 
@@ -281,6 +282,10 @@ export function NexusAutopilotPanel({
       pushLog(`Auto ${side.toUpperCase()} · ${signal.action} ${signal.confidence}%`, "trade");
       toast({ type: "success", title: "Autopilot trade", message: `${side.toUpperCase()} ${t.symbol}` });
       onTradeComplete?.();
+      if (cfg.scheduleMode === "once") {
+        persist({ ...configRef.current, enabled: false });
+        pushLog("One-time run complete — agent stopped", "info");
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Autopilot failed";
       pushLog(msg, "error");
@@ -299,18 +304,43 @@ export function NexusAutopilotPanel({
     requiredUsdc,
     resolveAmounts,
     toast,
+    refreshBalance,
   ]);
+
+  const stopAgent = useCallback(() => {
+    persist({ ...configRef.current, enabled: false });
+    pushLog("Stopped from Execution tab", "info");
+    toast({ type: "success", title: "Agent stopped", message: "Recurring trades paused" });
+  }, [persist, pushLog, toast]);
+
+  const displaySymbol =
+    config.amountMode === "custom_token" && config.customTokenAddress
+      ? config.customTokenSymbol || "Custom"
+      : token?.symbol ?? "—";
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     const t = activeToken();
     if (!config.enabled || !t || !isConnected) {
       setNextIn(0);
+      startedRef.current = false;
+      return;
+    }
+
+    if (config.scheduleMode === "once") {
+      if (!startedRef.current) {
+        startedRef.current = true;
+        void runCycle();
+      }
       return;
     }
 
     const ms = autopilotIntervalMs(config);
-    setNextIn(Math.floor(ms / 1000));
+    if (!startedRef.current) {
+      startedRef.current = true;
+      setNextIn(Math.floor(ms / 1000));
+      void runCycle();
+    }
 
     const tick = setInterval(() => {
       setNextIn((s) => {
@@ -324,63 +354,70 @@ export function NexusAutopilotPanel({
 
     timerRef.current = tick;
     return () => clearInterval(tick);
-  }, [config.enabled, config.interval, config.customIntervalMinutes, token, resolvedToken, isConnected, runCycle, activeToken, config]);
+  }, [config.enabled, config.scheduleMode, config.interval, config.customIntervalMinutes, token, resolvedToken, isConnected, runCycle, activeToken, config]);
+
+  useEffect(() => {
+    onRuntimeChange?.({
+      enabled: config.enabled,
+      nextIn,
+      running,
+      logs,
+      lastReasoning,
+      displaySymbol,
+      stop: stopAgent,
+      runNow: () => void runCycle(),
+    });
+  }, [
+    config.enabled,
+    nextIn,
+    running,
+    logs,
+    lastReasoning,
+    displaySymbol,
+    stopAgent,
+    runCycle,
+    onRuntimeChange,
+  ]);
 
   useEffect(() => {
     if (token) persist({ ...config, tokenKey: tokenKey(token.chainId, token.tokenAddress) });
   }, [token?.tokenAddress, token?.chainId]);
 
-  const displaySymbol =
-    config.amountMode === "custom_token" && config.customTokenAddress
-      ? config.customTokenSymbol || "Custom"
-      : token?.symbol ?? "—";
-
   const inner = (
     <div className="space-y-3">
-      {config.enabled && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-rose-400/40 bg-rose-500/15 px-3 py-2.5">
-          <span className="flex items-center gap-2 text-sm font-semibold text-rose-100">
-            <Bot className="h-4 w-4 animate-pulse" />
-            Agent running · next in {nextIn}s
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              persist({ ...config, enabled: false });
-              pushLog("Cancelled by user", "info");
-              toast({ type: "success", title: "Autopilot cancelled", message: "Scheduled trades stopped" });
-            }}
-            className="inline-flex items-center gap-1 rounded-lg border border-rose-400/50 bg-black/30 px-3 py-1.5 text-xs font-bold text-rose-100"
-          >
-            <XCircle className="h-3.5 w-3.5" />
-            Cancel
-          </button>
-        </div>
-      )}
-
       {!token && config.amountMode !== "custom_token" ? (
         <p className="text-sm text-white/55">Select a token from the feed, or use Custom Token mode.</p>
       ) : (
         <>
-          <p className="text-xs leading-relaxed text-white/70">
-            <Shield className="mr-1 inline h-3.5 w-3.5 text-cyan-300" />
-            Demo trades only — deposit USDC on Arc first. Agent pays ~$0.01 fee txs; no withdrawals from your wallet.
-          </p>
+          <NexusExecutionPanel compact />
 
-          <div
-            className={`rounded-xl border px-3 py-2.5 ${
-              hasDeposit ? "border-emerald-400/30 bg-emerald-500/10" : "border-amber-400/30 bg-amber-500/10"
-            }`}
-          >
-            <p className="flex items-center gap-2 text-sm font-semibold text-white">
-              <Wallet className="h-4 w-4 text-cyan-200" />
-              Balance {usdcBalance.toFixed(2)} USDC
-            </p>
-            <p className="mt-1 text-xs text-white/60">
-              {hasDeposit
-                ? `Ready · ~$${requiredUsdc.toFixed(2)} needed per buy cycle`
-                : `Deposit at least ~$${requiredUsdc.toFixed(2)} USDC on Arc Testnet to start`}
-            </p>
+          <p className="nexus-caption flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" />
+            Run mode
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => persist({ ...config, scheduleMode: "recurring" })}
+              className={`min-h-[44px] rounded-xl border text-xs font-bold ${
+                config.scheduleMode === "recurring"
+                  ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
+                  : "border-white/10 text-white/55"
+              }`}
+            >
+              Recurring schedule
+            </button>
+            <button
+              type="button"
+              onClick={() => persist({ ...config, scheduleMode: "once" })}
+              className={`min-h-[44px] rounded-xl border text-xs font-bold ${
+                config.scheduleMode === "once"
+                  ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                  : "border-white/10 text-white/55"
+              }`}
+            >
+              One-time trade
+            </button>
           </div>
 
           <p className="nexus-caption flex items-center gap-1.5">
@@ -548,7 +585,7 @@ export function NexusAutopilotPanel({
           >
             <span className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-violet-300" />
-              Advanced (optional)
+              Trade rules (AI mode & confidence)
             </span>
             {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
@@ -556,10 +593,11 @@ export function NexusAutopilotPanel({
           {advancedOpen && (
             <div className="space-y-2 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
               <p className="text-[11px] text-white/55">
-                Only trade when AI confidence is at least this % (default 55).
+                Minimum AI confidence to execute (recommended <strong className="text-white">55</strong>).
               </p>
               <input
                 inputMode="numeric"
+                placeholder="55"
                 value={String(config.minConfidence)}
                 onChange={(e) =>
                   persist({
@@ -569,6 +607,9 @@ export function NexusAutopilotPanel({
                 }
                 className="w-full min-h-[44px] rounded-xl border border-white/15 bg-black/30 px-3 text-white"
               />
+              {config.minConfidence < 55 && (
+                <p className="text-[10px] text-amber-200/90">Below 55% — more trades, higher risk.</p>
+              )}
               <div className="grid grid-cols-3 gap-2">
                 {(
                   [
@@ -595,79 +636,58 @@ export function NexusAutopilotPanel({
             </div>
           )}
 
-          {lastReasoning && (
-            <div className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-2.5">
-              <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-violet-200/80">
-                <Brain className="h-3.5 w-3.5" />
-                Latest reasoning · {displaySymbol}
-              </p>
-              <p className="text-xs leading-relaxed text-white/80">{lastReasoning}</p>
-            </div>
-          )}
-
           <div className="flex gap-2">
             <Button
-              variant={config.enabled ? "outline" : "nexus"}
+              variant="nexus"
               className="min-h-[48px] flex-1 gap-2"
-              disabled={!isConnected || running || arcPending || (!hasDeposit && !config.enabled)}
+              disabled={
+                !isConnected ||
+                running ||
+                arcPending ||
+                config.enabled ||
+                !hasDeposit
+              }
               onClick={() => {
-                if (!config.enabled && !hasDeposit) {
+                if (!hasDeposit) {
                   toast({
                     type: "error",
-                    title: "Deposit USDC first",
-                    message: `Need ~$${requiredUsdc.toFixed(2)} on Arc Testnet`,
+                    title: "Deposit to agent vault",
+                    message: `Need ~$${requiredUsdc.toFixed(2)} USDC on agent address (Execution tab)`,
                   });
                   return;
                 }
-                const next = { ...config, enabled: !config.enabled };
+                const next = { ...config, enabled: true };
                 persist(next);
-                if (next.enabled) {
-                  toast({
-                    type: "success",
-                    title: "Autopilot started",
-                    message: `Runs every ${config.interval === "custom" ? `${config.customIntervalMinutes}m` : AUTOPILOT_INTERVALS[config.interval as keyof typeof AUTOPILOT_INTERVALS]?.label}`,
-                  });
-                }
-                pushLog(next.enabled ? "Agent LIVE" : "Paused", "info");
+                startedRef.current = false;
+                toast({
+                  type: "success",
+                  title: "Agent running",
+                  message: `Executing ${displaySymbol} now, then every ${
+                    config.interval === "custom"
+                      ? `${config.customIntervalMinutes}m`
+                      : AUTOPILOT_INTERVALS[config.interval as keyof typeof AUTOPILOT_INTERVALS]?.label
+                  }`,
+                });
+                pushLog("Run Agent — immediate trade + schedule", "info");
               }}
             >
               {running || arcPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : config.enabled ? (
-                <Pause className="h-4 w-4" />
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              {config.enabled ? "Pause" : "Start Agent"}
+              {config.enabled ? "Agent running…" : "Run Agent"}
             </Button>
             <Button
               variant="outline"
               className="min-h-[48px] px-4"
-              disabled={!isConnected || running}
+              disabled={!isConnected || running || config.enabled}
               onClick={() => runCycle()}
+              title="One-shot without schedule"
             >
               <Zap className="h-4 w-4" />
             </Button>
           </div>
-
-          {logs.length > 0 && (
-            <div className="max-h-36 space-y-1 overflow-y-auto rounded-xl border border-white/8 bg-black/25 p-2">
-              {logs.map((log, i) => (
-                <p
-                  key={log.at + i}
-                  className={`text-[11px] ${
-                    log.type === "trade"
-                      ? "text-emerald-300"
-                      : log.type === "error"
-                        ? "text-rose-300"
-                        : "text-white/55"
-                  }`}
-                >
-                  {new Date(log.at).toLocaleTimeString()} — {log.message}
-                </p>
-              ))}
-            </div>
-          )}
         </>
       )}
     </div>

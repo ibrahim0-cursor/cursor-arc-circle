@@ -121,17 +121,24 @@ export function NexusPortfolio({
         {trades.length > 0 && (
           <div className="border-t border-white/8 pt-2">
             <p className="mb-1.5 text-[10px] uppercase tracking-wider text-white/35">Recent</p>
-            {trades.slice(0, 5).map((t) => (
+            {trades.slice(0, 8).map((t) => {
+              const isBuy = t.side === "buy";
+              return (
               <div
                 key={t.id}
-                className="flex items-center justify-between gap-2 py-1 text-[10px] text-white/55"
+                className={`flex items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-[10px] ${
+                  isBuy
+                    ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-100"
+                    : "border-rose-400/25 bg-rose-500/10 text-rose-100"
+                }`}
               >
-                <span className="capitalize">
-                  {t.side.replace("_", " ")} {t.symbol}
+                <span className="font-semibold capitalize">
+                  {isBuy ? "BUY" : "SELL"} {t.symbol}
+                  {t.usdcAmount != null && isBuy && ` · ${formatUsd(t.usdcAmount)}`}
                   {t.pnlUsd != null && (
-                    <span className={t.pnlUsd >= 0 ? " text-emerald-300" : " text-rose-300"}>
+                    <span className={t.pnlUsd >= 0 ? " text-emerald-200" : " text-rose-200"}>
                       {" "}
-                      · {formatUsd(t.pnlUsd)}
+                      P&L {formatUsd(t.pnlUsd)}
                     </span>
                   )}
                 </span>
@@ -146,7 +153,8 @@ export function NexusPortfolio({
                   </a>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

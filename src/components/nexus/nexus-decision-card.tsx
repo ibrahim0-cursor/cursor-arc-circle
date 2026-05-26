@@ -231,7 +231,7 @@ export function NexusTokenDetail({ decision }: { decision: NexusDecision | null 
         hint={summaryHint}
         variant="reasoning"
         icon={Brain}
-        defaultOpen
+        defaultOpen={false}
       >
         <p className="nexus-lead rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] px-3 py-2.5">
           {decision.whyAction ?? decision.reasoning}
