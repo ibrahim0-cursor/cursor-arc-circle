@@ -7,11 +7,28 @@ import { NexusWalletScoreButton } from "@/components/nexus/nexus-wallet-score";
 import { ARC_TESTNET_ID, arcExplorerAddress } from "@/lib/arc-chain";
 import { truncateHash } from "@/lib/utils";
 
-export function NexusWalletBar() {
+export function NexusWalletBar({ compact = false }: { compact?: boolean }) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
   const onArc = chainId === ARC_TESTNET_ID;
+
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-2.5">
+        <WalletConnectButton compact />
+        {isConnected && balance && (
+          <span className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-2 text-sm font-bold text-emerald-100">
+            {Number(balance.formatted).toFixed(2)} USDC
+          </span>
+        )}
+        <NexusWalletScoreButton />
+        {isConnected && !onArc && (
+          <span className="w-full text-center text-[11px] text-amber-200">Switch network to Arc Testnet</span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/10 to-violet-500/5 p-4">

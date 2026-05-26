@@ -9,9 +9,11 @@ import type { TechnicalAnalysis } from "@/lib/technical-analysis";
 export function NexusTAPanel({
   technical,
   priceUsd,
+  defaultOpen = false,
 }: {
   technical?: TechnicalSnapshot | TechnicalAnalysis | null;
   priceUsd?: number;
+  defaultOpen?: boolean;
 }) {
   if (!technical) return null;
 
@@ -22,7 +24,7 @@ export function NexusTAPanel({
   const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100`;
 
   return (
-    <NexusCollapsible label="Technical analysis" hint={hint} variant="technical" icon={BarChart3}>
+    <NexusCollapsible label="Technical analysis" hint={hint} variant="technical" icon={BarChart3} defaultOpen={defaultOpen}>
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2.5">
           <Stat

@@ -221,10 +221,14 @@ export function NexusTrendingFeed({
         </div>
       </div>
 
-      <p className="text-[11px] text-white/50">
+      <p className="text-xs text-white/50 max-lg:hidden">
         New tokens merge in each refresh — your pick stays selected. Tap <strong className="text-violet-200">Chat</strong> on
         any token for help.
         {refreshing && <span className="ml-1 text-cyan-300"> Updating prices…</span>}
+      </p>
+      <p className="text-xs text-white/55 lg:hidden">
+        Tap a token → opens Chart. Use bottom tabs: Tokens · Chart · Trade.
+        {refreshing && <span className="ml-1 text-cyan-300"> Updating…</span>}
       </p>
 
       <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
@@ -238,7 +242,7 @@ export function NexusTrendingFeed({
             key={`${token.chainId}:${token.tokenAddress}`}
             type="button"
             onClick={() => handleUserSelect(token)}
-            className={`w-full rounded-xl border p-2.5 text-left transition ${
+            className={`w-full rounded-2xl border p-3 text-left transition active:scale-[0.99] max-lg:min-h-[72px] ${
               selected
                 ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
                 : "border-white/10 bg-black/20 hover:border-white/20"
@@ -247,7 +251,7 @@ export function NexusTrendingFeed({
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 {token.icon ? (
-                  <img src={token.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white/10" />
+                  <img src={token.icon} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-white/10 max-lg:h-11 max-lg:w-11" />
                 ) : (
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
                     {token.symbol.slice(0, 2)}
@@ -255,8 +259,8 @@ export function NexusTrendingFeed({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold">{token.symbol}</span>
-                    <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[32px] !px-2 !py-1" />
+                    <span className="text-base font-semibold max-lg:text-[15px]">{token.symbol}</span>
+                    <NexusTokenChatButton token={token} onOpenTrade={onOpenTrade} className="!min-h-[40px] !px-2.5 !py-1.5 max-lg:hidden" />
                     {agent && (
                       <Badge
                         variant={
@@ -313,13 +317,14 @@ export function NexusTrendingFeed({
             )}
 
             {agent && (
-              <p className="mt-1.5 line-clamp-1 text-[11px] text-white/50">
+              <p className="mt-1.5 line-clamp-1 text-[11px] text-white/50 max-lg:text-xs">
                 <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
-                {agent.confidence}% · {agent.whyAction}
+                <span className="lg:hidden">{agent.confidence}% · {agent.action}</span>
+                <span className="hidden lg:inline">{agent.confidence}% · {agent.whyAction}</span>
               </p>
             )}
 
-            <div className="mt-1.5 grid grid-cols-4 gap-1 text-[10px]">
+            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] max-lg:text-xs lg:grid-cols-4 lg:gap-1 lg:text-[10px]">
               <span className="flex items-center gap-1 text-white/55">
                 <Waves className="h-3 w-3 text-cyan-300/70" />
                 Vol {formatCompact(token.volume24h)}

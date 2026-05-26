@@ -250,7 +250,7 @@ export function NexusAbSwap({
       hint={a && b ? `${a.symbol} → ${b.symbol} · demo Arc portfolio` : "Sell A, buy B"}
       variant="technical"
       icon={ArrowDownUp}
-      defaultOpen
+      defaultOpen={defaultOpen}
     >
       <div className="space-y-3">
         <p className="text-[11px] text-white/50">

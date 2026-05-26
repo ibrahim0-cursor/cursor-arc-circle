@@ -107,7 +107,7 @@ export function NexusTokenChart({
       <iframe
         title={`${symbol ?? "Token"} chart`}
         src={dexChartEmbedUrl(chainId, resolvedPair)}
-        className="h-[220px] w-full border-0 sm:h-[300px] lg:h-[320px]"
+        className="h-[min(52dvh,360px)] w-full border-0 sm:h-[300px] lg:h-[320px]"
         allow="clipboard-write"
       />
     </motion.div>

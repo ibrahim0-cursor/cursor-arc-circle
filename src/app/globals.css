@@ -39,6 +39,26 @@ body {
   }
 }
 
+/* NEXUS phone easy mode */
+@media (max-width: 1023px) {
+  [data-nexus-easy-mode] {
+    font-size: 15px;
+  }
+
+  [data-nexus-easy-mode] .nexus-mobile-panel {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-nexus-easy-mode] .nexus-panel-body {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  [data-nexus-easy-mode] [data-nexus-collapsible-trigger] {
+    min-height: 52px;
+  }
+}
+
 /* NEXUS panels — higher contrast body copy */
 .nexus-panel-body {
   font-size: 0.875rem;
