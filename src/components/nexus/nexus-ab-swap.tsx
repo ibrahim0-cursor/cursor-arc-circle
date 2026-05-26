@@ -88,9 +88,11 @@ function TokenPicker({
 export function NexusAbSwap({
   tokens,
   onComplete,
+  defaultOpen = true,
 }: {
   tokens: TrendingMarketToken[];
   onComplete?: () => void;
+  defaultOpen?: boolean;
 }) {
   const toast = useToast();
   const { address, isConnected } = useAccount();

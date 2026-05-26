@@ -366,20 +366,31 @@ export function NexusConsole() {
       </CardHeader>
       <CardContent className="flex min-h-[min(78vh,860px)] flex-col overflow-hidden p-3 lg:min-h-[min(85vh,920px)]">
         {activeTab === "live" ? (
-          <NexusTrendingFeed
-            selectedAddress={selectedToken?.tokenAddress}
-            onSelect={(t) => {
-              setSelectedToken(t);
-              setDeepResearch(null);
-              scrollToMobileContent();
-            }}
-            onTokensRefresh={handleFeedRefresh}
-            onOpenTrade={(tab) => {
-              setTradeTab(tab);
-              setMobilePanel("trade");
-              scrollToMobileContent();
-            }}
-          />
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <NexusTrendingFeed
+                selectedAddress={selectedToken?.tokenAddress}
+                onSelect={(t) => {
+                  setSelectedToken(t);
+                  setDeepResearch(null);
+                  scrollToMobileContent();
+                }}
+                onTokensRefresh={handleFeedRefresh}
+                onOpenTrade={(tab) => {
+                  setTradeTab(tab);
+                  setMobilePanel("trade");
+                  scrollToMobileContent();
+                }}
+              />
+            </div>
+            <div className="shrink-0 lg:hidden">
+              <NexusAbSwap
+                tokens={feedTokens}
+                defaultOpen={false}
+                onComplete={() => setPortfolioKey((k) => k + 1)}
+              />
+            </div>
+          </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             <NexusMemoryList
