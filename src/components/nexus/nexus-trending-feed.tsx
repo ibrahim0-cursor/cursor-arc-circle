@@ -109,7 +109,7 @@ export function NexusTrendingFeed({
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const q = quick ? "&quick=1" : "";
-    const lim = quick ? 50 : 60;
+    const lim = quick ? 80 : 100;
     try {
       const res = await fetch(`/api/nexus/feed?limit=${lim}${q}&t=${Date.now()}`, {
         cache: "no-store",
@@ -225,7 +225,7 @@ export function NexusTrendingFeed({
         {refreshing && <span className="ml-1 text-cyan-300"> Updating prices…</span>}
       </p>
 
-      <div className="max-h-[min(62vh,720px)] space-y-2 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
       {tokens.map((token) => {
         const selected = selectedAddress?.toLowerCase() === token.tokenAddress.toLowerCase();
         const agent = token.agent;
@@ -236,8 +236,7 @@ export function NexusTrendingFeed({
             key={`${token.chainId}:${token.tokenAddress}`}
             type="button"
             onClick={() => handleUserSelect(token)}
-            layout
-            className={`w-full rounded-2xl border p-4 text-left transition ${
+            className={`w-full rounded-xl border p-2.5 text-left transition ${
               selected
                 ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
                 : "border-white/10 bg-black/20 hover:border-white/20"
@@ -312,16 +311,13 @@ export function NexusTrendingFeed({
             )}
 
             {agent && (
-              <div className="mt-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-cyan-200/60">
-                  <Bot className="h-3 w-3" />
-                  NEXUS · {agent.confidence}% · RSI/MACD
-                </div>
-                <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/65">{agent.whyAction}</p>
-              </div>
+              <p className="mt-1.5 line-clamp-1 text-[11px] text-white/50">
+                <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
+                {agent.confidence}% · {agent.whyAction}
+              </p>
             )}
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            <div className="mt-1.5 grid grid-cols-4 gap-1 text-[10px]">
               <span className="flex items-center gap-1 text-white/55">
                 <Waves className="h-3 w-3 text-cyan-300/70" />
                 Vol {formatCompact(token.volume24h)}

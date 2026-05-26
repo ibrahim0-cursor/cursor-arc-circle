@@ -4,6 +4,7 @@ import { analyzeTokenSignal, buildDecision } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
 import { scoreTokenSecurity } from "@/lib/token-security";
 import { computeTechnicalAnalysis, normalizePriceChanges } from "@/lib/technical-analysis";
+import { buildResearchReport } from "@/lib/nexus-research";
 import { addNexusDecision } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,17 @@ export async function POST(request: Request) {
       token.liquidityUsd,
     );
 
+    const bundle = await buildDeepTokenIntel(token);
+    const agent = await analyzeTokenSignal(token, bundle.intel, body.deep ?? false);
+    const security = scoreTokenSecurity(token, bundle.intel);
+    const research = buildResearchReport({
+      token,
+      agent,
+      intel: bundle.intel,
+      technical: ta,
+      news: bundle.news,
+    });
+
     if (body.deep && body.save !== false) {
       const decision = await buildDecision(token, body.arcFeeTxHash);
       await addNexusDecision(decision);
@@ -44,24 +56,24 @@ export async function POST(request: Request) {
         agent: decision,
         technical: ta,
         intel: decision.intel,
+        research,
+        news: bundle.news.slice(0, 4),
+        security,
         saved: true,
-        message: `AI deep analysis complete — ${decision.action} signal saved with RSI ${ta.rsi}, MACD ${ta.macdSignal}`,
+        message: `Deep research ready — thesis, risks, and catalysts (signal ${decision.action} is reference only)`,
       });
     }
-
-    const bundle = await buildDeepTokenIntel(token);
-    const agent = await analyzeTokenSignal(token, bundle.intel, body.deep ?? false);
-    const security = scoreTokenSecurity(token, bundle.intel);
 
     return NextResponse.json({
       token,
       intel: bundle.intel,
       news: bundle.news.slice(0, 4),
       agent,
+      research,
       security,
       technical: ta,
       mode: body.deep ? "deep" : "quick",
-      message: `${agent.action} · confidence ${agent.confidence}% · security ${security.grade}`,
+      message: `Research report generated — see thesis & risks (not just ${agent.action})`,
     });
   } catch (error) {
     return NextResponse.json(

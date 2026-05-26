@@ -15,7 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MeshBackground } from "@/components/layout/mesh-background";
-import { NexusDecisionCard, NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
+import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
+import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
+import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
+import type { NexusResearchReport } from "@/lib/nexus-research";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
 import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -108,6 +111,7 @@ export function NexusConsole() {
   } | null>(null);
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
   const [heroCompact, setHeroCompact] = useState(true);
+  const [deepResearch, setDeepResearch] = useState<NexusResearchReport | null>(null);
 
   const loadSaved = useCallback(async () => {
     const res = await fetch(`/api/nexus/decisions?t=${Date.now()}`);
@@ -279,6 +283,7 @@ export function NexusConsole() {
       if (!res.ok) throw new Error(data.error ?? "Analyze failed");
 
       const agent = data.agent ?? data;
+      if (data.research) setDeepResearch(data.research as NexusResearchReport);
       setSelectedToken((prev) =>
         prev
           ? {
@@ -299,13 +304,13 @@ export function NexusConsole() {
       scrollToMobileContent();
       setActionBanner({
         type: "success",
-        title: `AI: ${agent.action} ${agent.confidence}%`,
-        message: (agent.whyAction ?? agent.reasoning)?.slice(0, 160) ?? "Deep report ready in chart panel.",
+        title: "Deep Research ready",
+        message: "Thesis, risks, catalysts & levels — chart panel (not just BUY/SELL/HOLD).",
       });
       toast({
         type: "success",
-        title: "AI report generated",
-        message: `${agent.action} · ${agent.confidence}% — chart panel`,
+        title: "Deep Research",
+        message: "Open chart panel for thesis, risks & news",
       });
       if (data.saved && data.agent) {
         const saved = data.agent as NexusDecision;
@@ -353,12 +358,13 @@ export function NexusConsole() {
           </button>
         </div>
       </CardHeader>
-      <CardContent className="max-h-[70vh] space-y-4 overflow-y-auto pr-1 lg:max-h-[85vh]">
+      <CardContent className="flex min-h-[min(78vh,860px)] flex-col overflow-hidden p-3 lg:min-h-[min(85vh,920px)]">
         {activeTab === "live" ? (
           <NexusTrendingFeed
             selectedAddress={selectedToken?.tokenAddress}
             onSelect={(t) => {
               setSelectedToken(t);
+              setDeepResearch(null);
               scrollToMobileContent();
             }}
             onTokensRefresh={handleFeedRefresh}
@@ -368,26 +374,15 @@ export function NexusConsole() {
               scrollToMobileContent();
             }}
           />
-        ) : savedDecisions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/50">
-            <Bot className="mx-auto mb-3 h-8 w-8 text-cyan-300/50" />
-            Run <strong className="text-white/70">Memory Scan</strong> to store 20 token analyses on Arc.
-          </div>
         ) : (
-          savedDecisions.map((decision) => (
-            <NexusDecisionCard
-              key={decision.id}
-              decision={{
-                ...decision,
-                chainId: decision.chainId ?? "unknown",
-                whyAction: decision.whyAction ?? decision.reasoning,
-                reasoningFactors: decision.reasoningFactors ?? [],
-                intel: decision.intel ?? {},
-              }}
-              selected={selectedSavedId === decision.id}
-              onSelect={() => {
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <NexusMemoryList
+              decisions={savedDecisions}
+              selectedId={selectedSavedId}
+              onSelect={(decision) => {
                 setActiveTab("saved");
                 setSelectedSavedId(decision.id);
+                setDeepResearch(null);
                 setSelectedToken({
                   symbol: decision.symbol,
                   name: decision.name ?? decision.symbol,
@@ -407,14 +402,14 @@ export function NexusConsole() {
                     riskScore: decision.riskScore,
                     reasoning: decision.reasoning,
                     whyAction: decision.whyAction,
-                    reasoningFactors: decision.reasoningFactors,
+                    reasoningFactors: decision.reasoningFactors ?? [],
                   },
                 });
                 setMobilePanel("chart");
                 scrollToMobileContent();
               }}
             />
-          ))
+          </div>
         )}
       </CardContent>
     </Card>
@@ -444,7 +439,10 @@ export function NexusConsole() {
         agentAction={displayDecision?.action}
         onIntelUpdate={handleBirdeyeIntel}
       />
-      {displayDecision && <NexusTokenDetail decision={displayDecision} />}
+      {deepResearch && (
+        <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
+      )}
+      {displayDecision && !deepResearch && <NexusTokenDetail decision={displayDecision} />}
     </div>
   );
 
@@ -498,7 +496,7 @@ export function NexusConsole() {
               <Button
                 variant="outline"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
-                title="Pays Arc fee · scans 20 tokens · saves to Memory tab"
+                title="Arc fee · archives ~20 tokens with whale/holder snapshot + journal"
                 onClick={runScan}
                 disabled={scanning || arcFeePending}
               >
@@ -521,7 +519,7 @@ export function NexusConsole() {
                 ) : (
                   <Brain className="h-4 w-4" />
                 )}
-                AI Analyze
+                Deep Research
               </Button>
             </div>
           </div>
