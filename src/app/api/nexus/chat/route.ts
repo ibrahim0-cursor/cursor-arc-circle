@@ -1,36 +1,23 @@
 import { NextResponse } from "next/server";
 import { getAiClient, getAiModel } from "@/lib/ai-client";
+import {
+  buildNexusChatContextLite,
+  formatNexusChatContextForAi,
+  sanitizeChatReply,
+} from "@/lib/nexus-chat-context";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 45;
+export const maxDuration = 60;
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 type ChatBody = {
   messages: ChatMessage[];
   token?: {
-    symbol: string;
-    name?: string;
+    symbol?: string;
     chainId: string;
     tokenAddress: string;
-    priceUsd?: number;
-    change24h?: number;
-    volume24h?: number;
-    liquidityUsd?: number;
-    action?: string;
-    confidence?: number;
-    riskScore?: number;
-    reasoning?: string;
-    securityGrade?: string;
-    securityLabel?: string;
-    technical?: {
-      rsi?: number;
-      macdSignal?: string;
-      trend?: string;
-      score?: number;
-      trendLine?: string;
-    };
   };
   walletConnected?: boolean;
   agentBalanceUsdc?: number;
@@ -39,16 +26,18 @@ type ChatBody = {
 const SYSTEM = `You are NEXUS Token Copilot — expert on ONE selected token only. Answer in plain language for beginners.
 
 Your job for this token:
-1. Explain fundamentals (liquidity, volume, 24h move, chain).
-2. Explain technical picture (RSI, MACD, trend) when data provided.
-3. Explain why the AI signal is BUY/SELL/HOLD and what to watch (support, whales, honeypot if mentioned).
-4. Help with actions: buy $X USDC, sell, one-time trade, or recurring autopilot — always remind: deposit USDC to agent vault first for autopilot.
+1. Explain fundamentals (liquidity, volume, 24h move, chain) using ONLY the verified live snapshot.
+2. Explain technical picture (RSI, MACD, trend) only when those values appear in the snapshot (not n/a).
+3. Explain why the AI signal is BUY/SELL/HOLD and what to watch — cite confidence and risk from snapshot.
+4. Help with actions: buy $X USDC, sell, one-time trade, or recurring autopilot — remind: deposit USDC to agent vault first for autopilot.
 
 Rules:
 - Only discuss the selected token unless user asks general crypto questions.
 - Never guarantee profits. Mention risks clearly.
-- If security grade is C/D/F or honeypot, warn strongly before any buy.
-- Be specific: cite numbers from context (price, %, confidence).
+- If security grade is C/D/F or honeypot flags appear, warn strongly before any buy.
+- Be specific: cite numbers from the VERIFIED LIVE SNAPSHOT only.
+- If data is missing, say "not available in live feed" — NEVER invent prices, holder addresses, whale names, or TA values.
+- Do NOT mention charts, chart links, DexScreener embeds, TradingView, or tell the user to "open the chart". Intel is text-only in chat.
 - 3-6 sentences unless user asks for short answer.
 
 Optional action (one per reply):
@@ -56,10 +45,19 @@ Optional action (one per reply):
 - sell: { "type":"sell" }
 - autopilot: { "type":"autopilot", "interval":"15m", "mode":"follow_agent" }
 - deposit: { "type":"deposit" }
-- analyze: { "type":"analyze" }
 
 JSON only:
 { "reply": "string", "action": null | object }`;
+
+function heuristicReply(
+  ctx: Awaited<ReturnType<typeof buildNexusChatContextLite>>,
+  lastUser: string,
+): string {
+  if (!ctx) return "Token not found on DexScreener — pick another from the live feed.";
+  const t = ctx.token;
+  const a = ctx.agent;
+  return `${t.symbol} is $${t.priceUsd.toFixed(t.priceUsd < 1 ? 6 : 4)} (${t.change24h >= 0 ? "+" : ""}${t.change24h.toFixed(2)}% 24h). Liquidity $${Math.round(t.liquidityUsd).toLocaleString()}, vol $${Math.round(t.volume24h).toLocaleString()}. Signal: ${a.action} at ${a.confidence}% confidence, risk ${a.riskScore}/100. ${a.whyAction ?? ""} You asked: "${lastUser.slice(0, 80)}". Use Buy/Sell tabs to trade; fund the agent vault for autopilot.`;
+}
 
 export async function POST(request: Request) {
   try {
@@ -69,35 +67,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "messages required" }, { status: 400 });
     }
 
-    const client = getAiClient();
     const t = body.token;
-    const context = t
-      ? `TOKEN ${t.symbol} (${t.name ?? t.symbol}) on ${t.chainId}
-Address: ${t.tokenAddress}
-Price $${t.priceUsd ?? "?"} · 24h ${t.change24h ?? "?"}%
-Volume $${t.volume24h ?? "?"} · Liquidity $${t.liquidityUsd ?? "?"}
-AI signal: ${t.action ?? "?"} · confidence ${t.confidence ?? "?"}% · risk ${t.riskScore ?? "?"}
-Reasoning: ${t.reasoning ?? "n/a"}
-Security: ${t.securityGrade ?? "?"} ${t.securityLabel ?? ""}
-Technical: RSI ${t.technical?.rsi?.toFixed?.(0) ?? "?"} · MACD ${t.technical?.macdSignal ?? "?"} · trend ${t.technical?.trend ?? "?"} · score ${t.technical?.score ?? "?"}
-${t.technical?.trendLine ?? ""}`
-      : "No token — ask user to select from feed.";
+    if (!t?.chainId || !t?.tokenAddress) {
+      return NextResponse.json({ error: "token chainId and tokenAddress required" }, { status: 400 });
+    }
+
+    const ctx = await buildNexusChatContextLite(t.chainId, t.tokenAddress);
+    const context = ctx ? formatNexusChatContextForAi(ctx) : "Token not found — do not invent data.";
     const walletCtx = body.walletConnected
       ? `Wallet connected. Agent vault USDC: ${body.agentBalanceUsdc ?? 0} (user must fund vault for scheduled agent).`
       : "Wallet not connected.";
 
+    const client = getAiClient();
+    const last = messages[messages.length - 1]?.content ?? "";
+
     if (!client) {
-      const last = messages[messages.length - 1]?.content ?? "";
       return NextResponse.json({
-        reply: `On ${t?.symbol ?? "this token"}: check 24h trend and liquidity before buying. You said: "${last.slice(0, 60)}". Connect wallet and use Buy tab, or deposit to agent vault for Autopilot.`,
+        reply: sanitizeChatReply(heuristicReply(ctx, last)),
         action: null,
         provider: "heuristic",
+        refreshedAt: ctx?.refreshedAt,
       });
     }
 
     const completion = await client.chat.completions.create({
       model: getAiModel(),
-      temperature: 0.35,
+      temperature: 0.25,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: `${SYSTEM}\n\n${context}\n${walletCtx}` },
@@ -106,17 +101,23 @@ ${t.technical?.trendLine ?? ""}`
     });
 
     const raw = completion.choices[0]?.message?.content ?? "{}";
-    let parsed: { reply?: string; action?: unknown };
+    let parsed: { reply?: string; action?: { type?: string } };
     try {
       parsed = JSON.parse(raw);
     } catch {
-      parsed = { reply: raw, action: null };
+      parsed = { reply: raw, action: undefined };
+    }
+
+    const action = parsed.action;
+    if (action?.type === "analyze") {
+      delete (action as { type?: string }).type;
     }
 
     return NextResponse.json({
-      reply: parsed.reply ?? "Done.",
-      action: parsed.action ?? null,
+      reply: sanitizeChatReply(parsed.reply ?? "Done."),
+      action: action?.type ? action : null,
       provider: getAiModel(),
+      refreshedAt: ctx?.refreshedAt,
     });
   } catch (error) {
     return NextResponse.json(

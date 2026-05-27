@@ -1607,6 +1607,10 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   flex-shrink: 0;
 }
 
+.nexus-agent-reasoning-strip {
+  scroll-margin-top: 0.5rem;
+}
+
 html[data-arc-theme="nexus"] .nexus-center-layout {
   display: flex;
   flex-direction: column;

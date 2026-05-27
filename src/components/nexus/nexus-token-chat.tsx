@@ -7,6 +7,7 @@ import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { useToast } from "@/components/ui/toast-provider";
 import { useAgentWallet } from "@/hooks/use-agent-wallet";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
+import { formatPct, formatUsd } from "@/lib/utils";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -15,9 +16,24 @@ type ChatAction = {
   usdcAmount?: number;
 };
 
-function tokenIntro(token: TrendingMarketToken) {
+type LiveChatSnapshot = {
+  symbol: string;
+  priceUsd: number;
+  change24h: number;
+  action?: string;
+  confidence?: number;
+  reasoningHeadline?: string;
+  refreshedAt?: string;
+};
+
+function introFromSnapshot(snap: LiveChatSnapshot | null, token: TrendingMarketToken) {
+  if (snap) {
+    const move = formatPct(snap.change24h);
+    const sig = snap.action ? `${snap.action} ${snap.confidence ?? ""}%` : "HOLD";
+    return `Live ${snap.symbol}: ${formatUsd(snap.priceUsd)} (${move} 24h). Signal ${sig}. ${snap.reasoningHeadline ?? "Ask fundamentals, risks, or say buy $10 / sell / autopilot."}`;
+  }
   const a = token.agent;
-  return `I only discuss ${token.symbol}. Ask fundamentals, why ${a?.action ?? "HOLD"} ${a?.confidence ?? ""}%, risks, or say "buy $10", "sell", "autopilot every 15 min".`;
+  return `Loading live ${token.symbol} data… Ask fundamentals, why ${a?.action ?? "HOLD"} ${a?.confidence ?? ""}%, risks, or say "buy $10", "sell", "autopilot every 15 min".`;
 }
 
 export function NexusTokenChatButton({
@@ -70,14 +86,65 @@ export function NexusTokenChatPanel({
   const { usdcBalance } = useAgentWallet();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [contextLoading, setContextLoading] = useState(true);
+  const [liveSnap, setLiveSnap] = useState<LiveChatSnapshot | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: tokenIntro(token) },
+    { role: "assistant", content: introFromSnapshot(null, token) },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMessages([{ role: "assistant", content: tokenIntro(token) }]);
-  }, [token.tokenAddress, token.chainId]);
+    let cancelled = false;
+    setContextLoading(true);
+    setLiveSnap(null);
+    setMessages([{ role: "assistant", content: introFromSnapshot(null, token) }]);
+
+    const q = new URLSearchParams({
+      chainId: token.chainId,
+      tokenAddress: token.tokenAddress,
+    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 14_000);
+    void fetch(`/api/nexus/chat/context?${q}`, { signal: controller.signal })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Could not load live token data");
+        if (cancelled) return;
+        const snap: LiveChatSnapshot = {
+          symbol: data.symbol,
+          priceUsd: data.priceUsd,
+          change24h: data.change24h,
+          action: data.action,
+          confidence: data.confidence,
+          reasoningHeadline: data.reasoningHeadline,
+          refreshedAt: data.refreshedAt,
+        };
+        setLiveSnap(snap);
+        setMessages([{ role: "assistant", content: introFromSnapshot(snap, token) }]);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        const aborted = e instanceof Error && e.name === "AbortError";
+        setMessages([
+          {
+            role: "assistant",
+            content: aborted
+              ? `${token.symbol}: using feed snapshot (server busy). ${introFromSnapshot(null, token)}`
+              : `Could not refresh ${token.symbol} — ${e instanceof Error ? e.message : "error"}. You can still ask; replies use latest feed data.`,
+          },
+        ]);
+      })
+      .finally(() => {
+        clearTimeout(timer);
+        if (!cancelled) setContextLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [token.tokenAddress, token.chainId, token.symbol]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -100,20 +167,8 @@ export function NexusTokenChatPanel({
           agentBalanceUsdc: usdcBalance,
           token: {
             symbol: token.symbol,
-            name: token.name,
             chainId: token.chainId,
             tokenAddress: token.tokenAddress,
-            priceUsd: token.priceUsd,
-            change24h: token.change24h,
-            volume24h: token.volume24h,
-            liquidityUsd: token.liquidityUsd,
-            action: token.agent?.action,
-            confidence: token.agent?.confidence,
-            riskScore: token.agent?.riskScore,
-            reasoning: token.agent?.whyAction ?? token.agent?.reasoning,
-            securityGrade: token.security?.grade,
-            securityLabel: token.security?.label,
-            technical: token.intel?.technical,
           },
         }),
       });
@@ -124,7 +179,11 @@ export function NexusTokenChatPanel({
       const action = data.action as ChatAction | null;
       if (action?.type === "buy") {
         onOpenTrade?.("buy");
-        toast({ type: "success", title: "Buy tab", message: action.usdcAmount ? `Try $${action.usdcAmount} USDC` : "Set amount and confirm" });
+        toast({
+          type: "success",
+          title: "Buy tab",
+          message: action.usdcAmount ? `Try $${action.usdcAmount} USDC` : "Set amount and confirm",
+        });
       } else if (action?.type === "sell") onOpenTrade?.("sell");
       else if (action?.type === "autopilot" || action?.type === "deposit") onOpenTrade?.("agent");
     } catch (e) {
@@ -153,7 +212,13 @@ export function NexusTokenChatPanel({
           <NexusTokenAvatar symbol={token.symbol} icon={token.icon} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-white">{token.symbol} Copilot</p>
-            <p className="truncate text-[10px] text-white/50">Fundamentals · TA · buy/sell help</p>
+            <p className="truncate text-[10px] text-white/50">
+              {contextLoading
+                ? "Refreshing live market data…"
+                : liveSnap
+                  ? `${formatUsd(liveSnap.priceUsd)} · ${formatPct(liveSnap.change24h)} · ${liveSnap.action ?? "—"}`
+                  : "Text-only intel — no charts in chat"}
+            </p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-white/60 hover:bg-white/10">
             <X className="h-5 w-5" />
@@ -175,7 +240,7 @@ export function NexusTokenChatPanel({
             <div className="flex items-center gap-2 text-xs text-white/50">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <Bot className="h-3.5 w-3.5" />
-              Researching {token.symbol}…
+              Verifying live {token.symbol} data…
             </div>
           )}
         </div>
@@ -187,12 +252,13 @@ export function NexusTokenChatPanel({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void send()}
               placeholder={`Why ${token.symbol}? Or "buy $10"…`}
-              className="min-h-[44px] flex-1 rounded-xl border border-white/15 bg-black/40 px-3 text-sm text-white outline-none"
+              disabled={contextLoading}
+              className="min-h-[44px] flex-1 rounded-xl border border-white/15 bg-black/40 px-3 text-sm text-white outline-none disabled:opacity-50"
             />
             <button
               type="button"
               onClick={() => void send()}
-              disabled={loading || !input.trim()}
+              disabled={loading || contextLoading || !input.trim()}
               className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500 text-white disabled:opacity-40"
             >
               <Send className="h-4 w-4" />

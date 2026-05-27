@@ -1034,7 +1034,7 @@ export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
   const rankOf = new Map(
     sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
   );
-  const birdeyeCap = 8;
+  const birdeyeCap = 4;
   return Promise.all(
     tokens.map(async (token) => {
       const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;

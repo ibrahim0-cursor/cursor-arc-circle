@@ -33,7 +33,7 @@ import {
   NexusResearchDossierLive,
 } from "@/components/nexus/nexus-research-dossier";
 import { NexusIntelCollapsibles } from "@/components/nexus/nexus-intel-collapsibles";
-import { NexusAgentBrief } from "@/components/nexus/nexus-agent-brief";
+import { NexusAgentReasoningStrip } from "@/components/nexus/nexus-agent-reasoning-strip";
 import { useTokenDossier } from "@/hooks/use-token-dossier";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
 import { NexusFeedTabs, type NexusFeedTab } from "@/components/nexus/nexus-feed-tabs";
@@ -82,6 +82,8 @@ export function NexusConsole() {
   const [portfolioKey, setPortfolioKey] = useState(0);
 
   const [selectedToken, setSelectedToken] = useState<TrendingMarketToken | null>(null);
+  const [intelTier, setIntelTier] = useState<"feed" | "alpha">("feed");
+  const [alphaThesis, setAlphaThesis] = useState<string | undefined>(undefined);
   const [alphaScanning, setAlphaScanning] = useState(false);
   const [alphaScanError, setAlphaScanError] = useState<string | null>(null);
   const [alphaOpportunities, setAlphaOpportunities] = useState<AlphaOpportunity[]>([]);
@@ -109,7 +111,7 @@ export function NexusConsole() {
   }, []);
 
   const displayDecision = selectedToken ? tokenToDecision(selectedToken) : null;
-  const tokenDossier = useTokenDossier(selectedToken);
+  const tokenDossier = useTokenDossier(selectedToken, intelTier);
 
   useEffect(() => {
     const p = tokenDossier.payload;
@@ -161,6 +163,8 @@ export function NexusConsole() {
 
   const handleTokenSelect = useCallback(
     (token: TrendingMarketToken, openChart = true) => {
+      setIntelTier("feed");
+      setAlphaThesis(undefined);
       setSelectedToken(token);
       if (openChart) openChartView();
     },
@@ -328,30 +332,30 @@ export function NexusConsole() {
   }
 
   function selectAlphaRow(row: AlphaOpportunity) {
-    handleTokenSelect(
-      {
-        symbol: row.symbol,
-        name: row.name,
-        tokenAddress: row.tokenAddress,
-        chainId: row.chainId,
-        pairAddress: "",
-        priceUsd: row.priceUsd,
-        change24h: row.change24h,
-        volume24h: row.volume24h,
-        liquidityUsd: row.liquidityUsd,
-        icon: row.icon,
-        url: "",
-        agent: {
-          action: row.action,
-          confidence: row.confidence,
-          riskScore: row.riskScore,
-          reasoning: row.aiThesis || row.reasoning,
-          whyAction: row.whyAction,
-          reasoningFactors: [],
-        },
+    setIntelTier("alpha");
+    setAlphaThesis(row.aiThesis ?? row.researchGlance ?? row.whyAction);
+    setSelectedToken({
+      symbol: row.symbol,
+      name: row.name,
+      tokenAddress: row.tokenAddress,
+      chainId: row.chainId,
+      pairAddress: "",
+      priceUsd: row.priceUsd,
+      change24h: row.change24h,
+      volume24h: row.volume24h,
+      liquidityUsd: row.liquidityUsd,
+      icon: row.icon,
+      url: "",
+      agent: {
+        action: row.action,
+        confidence: row.confidence,
+        riskScore: row.riskScore,
+        reasoning: row.aiThesis || row.reasoning,
+        whyAction: row.whyAction ?? row.researchGlance,
+        reasoningFactors: row.reasoningFactors ?? [],
       },
-      true,
-    );
+    });
+    openChartView();
   }
 
   const feedPanel = (
@@ -405,7 +409,7 @@ export function NexusConsole() {
     </div>
   ) : (
     <div className="nexus-center-layout flex min-h-0 flex-1 flex-col max-lg:space-y-3 max-lg:pb-4 lg:overflow-hidden">
-      <div className="nexus-center-toolbar shrink-0 space-y-2.5 lg:space-y-3 lg:border-b lg:border-white/[0.06] lg:pb-3">
+      <div className="nexus-center-toolbar shrink-0 space-y-2 lg:space-y-2.5 lg:border-b lg:border-white/[0.06] lg:pb-2">
         <NexusCenterTokenHeader
           token={selectedToken}
           decision={displayDecision}
@@ -437,10 +441,9 @@ export function NexusConsole() {
           compact
         />
         <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />
-        <NexusTokenMetrics token={selectedToken} compact />
       </div>
 
-      <div className="nexus-center-chart shrink-0 py-1 lg:py-1.5">
+      <div id="nexus-chart-panel" className="nexus-center-chart nexus-center-chart-priority shrink-0">
         <NexusTokenChart
           compact
           chainId={selectedToken.chainId}
@@ -451,16 +454,24 @@ export function NexusConsole() {
       </div>
 
       <div className="nexus-center-intel-below-chart shrink-0 space-y-2 px-0.5">
-        <NexusAgentBrief />
+        <NexusAgentReasoningStrip
+          token={selectedToken}
+          payload={tokenDossier.payload}
+          loading={tokenDossier.loading}
+          tier={intelTier}
+          alphaThesis={alphaThesis}
+        />
         {tokenDossier.error && !tokenDossier.loading && (
           <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
             {tokenDossier.error}
           </p>
         )}
+        <NexusTokenMetrics token={selectedToken} compact />
         <NexusIntelCollapsibles
           token={selectedToken}
           payload={tokenDossier.payload}
           loading={tokenDossier.loading}
+          reasoningInStrip
         />
         <NexusResearchDossierLive
           token={selectedToken}

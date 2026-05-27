@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { TokenDossierPayload } from "@/lib/nexus-research-dossier";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
-export function useTokenDossier(token: TrendingMarketToken | null) {
+export function useTokenDossier(token: TrendingMarketToken | null, tier: "feed" | "alpha" = "feed") {
   const [payload, setPayload] = useState<TokenDossierPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,7 @@ export function useTokenDossier(token: TrendingMarketToken | null) {
       setError(null);
       try {
         const params = new URLSearchParams(snap);
+        params.set("tier", tier);
         const res = await fetch(`/api/nexus/token/dossier?${params}`);
         const json = await res.json();
         if (!cancelled) {
@@ -63,6 +64,7 @@ export function useTokenDossier(token: TrendingMarketToken | null) {
     token?.liquidityUsd,
     token?.txns24h?.buys,
     token?.txns24h?.sells,
+    tier,
   ]);
 
   return { payload, loading, error };

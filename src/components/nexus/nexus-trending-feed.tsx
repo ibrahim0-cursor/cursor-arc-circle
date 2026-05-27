@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
-import { agentVerdictLine } from "@/lib/nexus-copy";
+import { agentVerdictLine, FEED_ROW_HINT } from "@/lib/nexus-copy";
 import { cn } from "@/lib/utils";
 import type { TokenIntel } from "@/lib/storage";
 import type { AgentSignal } from "@/lib/storage";
@@ -101,6 +101,7 @@ export function NexusTrendingFeed({
   const selectedAddressRef = useRef(selectedAddress);
   const didInitialPick = useRef(false);
   const userPickedRef = useRef(false);
+  const loadInFlightRef = useRef(false);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -149,15 +150,17 @@ export function NexusTrendingFeed({
 
   const load = useCallback(
     async (silent = false) => {
+      if (loadInFlightRef.current) return;
+      loadInFlightRef.current = true;
       if (!silent) setLoading(true);
       else setRefreshing(true);
       try {
-        const { list, data } = await fetchFeed(true, 28_000);
+        const { list, data } = await fetchFeed(true, 22_000);
         applyFeed(list, data);
         if (!silent) {
           void (async () => {
             try {
-              const full = await fetchFeed(false, 52_000);
+              const full = await fetchFeed(false, 45_000);
               applyFeed(full.list, full.data);
             } catch {
               /* keep quick feed */
@@ -173,6 +176,7 @@ export function NexusTrendingFeed({
               : "Feed load failed";
         if (!silent) setError(msg);
       } finally {
+        loadInFlightRef.current = false;
         setLoading(false);
         setRefreshing(false);
       }
@@ -314,9 +318,17 @@ export function NexusTrendingFeed({
                 </span>
               )}
             </p>
-            {(agent.whyAction || agent.reasoning || cleanFeed) && (
+            {(agent.whyAction || agent.reasoning) && (
               <p className="line-clamp-2 text-[10px] leading-snug text-white/50">
                 {agentVerdictLine(agent.whyAction, undefined, agent.reasoning)}
+              </p>
+            )}
+            {cleanFeed && agent.reasoningFactors && agent.reasoningFactors.length > 0 && (
+              <p className="line-clamp-1 text-[9px] text-white/40">
+                {agent.reasoningFactors
+                  .slice(0, 2)
+                  .map((f) => f.label)
+                  .join(" · ")}
               </p>
             )}
           </div>
@@ -406,8 +418,8 @@ export function NexusTrendingFeed({
       </div>
 
       <p className="text-xs text-white/50 max-lg:hidden">
-        New tokens merge in each refresh — your pick stays selected. Tap <strong className="text-violet-200">Chat</strong> on
-        any token for help.
+        {FEED_ROW_HINT}. Tap a row for chart + agent reasoning. <strong className="text-violet-200">Chat</strong> for
+        Q&amp;A. Run <strong className="text-fuchsia-200/90">Alpha Scan</strong> for the full paid thesis.
         {refreshing && <span className="ml-1 text-cyan-300"> Updating prices…</span>}
       </p>
       <p className="text-xs text-white/55 lg:hidden">

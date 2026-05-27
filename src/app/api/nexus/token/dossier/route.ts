@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   const buys = Number(searchParams.get("buys") ?? 0);
   const sells = Number(searchParams.get("sells") ?? 0);
   const volume = Number(searchParams.get("volume") ?? 0);
+  const tier = searchParams.get("tier") === "alpha" ? "alpha" : "feed";
 
   if (!chainId || !address) {
     return NextResponse.json({ error: "chainId and address required" }, { status: 400 });
@@ -44,12 +45,13 @@ export async function GET(request: Request) {
       volume: token.volume24h ?? volume,
     };
 
+    const scanKind = tier === "alpha" ? "alpha" : "analyze";
     const [bundle, detection] = await Promise.all([
-      buildDeepTokenIntel(token, { scanKind: "analyze" }),
+      buildDeepTokenIntel(token, { scanKind, tokenIndex: 0, skipGmgnEnrich: false }),
       fetchMergedTokenDetection(token.tokenAddress, token.chainId, dexStats),
     ]);
 
-    const agent = await analyzeTokenSignal(token, bundle.intel, false);
+    const agent = await analyzeTokenSignal(token, bundle.intel, tier === "alpha");
     const research = buildResearchReport({
       token,
       agent,

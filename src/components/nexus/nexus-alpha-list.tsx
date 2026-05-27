@@ -8,6 +8,7 @@ import {
   ALPHA_SCAN_EMPTY,
   ALPHA_SCAN_ERROR_TIP,
   ALPHA_SCAN_LOADING,
+  ALPHA_LIST_INTRO,
   agentVerdictLine,
   publicSourceLabel,
 } from "@/lib/nexus-copy";
@@ -195,6 +196,24 @@ export function NexusAlphaList({
                         {row.smartMoneySignal} · {row.momentumHealth}
                       </p>
                     )}
+                    {row.reasoningFactors && row.reasoningFactors.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {row.reasoningFactors.slice(0, 3).map((f) => (
+                          <span
+                            key={`${f.label}-${f.detail.slice(0, 12)}`}
+                            className="rounded-md border border-white/10 bg-black/35 px-1.5 py-0.5 text-[9px] text-white/60"
+                            title={f.detail}
+                          >
+                            {f.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {row.aiThesis && row.aiThesis !== row.researchGlance && (
+                      <p className="mt-1 text-[10px] text-violet-200/70 line-clamp-2">
+                        {agentVerdictLine(undefined, row.aiThesis)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="shrink-0 text-right text-xs">
@@ -217,7 +236,7 @@ export function NexusAlphaList({
               </div>
 
               <p className="mt-2 text-[10px] text-white/40">
-                Tap for chart · trade · full intel
+                Tap for intel & trade · Chat for text-only Q&amp;A
               </p>
 
               <div className="mt-2 flex flex-wrap gap-1.5 text-[9px]">

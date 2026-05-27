@@ -321,29 +321,6 @@ export function tradersFromWhalesAndTrades(
   }));
 }
 
-function demoHolders(token: TrendingToken): HolderTableRow[] {
-  const seed = token.tokenAddress.slice(-4);
-  return [1, 2, 3, 4, 5].map((rank) => ({
-    rank,
-    address: `${seed}…demo${rank}`,
-    pctSupply: Math.max(2, 18 - rank * 3),
-    label: rank === 1 ? "Demo LP / deployer proxy" : "Demo wallet",
-    source: "demo" as const,
-  }));
-}
-
-function demoTraders(token: TrendingToken): TraderTableRow[] {
-  const seed = token.tokenAddress.slice(-4);
-  return [1, 2, 3, 4].map((rank) => ({
-    rank,
-    address: `${seed}…trader${rank}`,
-    pnlOrVolume: rank === 1 ? "+$12.4K est." : `+$${(8 - rank) * 2.1}K est.`,
-    trades: 12 - rank * 2,
-    label: "Demo smart money",
-    source: "demo" as const,
-  }));
-}
-
 function buildSocialNews(
   community?: CommunityPulse | null,
   news: CryptoNewsItem[] = [],
@@ -364,7 +341,7 @@ function buildSocialNews(
   if (community?.opennewsBuzz) lines.unshift(`OpenNews: ${community.opennewsBuzz}`);
   if (community?.twitterBuzz) lines.unshift(`Twitter scan: ${community.twitterBuzz}`);
   if (lines.length === 0) {
-    lines.push("No symbol-specific headlines — enable OPENNEWS_TOKEN / TWITTER_TOKEN for 6551 sweep");
+    lines.push("No symbol-specific headlines — set API_KEY_6551 (or OPENNEWS_TOKEN) on Vercel for 6551 news");
   }
   return lines.slice(0, 6);
 }
@@ -571,8 +548,9 @@ export async function buildTokenDossierPayload(
     topHolders = holdersFromDetection(detection.holders, detection.whales, src);
   }
   if (topHolders.length === 0) {
-    topHolders = demoHolders(token);
-    dataNotes.push("Top holders: demo rows (no on-chain rows returned for this token — check chain support)");
+    dataNotes.push(
+      "Top holders: no live rows returned (Birdeye/GMGN/DexPaprika) — expand again after feed refresh",
+    );
   } else if (gmgnHolders.length > 0) {
     dataNotes.push("Top holders: GMGN OpenAPI");
   } else {
@@ -598,8 +576,8 @@ export async function buildTokenDossierPayload(
       source: "gmgn" as const,
     }));
   } else if (topTraders.length < 2) {
-    topTraders = demoTraders(token);
-    dataNotes.push("Top traders: demo rows (API returned no trader rows for this pair)");
+    topTraders = [];
+    dataNotes.push("Top traders: no live rows returned for this pair");
   }
 
   const scam = assessTokenScam(token, intel);

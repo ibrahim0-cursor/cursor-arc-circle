@@ -11,6 +11,26 @@ export function clean6551Token(raw?: string): string | undefined {
   return v.length > 0 ? v : undefined;
 }
 
+/** One 6551 account key often powers both OpenNews and OpenTwitter REST routes. */
+export function resolve6551Token(role: "opennews" | "twitter"): string | undefined {
+  const primary =
+    role === "opennews"
+      ? clean6551Token(process.env.OPENNEWS_TOKEN)
+      : clean6551Token(process.env.TWITTER_TOKEN);
+  if (primary) return primary;
+
+  const shared =
+    clean6551Token(process.env.API_KEY_6551) ??
+    clean6551Token(process.env["6551_API_KEY"]) ??
+    clean6551Token(process.env.OPENNEWS_TOKEN) ??
+    clean6551Token(process.env.TWITTER_TOKEN);
+  return shared;
+}
+
+export function has6551Token(): boolean {
+  return Boolean(resolve6551Token("opennews") ?? resolve6551Token("twitter"));
+}
+
 export function base6551Url(): string {
   return clean6551Token(process.env.OPENNEWS_API_BASE) ?? DEFAULT_BASE;
 }

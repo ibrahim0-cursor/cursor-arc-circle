@@ -73,14 +73,14 @@ export function NexusHolderTables({
 }) {
   const holderHint = loading
     ? "Loading holders…"
-    : topHolders.some((h) => h.source === "demo")
-      ? `${symbol ?? "Token"} · demo labeled — add Birdeye / GMGN for live`
+    : topHolders.length === 0
+      ? `${symbol ?? "Token"} · no live holder rows yet`
       : `${topHolders.length} wallets · ${topHolders[0]?.source ?? "on-chain"}`;
 
   const traderHint = loading
     ? "Loading traders…"
-    : topTraders.some((t) => t.source === "demo")
-      ? "Smart money / volume proxy · demo labeled"
+    : topTraders.length === 0
+      ? "No live trader rows yet"
       : `${topTraders.length} active wallets · volume / GMGN tags`;
 
   return (

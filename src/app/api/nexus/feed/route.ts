@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 
     let tokens = filterTradableTokens(await fetchStableMarketFeed(limit));
     tokens = await enrichTokensWithIcons(tokens, limit);
-    tokens = await enrichMissingPairs(tokens, quick ? 8 : 16);
+    tokens = await enrichMissingPairs(tokens, quick ? 4 : 12);
 
     if (quick) {
       const analyzed = await analyzeTrendingFeedQuick(tokens);

@@ -85,6 +85,15 @@ export function publicSentimentSummary(label: string, score: number): string {
   return `${tone} (index ${score}).`;
 }
 
+export const FEED_INTEL_LABEL = "Live feed";
+export const ALPHA_INTEL_LABEL = "Alpha deep intel";
+
+export const FEED_ROW_HINT =
+  "Dex-verified price & flow · light agent pass (not a paid deep scan)";
+
+export const ALPHA_LIST_INTRO =
+  "Ranked after your Arc scan fee — GMGN, Birdeye, news, smart money, and full agent thesis. Tap a row for chart + deep reasoning.";
+
 /** One-line agent verdict for list rows */
 export function agentVerdictLine(whyAction?: string, thesis?: string, reasoning?: string): string {
   const line = (whyAction || thesis || reasoning || "").trim();

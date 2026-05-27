@@ -33,8 +33,11 @@ export function NexusTokenChart({
     if (!chainId || !tokenAddress || resolvedPair) return;
     let cancelled = false;
     setResolving(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12_000);
     fetch(`/api/nexus/pair?chainId=${encodeURIComponent(chainId)}&address=${encodeURIComponent(tokenAddress)}`, {
       cache: "no-store",
+      signal: controller.signal,
     })
       .then((r) => r.json())
       .then((data) => {
@@ -42,11 +45,17 @@ export function NexusTokenChart({
         if (data.pairAddress) setResolvedPair(data.pairAddress);
         if (data.url) setDexUrl(data.url);
       })
+      .catch(() => {
+        if (!cancelled) setResolvedPair("");
+      })
       .finally(() => {
+        clearTimeout(timer);
         if (!cancelled) setResolving(false);
       });
     return () => {
       cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
     };
   }, [chainId, tokenAddress, resolvedPair]);
 
@@ -111,7 +120,7 @@ export function NexusTokenChart({
           src={dexChartEmbedUrl(chainId, resolvedPair)}
           className={
             compact
-              ? "nexus-chart-iframe nexus-chart-iframe-compact h-[200px] w-full border-0 sm:h-[220px] lg:h-[240px] lg:max-h-[260px]"
+              ? "nexus-chart-iframe nexus-chart-iframe-compact h-[min(38dvh,240px)] w-full border-0 sm:h-[260px] lg:h-[280px] lg:max-h-[300px]"
               : "nexus-chart-iframe h-[min(42dvh,320px)] w-full border-0 sm:h-[280px] lg:h-[min(32vh,300px)] lg:max-h-[300px]"
           }
           allow="clipboard-write"
