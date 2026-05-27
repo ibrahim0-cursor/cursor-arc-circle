@@ -1521,13 +1521,33 @@ html[data-arc-theme="nexus"] .arc-panel-stripe-nexus {
 }
 
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
-  grid-template-columns: minmax(360px, 28%) minmax(300px, 1fr) minmax(300px, 26%) !important;
+  grid-template-columns: minmax(360px, 38%) minmax(260px, 1fr) minmax(360px, 38%) !important;
 }
 
 @media (min-width: 1280px) {
   html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
-    grid-template-columns: minmax(400px, 30%) minmax(340px, 1fr) minmax(320px, 24%) !important;
+    grid-template-columns: minmax(400px, 37%) minmax(300px, 1fr) minmax(400px, 37%) !important;
   }
+}
+
+@media (min-width: 1536px) {
+  html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
+    grid-template-columns: minmax(440px, 36%) minmax(340px, 1fr) minmax(440px, 36%) !important;
+  }
+}
+
+.nexus-feed-panel.arc-panel-nexus {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.nexus-feed-row {
+  scroll-margin: 8px;
+}
+
+.nexus-feed-row:hover {
+  transform: translateY(-1px);
 }
 
 @media (prefers-reduced-motion: reduce) {

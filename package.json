@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "health": "node scripts/health-check.mjs",
+    "nexus:scan": "node scripts/nexus-api-scan.mjs",
+    "nexus:scan:local": "node scripts/nexus-api-scan.mjs http://localhost:3000",
     "health:local": "node scripts/health-check.mjs http://localhost:3000",
     "finish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/complete-pending.ps1",
     "setup:portfolio": "node scripts/apply-demo-portfolios.mjs",

@@ -92,6 +92,9 @@ export function NexusPortfolio({
       label={`Portfolio${positions.length ? ` (${positions.length})` : ""}`}
       hint={hint}
       defaultOpen={positions.length > 0}
+      showCollapseHint
+      variant="technical"
+      icon={TrendingUp}
     >
       <div className="space-y-2">
         {loading && positions.length === 0 ? (

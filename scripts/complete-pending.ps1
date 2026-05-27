@@ -74,7 +74,25 @@ $critical = @(
   @{ n = "ALCHEMY_API_KEY"; s = $true },
   @{ n = "ZEROX_API_KEY"; s = $true },
   @{ n = "NEXT_PUBLIC_ARC_RPC_URL"; s = $false },
-  @{ n = "ARC_RPC_URL"; s = $false }
+  @{ n = "ARC_RPC_URL"; s = $false },
+  @{ n = "MORALIS_API_KEY"; s = $true },
+  @{ n = "GOLDRUSH_API_KEY"; s = $true },
+  @{ n = "COVALENT_API_KEY"; s = $true },
+  @{ n = "GITHUB_TOKEN"; s = $true },
+  @{ n = "SOCIAL_USE_PREMIUM"; s = $false },
+  @{ n = "SOCIAL_DATA_API_KEY"; s = $true },
+  @{ n = "LUNARCRUSH_API_KEY"; s = $true },
+  @{ n = "NEYNAR_API_KEY"; s = $true },
+  @{ n = "NEYNAR_API_BASE"; s = $false },
+  @{ n = "TELEGRAM_BOT_TOKEN"; s = $true },
+  @{ n = "DISCORD_BOT_TOKEN"; s = $true },
+  @{ n = "DISCORD_CLIENT_ID"; s = $false },
+  @{ n = "STOCKTWITS_USERNAME"; s = $false },
+  @{ n = "STOCKTWITS_PASSWORD"; s = $true },
+  @{ n = "RAPIDAPI_KEY"; s = $true },
+  @{ n = "RAPIDAPI_TWITTER_HOST"; s = $false },
+  @{ n = "RAPIDAPI_TWITTER_PROBE_PATH"; s = $false },
+  @{ n = "RAPIDAPI_TWITTER_PROBE_USERS"; s = $false }
 )
 
 Write-Host "==> Sync env vars (production, preview, development)"
@@ -93,6 +111,11 @@ if ($LASTEXITCODE -ne 0) {
   exit 1
 }
 
+Write-Host "==> NEXUS API scan"
+npm run nexus:scan
+$scanExit = $LASTEXITCODE
+
 Write-Host "==> Health check"
 npm run health
-exit $LASTEXITCODE
+$healthExit = $LASTEXITCODE
+exit ([Math]::Max($scanExit, $healthExit))

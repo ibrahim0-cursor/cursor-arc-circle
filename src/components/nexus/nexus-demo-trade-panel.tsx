@@ -62,11 +62,14 @@ export function NexusTradeHub({
   onTradeComplete,
   activeTab,
   onTabChange,
+  embedded = false,
 }: {
   token: TradeToken;
   onTradeComplete?: () => void;
   activeTab?: TradeTab;
   onTabChange?: (tab: TradeTab) => void;
+  /** Inside NexusCollapsible — skip duplicate outer panel */
+  embedded?: boolean;
 }) {
   const [internalTab, setInternalTab] = useState<TradeTab>("buy");
   const tradeTab = activeTab ?? internalTab;
@@ -265,11 +268,11 @@ export function NexusTradeHub({
           } as TrendingMarketToken)
         : null;
 
-  return (
-    <NexusAgentWalletProvider>
-      <div className="arc-panel arc-panel-nexus overflow-hidden">
-        <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-        <div className="border-b border-white/[0.08] px-4 py-3">
+  const shell = (
+    <>
+        {!embedded && <div className="arc-panel-stripe arc-panel-stripe-nexus" />}
+        <div className={embedded ? "" : "border-b border-white/[0.08] px-4 py-3"}>
+          {!embedded && (
           <div className="nexus-trade-hub-header mb-3 flex flex-wrap items-center gap-3">
             <ArcIconFrame icon={ArrowDownUp} variant="nexus" size="md" active />
             <div className="min-w-0 flex-1">
@@ -282,6 +285,7 @@ export function NexusTradeHub({
               </span>
             )}
           </div>
+          )}
           <div className="nexus-trade-tabs grid grid-cols-3 gap-2">
             {(
               [
@@ -537,7 +541,16 @@ export function NexusTradeHub({
           </>
         )}
       </div>
-      </div>
+    </>
+  );
+
+  return (
+    <NexusAgentWalletProvider>
+      {embedded ? (
+        <div className="overflow-hidden rounded-xl">{shell}</div>
+      ) : (
+        <div className="arc-panel arc-panel-nexus overflow-hidden">{shell}</div>
+      )}
     </NexusAgentWalletProvider>
   );
 }

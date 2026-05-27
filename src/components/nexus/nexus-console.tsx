@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { Database, LineChart, Loader2, Radio, Sparkles } from "lucide-react";
+import { ArrowDownUp, Database, LineChart, Loader2, Radio, Sparkles, Wallet } from "lucide-react";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcPanel } from "@/components/ui/arc-panel";
+import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
@@ -491,13 +492,16 @@ export function NexusConsole() {
   }
 
   const feedPanel = (
-    <ArcPanel
-      theme="nexus"
-      title="Market feed"
+    <NexusCollapsible
+      label="Market feed"
+      hint="Live · Saved · Alpha"
       icon={Radio}
-      className="nexus-column-panel max-lg:!border-0 max-lg:!bg-transparent lg:flex lg:h-full lg:min-h-0 lg:flex-col"
+      variant="reasoning"
+      defaultOpen
+      showCollapseHint
+      className="nexus-column-panel nexus-feed-panel max-lg:!border-0 max-lg:!bg-transparent lg:flex lg:h-full lg:max-h-full lg:min-h-0 lg:flex-col"
     >
-      <div className="-mt-2 mb-3 flex flex-wrap items-center gap-1.5 max-lg:mb-2">
+      <div className="mb-3 flex flex-wrap items-center gap-1.5 max-lg:mb-2">
         <button
           type="button"
           onClick={() => {
@@ -553,6 +557,7 @@ export function NexusConsole() {
         {activeTab === "live" ? (
           <NexusTrendingFeed
             className="h-full min-h-0"
+            cleanFeed
             selectedAddress={selectedToken?.tokenAddress}
             onSelect={(t, opts) => handleTokenSelect(t, opts?.openChart ?? true)}
             onTokensRefresh={handleFeedRefresh}
@@ -612,7 +617,7 @@ export function NexusConsole() {
           </div>
         )}
       </div>
-    </ArcPanel>
+    </NexusCollapsible>
   );
 
   const chartPanel = !selectedToken ? (
@@ -671,29 +676,52 @@ export function NexusConsole() {
   );
 
   const tradePanel = (
-    <div className="space-y-3 max-lg:pb-4 lg:space-y-2">
-      <div className="lg:hidden">
-        <NexusTokenStrip
-          tokens={feedTokens}
-          selected={selectedToken}
-          onSelect={(t) => handleTokenSelect(t)}
-          mobileLimit={STABLE_FEED_LIMIT}
-        />
-        {selectedToken && (
-          <NexusMobileTokenActions
-            token={selectedToken}
-            onTradeTab={(tab) => setTradeTab(tab)}
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div className="shrink-0 space-y-3 max-lg:pb-2">
+        <div className="lg:hidden">
+          <NexusTokenStrip
+            tokens={feedTokens}
+            selected={selectedToken}
+            onSelect={(t) => handleTokenSelect(t)}
+            mobileLimit={STABLE_FEED_LIMIT}
           />
-        )}
+          {selectedToken && (
+            <NexusMobileTokenActions
+              token={selectedToken}
+              onTradeTab={(tab) => setTradeTab(tab)}
+            />
+          )}
+        </div>
+        <NexusCollapsible
+          label="Arc Trade · Agent"
+          hint="Buy · Sell · Autopilot"
+          icon={ArrowDownUp}
+          variant="reasoning"
+          defaultOpen
+          showCollapseHint
+        >
+          <NexusTradeHub
+            embedded
+            token={selectedToken}
+            activeTab={tradeTab}
+            onTabChange={setTradeTab}
+            onTradeComplete={() => setPortfolioKey((k) => k + 1)}
+          />
+        </NexusCollapsible>
       </div>
-      <NexusTradeHub
-        token={selectedToken}
-        activeTab={tradeTab}
-        onTabChange={setTradeTab}
-        onTradeComplete={() => setPortfolioKey((k) => k + 1)}
-      />
-      <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
-      <NexusAbSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
+      <div className="nexus-trade-column-scroll min-h-0 flex-1 space-y-3 max-lg:pb-4">
+        <NexusCollapsible
+          label="Portfolio & swap"
+          hint="Balances · A/B swap"
+          icon={Wallet}
+          variant="intel"
+          defaultOpen
+          showCollapseHint
+        >
+          <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} />
+          <NexusAbSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
+        </NexusCollapsible>
+      </div>
     </div>
   );
 
@@ -702,7 +730,7 @@ export function NexusConsole() {
     <div className="relative min-h-screen text-white" data-nexus-page data-nexus-easy-mode data-arc-theme="nexus">
       <ArcBackground theme="nexus" />
 
-      <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
+      <div className="relative mx-auto w-full max-w-[1920px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8 xl:px-6">
         <NexusPremiumHero
           stableCount={STABLE_FEED_LIMIT}
           feeUsd={feeUsd}
@@ -789,11 +817,8 @@ export function NexusConsole() {
               {chartPanel}
             </div>
           </div>
-          <div className="nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col lg:sticky lg:top-20">
-            <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="arc-panel-body flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-              {tradePanel}
-            </div>
+          <div className="flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-20">
+            {tradePanel}
           </div>
         </div>
 

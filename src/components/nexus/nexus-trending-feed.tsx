@@ -74,6 +74,7 @@ export function NexusTrendingFeed({
   onOpenTrade,
   showAgent = true,
   compactDesktop = false,
+  cleanFeed = false,
   className,
 }: {
   selectedAddress?: string;
@@ -83,6 +84,8 @@ export function NexusTrendingFeed({
   showAgent?: boolean;
   /** Narrow left column: denser rows, less vertical scroll */
   compactDesktop?: boolean;
+  /** Hide long agent paragraphs — cleaner live feed */
+  cleanFeed?: boolean;
   className?: string;
 }) {
   const [tokens, setTokens] = useState<TrendingMarketToken[]>([]);
@@ -317,27 +320,20 @@ export function NexusTrendingFeed({
         )}
 
         {agent && (
-          <p
-            className={cn(
-              "mt-1 text-[11px] text-white/50 max-lg:text-xs",
-              compactDesktop ? "line-clamp-1 lg:mt-0.5 lg:text-[10px]" : "mt-1.5 line-clamp-2",
-            )}
-          >
-            <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
-            <span className="font-medium text-cyan-200/90">{agent.confidence}% {agent.action}</span>
-            {!compactDesktop && (
-              <>
-                {" · "}
-                {agent.whyAction || agent.reasoning}
-              </>
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/55">
+            <Bot className="h-3 w-3 shrink-0 text-emerald-300/80" />
+            <span className="font-semibold text-emerald-200/95">
+              {agent.confidence}% {agent.action}
+            </span>
+            {!cleanFeed && !compactDesktop && (agent.whyAction || agent.reasoning) && (
+              <span className="line-clamp-1 text-white/45">· {agent.whyAction || agent.reasoning}</span>
             )}
           </p>
         )}
-        {token.intel?.technical && !compactDesktop && (
-          <p className="mt-1 text-[10px] text-violet-200/70">
-            RSI {token.intel.technical.rsi.toFixed(0)} · {token.intel.technical.trend.replace("_", " ")} · TA{" "}
+        {token.intel?.technical && !cleanFeed && !compactDesktop && (
+          <p className="mt-1 text-[10px] text-violet-200/60">
+            RSI {token.intel.technical.rsi.toFixed(0)} · {token.intel.technical.trend.replace("_", " ")} ·{" "}
             {token.intel.technical.score}/100
-            {token.intel.technical.taSource === "birdeye_ohlcv" ? " · live candles" : ""}
           </p>
         )}
 
