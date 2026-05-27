@@ -369,7 +369,11 @@ export function NexusConsole() {
         )}
         {feedTab === "swap" && (
           <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
-            <NexusQuickSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
+            <NexusQuickSwap
+              tokens={feedTokens}
+              alphaTokens={alphaOpportunities}
+              onComplete={() => setPortfolioKey((k) => k + 1)}
+            />
           </div>
         )}
       </div>

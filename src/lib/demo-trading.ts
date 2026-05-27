@@ -126,7 +126,10 @@ export function applyDemoTrade(
     throw new Error("No open demo position for this token");
   }
 
-  const sellAmount = trade.side === "swap_to_usdc" ? existing.tokenAmount : trade.tokenAmount;
+  const sellAmount =
+    trade.side === "swap_to_usdc"
+      ? Math.min(trade.tokenAmount > 0 ? trade.tokenAmount : existing.tokenAmount, existing.tokenAmount)
+      : trade.tokenAmount;
   if (sellAmount > existing.tokenAmount + 1e-12) {
     throw new Error("Insufficient demo token balance");
   }
