@@ -32,6 +32,7 @@ import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
 import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
+import { NexusGmgnSkillsPanel } from "@/components/nexus/nexus-gmgn-skills-panel";
 import { NexusWalletBar } from "@/components/nexus/nexus-wallet-bar";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
 import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-bar";
@@ -846,8 +847,9 @@ export function NexusConsole() {
             </button>
           </div>
         )}
-        <div className="mb-3 max-lg:hidden">
+        <div className="mb-3 max-lg:hidden space-y-3">
           <NexusIntegrationsBanner />
+          <NexusGmgnSkillsPanel />
         </div>
 
         <div id="nexus-mobile-content" className="nexus-mobile-panel scroll-mt-36 max-lg:min-h-0 lg:hidden">

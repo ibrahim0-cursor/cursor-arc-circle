@@ -21,6 +21,7 @@ import { probeRedditPublic } from "@/lib/reddit-public";
 import { probeApeWisdom } from "@/lib/apewisdom";
 import { probeHackerNews } from "@/lib/hackernews";
 import { hasPerceptionKey, probePerception } from "@/lib/perception";
+import { hasGmgnApiKey, hasGmgnPrivateKey, probeGmgn } from "@/lib/gmgn-client";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export async function GET() {
     apeWisdomProbe,
     hackerNewsProbe,
     perceptionProbe,
+    gmgnProbe,
   ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
@@ -78,6 +80,7 @@ export async function GET() {
     probeApeWisdom(),
     probeHackerNews(),
     hasPerceptionKey() ? probePerception() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
+    probeGmgn(),
   ]);
   const redditEffective =
     redditProbe.ok || redditPublicProbe.ok
@@ -141,6 +144,9 @@ export async function GET() {
     hackerNewsProbe,
     perception: hasPerceptionKey(),
     perceptionProbe,
+    gmgn: hasGmgnApiKey(),
+    gmgnPrivateKey: hasGmgnPrivateKey(),
+    gmgnProbe,
     socialStack: premiumSocial ? "premium" : "free",
     geckoterminal: true,
     geckoProbe,
@@ -162,7 +168,7 @@ export async function GET() {
     socialData: hasSocialDataKey(),
     socialDataProbe,
     alphaLayers:
-      "apewisdom|reddit-public|hackernews|perception|narrative|telegram|discord|github|on-chain",
+      "gmgn|apewisdom|reddit-public|hackernews|perception|narrative|telegram|discord|github|on-chain",
     mode:
       process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
         ? "ai"

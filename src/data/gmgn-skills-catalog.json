@@ -1,0 +1,74 @@
+[
+  {
+    "id": "gmgn-token",
+    "title": "gmgn-token",
+    "subtitle": "Token info, security checks, pool data, holders, and top traders via GMGN OpenAPI.",
+    "category": "token-research",
+    "source": "GMGN",
+    "url": "https://gmgn.ai/ai",
+    "detailUrl": "https://github.com/GMGNAI/gmgn-skills/tree/main/skills/gmgn-token",
+    "installation": "npm install -g gmgn-cli. Set GMGN_API_KEY in ARC / Vercel. Use gmgn-cli token commands or enable this skill in NEXUS after confirm.",
+    "capabilities": ["token security", "holders", "pool", "traders", "contract risk"],
+    "requiresPrivateKey": false
+  },
+  {
+    "id": "gmgn-market",
+    "title": "gmgn-market",
+    "subtitle": "K-line OHLCV, trending meme rankings, trenches new launches, and real-time signals.",
+    "category": "market-data",
+    "source": "GMGN",
+    "url": "https://gmgn.ai/ai",
+    "detailUrl": "https://github.com/GMGNAI/gmgn-skills/tree/main/skills/gmgn-market",
+    "installation": "npm install -g gmgn-cli. Set GMGN_API_KEY. Integrated in NEXUS Alpha via /v1/market/rank.",
+    "capabilities": ["trending", "kline", "trenches", "signals", "hot tokens"],
+    "requiresPrivateKey": false
+  },
+  {
+    "id": "gmgn-portfolio",
+    "title": "gmgn-portfolio",
+    "subtitle": "Wallet holdings, activity, PnL stats, and transaction history.",
+    "category": "wallet-analysis",
+    "source": "GMGN",
+    "url": "https://gmgn.ai/ai",
+    "detailUrl": "https://github.com/GMGNAI/gmgn-skills/tree/main/skills/gmgn-portfolio",
+    "installation": "npm install -g gmgn-cli. Set GMGN_API_KEY. Enable after confirm in NEXUS GMGN panel.",
+    "capabilities": ["holdings", "wallet PnL", "activity", "balance"],
+    "requiresPrivateKey": false
+  },
+  {
+    "id": "gmgn-track",
+    "title": "gmgn-track",
+    "subtitle": "Follow-wallet trades, KOL buys, and smart-money flow tracking.",
+    "category": "smart-money",
+    "source": "GMGN",
+    "url": "https://gmgn.ai/ai",
+    "detailUrl": "https://github.com/GMGNAI/gmgn-skills/tree/main/skills/gmgn-track",
+    "installation": "npm install -g gmgn-cli. Set GMGN_API_KEY. Enable after confirm in NEXUS GMGN panel.",
+    "capabilities": ["KOL signals", "smart money", "wallet follows", "copy-trade intel"],
+    "requiresPrivateKey": false
+  },
+  {
+    "id": "gmgn-swap",
+    "title": "gmgn-swap",
+    "subtitle": "Execute swaps, limit orders, and strategy orders on Solana, BSC, and Base.",
+    "category": "trading",
+    "source": "GMGN",
+    "url": "https://gmgn.ai/ai",
+    "detailUrl": "https://github.com/GMGNAI/gmgn-skills/tree/main/skills/gmgn-swap",
+    "installation": "npm install -g gmgn-cli. Requires GMGN_API_KEY + GMGN_PRIVATE_KEY (Ed25519). Confirm before enabling trade skill.",
+    "capabilities": ["swap", "limit orders", "strategy orders", "order query"],
+    "requiresPrivateKey": true
+  },
+  {
+    "id": "gmgn-cooking",
+    "title": "gmgn-cooking",
+    "subtitle": "One-command cooking: buy plus take-profit/stop-loss in a single flow.",
+    "category": "trading",
+    "source": "GMGN",
+    "url": "https://gmgn.ai/ai",
+    "detailUrl": "https://github.com/GMGNAI/gmgn-skills/tree/main/skills/gmgn-cooking",
+    "installation": "npm install -g gmgn-cli. Requires GMGN_API_KEY + GMGN_PRIVATE_KEY. Confirm before enabling.",
+    "capabilities": ["cooking orders", "TP/SL bundle", "launch snipes"],
+    "requiresPrivateKey": true
+  }
+]

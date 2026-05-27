@@ -52,6 +52,7 @@ function narrativeAcceleration(
   news: CryptoNewsItem[],
   community: CommunityPulse,
   geckoTrending: boolean,
+  gmgnLine?: string,
 ): { score: number; summary: string } {
   const memeHits = community.items.filter((i) => i.kind === "meme").length;
   const redditHits = community.items.filter((i) => i.kind === "reddit").length;
@@ -81,6 +82,7 @@ function narrativeAcceleration(
   score += Math.min(12, twitterHits * 6);
   score += Math.min(10, stocktwitsHits * 5);
   if (geckoTrending) score += 18;
+  if (gmgnLine) score += 14;
   if (turnover > 0.8 && turnover < 6) score += 12;
   if (buyPressure > 1.15) score += 10;
   if (token.change24h > 6 && token.change24h < 70) score += 8;
@@ -89,6 +91,7 @@ function narrativeAcceleration(
 
   const parts: string[] = [];
   if (geckoTrending) parts.push("GeckoTerminal trending");
+  if (gmgnLine) parts.push(gmgnLine);
   if (memeHits > 0) parts.push(`meme/news velocity (${memeHits} headlines)`);
   if (redditHits > 0) parts.push(`Reddit buzz (${redditHits} posts)`);
   if (apeHits > 0) parts.push(`ApeWisdom rank / mentions (${apeItem?.title?.slice(0, 48) ?? "tracked"})`);
@@ -196,12 +199,19 @@ export async function buildAlphaIntelReport(input: {
   news: CryptoNewsItem[];
   community: CommunityPulse;
   geckoTrending?: boolean;
+  gmgnLine?: string;
   security?: TokenSecurityReport;
   skipGithub?: boolean;
 }): Promise<AlphaIntelReport> {
-  const { token, intel, signal, news, community, geckoTrending } = input;
+  const { token, intel, signal, news, community, geckoTrending, gmgnLine } = input;
   const scam = assessTokenScam(token, intel, input.security);
-  const narrative = narrativeAcceleration(token, news, community, Boolean(geckoTrending));
+  const narrative = narrativeAcceleration(
+    token,
+    news,
+    community,
+    Boolean(geckoTrending),
+    gmgnLine,
+  );
   const risk = riskBreakdown(token, intel, signal, scam);
   const tags = ecosystemTags(token);
 
@@ -230,7 +240,7 @@ export async function buildAlphaIntelReport(input: {
       : `${signal.whyAction} ${narrative.summary}${comparable} Confidence ${signal.confidence}%, continuation probability weighted by narrative + flow.`;
 
   const layerHints = [
-    "Narrative acceleration (ApeWisdom, Reddit public, HN, Perception, news, Telegram, Discord, X, Gecko)",
+    "Narrative acceleration (GMGN, ApeWisdom, Reddit, HN, Perception, news, Telegram, Discord, X, Gecko)",
     "Smart money (Birdeye whales, buy/sell flow)",
     "Momentum (TA + 24h structure)",
     "Risk (rug, liq, concentration, hype)",

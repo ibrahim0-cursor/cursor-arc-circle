@@ -701,7 +701,9 @@ export async function runAlphaScan(
 
   const { buildAlphaIntelReport } = await import("./alpha-intel");
   const { getApeWisdomMentionMap, lookupApeWisdom } = await import("./apewisdom");
+  const { getGmgnAlphaContext, gmgnBoostForSymbol } = await import("./gmgn-alpha");
   const apeMap = await getApeWisdomMentionMap("all-crypto", 2);
+  const gmgnCtx = await getGmgnAlphaContext();
 
   const analyzed = await mapWithConcurrencySafe(
     tokens,
@@ -719,6 +721,7 @@ export async function runAlphaScan(
     async ({ token, intel, signal, news, social, community, security }, index) => {
       const key = `${token.chainId}:${token.tokenAddress.toLowerCase()}`;
       const socialHeadline = pickCommunityBuzz(community, news.map((n) => n.title));
+      const gmgn = gmgnBoostForSymbol(token.symbol, gmgnCtx);
       const report = await buildAlphaIntelReport({
         token,
         intel,
@@ -726,13 +729,15 @@ export async function runAlphaScan(
         news,
         community,
         geckoTrending: geckoHot.has(key),
+        gmgnLine: gmgn.line,
         security,
         skipGithub: index >= 8,
       });
       const apeRow = lookupApeWisdom(token.symbol, apeMap);
       let legacyScore =
         scoreOpportunity(token, signal, intel, social, news.length) +
-        (geckoHot.has(key) ? 5 : 0);
+        (geckoHot.has(key) ? 5 : 0) +
+        gmgn.boost;
       if (apeRow) {
         legacyScore += Math.min(18, 8 + Math.min(10, apeRow.mentions));
       }
@@ -794,7 +799,7 @@ export async function runAlphaScan(
     count: opportunities.length,
     scanMode: "alpha" as const,
     criteria:
-      "alpha-20|apewisdom|reddit-public|hackernews|perception|narrative|geckoterminal|github|birdeye|ai-thesis",
+      "alpha-20|gmgn|apewisdom|reddit-public|hackernews|perception|geckoterminal|github|birdeye|ai-thesis",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

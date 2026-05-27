@@ -24,6 +24,7 @@ const checks = [
   ["ApeWisdom", (d) => d.apeWisdomProbe?.ok, (d) => d.apeWisdomProbe?.error],
   ["Hacker News", (d) => d.hackerNewsProbe?.ok, (d) => d.hackerNewsProbe?.error],
   ["Perception", (d) => d.perceptionProbe?.ok, (d) => d.perceptionProbe?.error],
+  ["GMGN", (d) => d.gmgnProbe?.ok, (d) => d.gmgnProbe?.error],
   ["Telegram", (d) => d.telegramProbe?.ok, (d) => d.telegramProbe?.error],
   ["Discord", (d) => d.discordProbe?.ok, (d) => d.discordProbe?.error],
   ["Stocktwits", (d) => d.stocktwitsProbe?.ok, (d) => d.stocktwitsProbe?.error],
