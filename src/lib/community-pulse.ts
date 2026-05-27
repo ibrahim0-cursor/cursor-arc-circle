@@ -10,9 +10,26 @@ import { fetchDiscordBuzz } from "./discord-bot";
 import { fetchStocktwitsBuzz } from "./stocktwits";
 import { fetchRapidApiTwitterBuzz, hasRapidApiTwitter } from "./rapidapi-twitter";
 import { hasSocialDataKey, searchSocialDataTweets } from "./social-data-api";
+import { getApeWisdomMentionMap, lookupApeWisdom } from "./apewisdom";
+import { searchHackerNewsForToken } from "./hackernews";
+import {
+  getPerceptionIndexCached,
+  hasPerceptionKey,
+  matchPerceptionForSymbol,
+} from "./perception";
 
 export type CommunityPulseItem = {
-  kind: "news" | "meme" | "reddit" | "telegram" | "discord" | "stocktwits" | "twitter";
+  kind:
+    | "news"
+    | "meme"
+    | "reddit"
+    | "telegram"
+    | "discord"
+    | "stocktwits"
+    | "twitter"
+    | "apewisdom"
+    | "hackernews"
+    | "perception";
   title: string;
   source: string;
   link?: string;
@@ -31,6 +48,9 @@ export type CommunityPulse = {
   discordBuzz?: string;
   stocktwitsBuzz?: string;
   twitterBuzz?: string;
+  apeWisdomBuzz?: string;
+  hackerNewsBuzz?: string;
+  perceptionBuzz?: string;
   social?: TokenSocialIntel;
 };
 
@@ -66,15 +86,22 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
         )
       : Promise.resolve([]);
 
-  const [news, meme, social, telegram, discord, stocktwits, twitter] = await Promise.all([
-    fetchCryptoNewsHeadlines(key, 6),
-    fetchCryptoNewsHeadlines(memeQuery, 5),
-    fetchTokenSocialIntel(key, name),
-    fetchTelegramBuzz(key, name),
-    fetchDiscordBuzz(key),
-    fetchStocktwitsBuzz(key),
-    twitterPromise,
-  ]);
+  const [news, meme, social, telegram, discord, stocktwits, twitter, apeMap, hnHits, perceptionIndex] =
+    await Promise.all([
+      fetchCryptoNewsHeadlines(key, 6),
+      fetchCryptoNewsHeadlines(memeQuery, 5),
+      fetchTokenSocialIntel(key, name),
+      fetchTelegramBuzz(key, name),
+      fetchDiscordBuzz(key),
+      fetchStocktwitsBuzz(key),
+      twitterPromise,
+      getApeWisdomMentionMap("all-crypto", 2),
+      searchHackerNewsForToken(key, name),
+      hasPerceptionKey() ? getPerceptionIndexCached() : Promise.resolve([]),
+    ]);
+
+  const apeRow = lookupApeWisdom(key, apeMap);
+  const perceptionRow = matchPerceptionForSymbol(key, name, perceptionIndex);
 
   const items = dedupeItems([
     ...newsToItems(meme, "meme"),
@@ -111,7 +138,36 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
       source: tw.author ? `X @${tw.author}` : hasSocialDataKey() ? "X (Social Data)" : "X",
       link: tw.url,
     })),
-  ]).slice(0, 16);
+    ...(apeRow
+      ? [
+          {
+            kind: "apewisdom" as const,
+            title: `${apeRow.ticker} — rank #${apeRow.rank} · ${apeRow.mentions} mentions · ${apeRow.upvotes} upvotes`,
+            source: "ApeWisdom (Reddit + 4chan)",
+            score: apeRow.mentions,
+          },
+        ]
+      : []),
+    ...hnHits.map((h) => ({
+      kind: "hackernews" as const,
+      title: h.title,
+      source: `HN · ${h.points} pts · ${h.numComments} comments`,
+      link: h.url ?? h.storyUrl,
+      score: h.points,
+    })),
+    ...(perceptionRow
+      ? [
+          {
+            kind: "perception" as const,
+            title:
+              perceptionRow.summary ??
+              `${perceptionRow.symbol ?? key} perception ${perceptionRow.score ?? "—"}`,
+            source: "Perception.to",
+            score: perceptionRow.score,
+          },
+        ]
+      : []),
+  ]).slice(0, 18);
 
   const memeBuzz = items.find((i) => i.kind === "meme")?.title;
   const redditBuzz = items.find((i) => i.kind === "reddit")?.title;
@@ -120,6 +176,9 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
   const discordBuzz = items.find((i) => i.kind === "discord")?.title;
   const stocktwitsBuzz = items.find((i) => i.kind === "stocktwits")?.title;
   const twitterBuzz = items.find((i) => i.kind === "twitter")?.title;
+  const apeWisdomBuzz = items.find((i) => i.kind === "apewisdom")?.title;
+  const hackerNewsBuzz = items.find((i) => i.kind === "hackernews")?.title;
+  const perceptionBuzz = items.find((i) => i.kind === "perception")?.title;
 
   return {
     topic: key.toUpperCase(),
@@ -132,6 +191,9 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
     discordBuzz,
     stocktwitsBuzz,
     twitterBuzz,
+    apeWisdomBuzz,
+    hackerNewsBuzz,
+    perceptionBuzz,
     social,
   };
 }
@@ -139,9 +201,12 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
 /** Best single line for Alpha cards / feed chips */
 export function pickCommunityBuzz(pulse: CommunityPulse, newsFallback: string[] = []): string | undefined {
   return (
+    pulse.apeWisdomBuzz ??
     pulse.telegramBuzz ??
     pulse.discordBuzz ??
     pulse.redditBuzz ??
+    pulse.hackerNewsBuzz ??
+    pulse.perceptionBuzz ??
     pulse.twitterBuzz ??
     pulse.stocktwitsBuzz ??
     pulse.memeBuzz ??

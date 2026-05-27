@@ -11,6 +11,9 @@ const kindStyles: Record<CommunityPulseItem["kind"], string> = {
   discord: "border-indigo-400/30 bg-indigo-500/10",
   stocktwits: "border-emerald-400/25 bg-emerald-500/8",
   twitter: "border-fuchsia-400/30 bg-fuchsia-500/10",
+  apewisdom: "border-amber-400/40 bg-amber-500/15",
+  hackernews: "border-orange-400/35 bg-orange-600/10",
+  perception: "border-violet-400/35 bg-violet-500/12",
 };
 
 const kindLabels: Record<CommunityPulseItem["kind"], string> = {
@@ -21,6 +24,9 @@ const kindLabels: Record<CommunityPulseItem["kind"], string> = {
   discord: "Discord",
   stocktwits: "Stocktwits",
   twitter: "X",
+  apewisdom: "ApeWisdom",
+  hackernews: "Hacker News",
+  perception: "Perception",
 };
 
 export function CommunityPulsePanel({

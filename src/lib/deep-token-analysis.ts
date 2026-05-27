@@ -44,7 +44,7 @@ export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<De
   };
 
   const news: CryptoNewsItem[] = community.items
-    .filter((i) => i.kind !== "reddit")
+    .filter((i) => i.kind === "news" || i.kind === "meme")
     .map((i) => ({
       title: i.title,
       source: i.source,

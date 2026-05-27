@@ -375,7 +375,7 @@ export function NexusConsole() {
       toast({
         type: "success",
         title: "Alpha scan complete",
-        message: `${rows.length} tokens — 6-layer alpha + AI thesis`,
+        message: `${rows.length} tokens — ApeWisdom + Reddit + HN + Perception + AI thesis`,
       });
     } catch (err) {
       const msg =

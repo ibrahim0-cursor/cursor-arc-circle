@@ -559,6 +559,8 @@ export type AlphaOpportunity = {
   whyAction: string;
   newsHeadlines: string[];
   socialBuzz?: string;
+  apeWisdomRank?: number;
+  apeMentions?: number;
   galaxyScore?: number;
   socialDegraded?: string;
   githubDevSummary?: string;
@@ -698,6 +700,9 @@ export async function runAlphaScan(
   }
 
   const { buildAlphaIntelReport } = await import("./alpha-intel");
+  const { getApeWisdomMentionMap, lookupApeWisdom } = await import("./apewisdom");
+  const apeMap = await getApeWisdomMentionMap("all-crypto", 2);
+
   const analyzed = await mapWithConcurrencySafe(
     tokens,
     (token) => analyzeTokenForMemoryScan(token),
@@ -724,9 +729,13 @@ export async function runAlphaScan(
         security,
         skipGithub: index >= 8,
       });
-      const legacyScore =
+      const apeRow = lookupApeWisdom(token.symbol, apeMap);
+      let legacyScore =
         scoreOpportunity(token, signal, intel, social, news.length) +
         (geckoHot.has(key) ? 5 : 0);
+      if (apeRow) {
+        legacyScore += Math.min(18, 8 + Math.min(10, apeRow.mentions));
+      }
 
       return {
         rank: 0,
@@ -752,6 +761,8 @@ export async function runAlphaScan(
         whyAction: signal.whyAction,
         newsHeadlines: news.slice(0, 3).map((n) => n.title),
         socialBuzz: socialHeadline,
+        apeWisdomRank: apeRow?.rank,
+        apeMentions: apeRow?.mentions,
         galaxyScore: social.lunarcrush?.galaxyScore,
         socialDegraded:
           usePremiumSocialApis() && social.status.lunarcrush === "402"
@@ -783,7 +794,7 @@ export async function runAlphaScan(
     count: opportunities.length,
     scanMode: "alpha" as const,
     criteria:
-      "alpha-20|6-layer|narrative-accel|smart-money|geckoterminal|github-dev|community|birdeye|ai-thesis",
+      "alpha-20|apewisdom|reddit-public|hackernews|perception|narrative|geckoterminal|github|birdeye|ai-thesis",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

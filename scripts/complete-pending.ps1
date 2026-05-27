@@ -92,7 +92,9 @@ $critical = @(
   @{ n = "RAPIDAPI_KEY"; s = $true },
   @{ n = "RAPIDAPI_TWITTER_HOST"; s = $false },
   @{ n = "RAPIDAPI_TWITTER_PROBE_PATH"; s = $false },
-  @{ n = "RAPIDAPI_TWITTER_PROBE_USERS"; s = $false }
+  @{ n = "RAPIDAPI_TWITTER_PROBE_USERS"; s = $false },
+  @{ n = "PERCEPTION_API_KEY"; s = $true },
+  @{ n = "REDDIT_PUBLIC_USER_AGENT"; s = $false }
 )
 
 Write-Host "==> Sync env vars (production, preview, development)"

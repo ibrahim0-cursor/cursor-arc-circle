@@ -14,6 +14,7 @@ import {
   type NeynarCastSearchResult,
 } from "./neynar";
 import { hasRedditCredentials, searchSubredditPosts, type RedditPost } from "./reddit";
+import { redditPublicForToken } from "./reddit-public";
 import { usePremiumSocialApis } from "./social-config";
 import type { TokenSocialSnapshot } from "./storage";
 
@@ -102,7 +103,7 @@ export async function fetchTokenSocialIntel(symbol: string, name?: string): Prom
 
   const status: TokenSocialIntel["status"] = {
     lunarcrush: useLc ? "empty" : "missing",
-    reddit: hasRedditCredentials() ? "empty" : "missing",
+    reddit: "empty",
     neynar: useNeynarSearch ? "empty" : "missing",
   };
 
@@ -114,7 +115,7 @@ export async function fetchTokenSocialIntel(symbol: string, name?: string): Prom
     useLc ? getTopicPosts(sym, 3) : Promise.resolve(emptyPosts),
     hasRedditCredentials()
       ? searchSubredditPosts(pickSubreddit(sym), query, 4)
-      : Promise.resolve([]),
+      : redditPublicForToken(sym, 4),
     useNeynarSearch
       ? getCastsForKeyword(sym, 4)
       : Promise.resolve({ casts: [] } as NeynarCastSearchResult),
@@ -132,9 +133,7 @@ export async function fetchTokenSocialIntel(symbol: string, name?: string): Prom
     else status.lunarcrush = "empty";
   }
 
-  if (hasRedditCredentials()) {
-    status.reddit = redditPosts.length > 0 ? "ok" : "empty";
-  }
+  status.reddit = redditPosts.length > 0 ? "ok" : hasRedditCredentials() ? "empty" : "empty";
 
   if (useNeynarSearch) {
     if (farcasterResult.paymentRequired) status.neynar = "402";

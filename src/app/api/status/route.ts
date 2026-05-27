@@ -17,6 +17,10 @@ import { probeDiscord, hasDiscordBotToken, hasDiscordOAuthClient } from "@/lib/d
 import { hasStocktwitsCredentials, probeStocktwits } from "@/lib/stocktwits";
 import { hasRapidApiTwitter, probeRapidApiTwitter } from "@/lib/rapidapi-twitter";
 import { hasSocialDataKey, probeSocialData } from "@/lib/social-data-api";
+import { probeRedditPublic } from "@/lib/reddit-public";
+import { probeApeWisdom } from "@/lib/apewisdom";
+import { probeHackerNews } from "@/lib/hackernews";
+import { hasPerceptionKey, probePerception } from "@/lib/perception";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +42,10 @@ export async function GET() {
     stocktwitsProbe,
     rapidTwitterProbe,
     socialDataProbe,
+    redditPublicProbe,
+    apeWisdomProbe,
+    hackerNewsProbe,
+    perceptionProbe,
   ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
@@ -66,7 +74,20 @@ export async function GET() {
     hasStocktwitsCredentials() ? probeStocktwits() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
     hasRapidApiTwitter() ? probeRapidApiTwitter() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
     hasSocialDataKey() ? probeSocialData() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
+    probeRedditPublic(),
+    probeApeWisdom(),
+    probeHackerNews(),
+    hasPerceptionKey() ? probePerception() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
   ]);
+  const redditEffective =
+    redditProbe.ok || redditPublicProbe.ok
+      ? { ok: true, oauth: redditProbe.ok, public: redditPublicProbe.ok }
+      : {
+          ok: false,
+          oauth: redditProbe.configured,
+          public: redditPublicProbe.configured,
+          error: redditProbe.error ?? redditPublicProbe.error,
+        };
   const demoPortfolio = supabaseHealth.demoPortfolio;
 
   let birdeyeProbe: { ok: boolean; error?: string } = { ok: false, error: "no key" };
@@ -113,8 +134,13 @@ export async function GET() {
       ...neynarProbe,
       searchEnabled: process.env.NEYNAR_USE_SEARCH?.trim().toLowerCase() === "true",
     },
-    reddit: hasRedditCredentials(),
-    redditProbe,
+    reddit: hasRedditCredentials() || redditPublicProbe.ok,
+    redditProbe: redditEffective,
+    redditPublicProbe,
+    apeWisdomProbe,
+    hackerNewsProbe,
+    perception: hasPerceptionKey(),
+    perceptionProbe,
     socialStack: premiumSocial ? "premium" : "free",
     geckoterminal: true,
     geckoProbe,
@@ -136,7 +162,7 @@ export async function GET() {
     socialData: hasSocialDataKey(),
     socialDataProbe,
     alphaLayers:
-      "narrative|telegram|discord|stocktwits|rapidapi-x|reddit|github|on-chain",
+      "apewisdom|reddit-public|hackernews|perception|narrative|telegram|discord|github|on-chain",
     mode:
       process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
         ? "ai"

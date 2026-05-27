@@ -55,10 +55,15 @@ function narrativeAcceleration(
 ): { score: number; summary: string } {
   const memeHits = community.items.filter((i) => i.kind === "meme").length;
   const redditHits = community.items.filter((i) => i.kind === "reddit").length;
+  const apeHits = community.items.filter((i) => i.kind === "apewisdom").length;
+  const hnHits = community.items.filter((i) => i.kind === "hackernews").length;
+  const perceptionHits = community.items.filter((i) => i.kind === "perception").length;
   const telegramHits = community.items.filter((i) => i.kind === "telegram").length;
   const discordHits = community.items.filter((i) => i.kind === "discord").length;
   const twitterHits = community.items.filter((i) => i.kind === "twitter").length;
   const stocktwitsHits = community.items.filter((i) => i.kind === "stocktwits").length;
+  const apeItem = community.items.find((i) => i.kind === "apewisdom");
+  const apeMentions = apeItem?.score ?? 0;
   const newsHits = news.length;
   const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
   const buyPressure =
@@ -68,6 +73,9 @@ function narrativeAcceleration(
   score += Math.min(25, newsHits * 5);
   score += Math.min(20, memeHits * 8);
   score += Math.min(20, redditHits * 10);
+  score += Math.min(22, apeHits > 0 ? 12 + Math.min(10, apeMentions) : 0);
+  score += Math.min(14, hnHits * 7);
+  score += Math.min(12, perceptionHits * 10);
   score += Math.min(15, telegramHits * 8);
   score += Math.min(15, discordHits * 8);
   score += Math.min(12, twitterHits * 6);
@@ -83,6 +91,9 @@ function narrativeAcceleration(
   if (geckoTrending) parts.push("GeckoTerminal trending");
   if (memeHits > 0) parts.push(`meme/news velocity (${memeHits} headlines)`);
   if (redditHits > 0) parts.push(`Reddit buzz (${redditHits} posts)`);
+  if (apeHits > 0) parts.push(`ApeWisdom rank / mentions (${apeItem?.title?.slice(0, 48) ?? "tracked"})`);
+  if (hnHits > 0) parts.push(`Hacker News (${hnHits} stories)`);
+  if (perceptionHits > 0) parts.push("Perception index signal");
   if (telegramHits > 0) parts.push(`Telegram velocity (${telegramHits})`);
   if (discordHits > 0) parts.push(`Discord chatter (${discordHits})`);
   if (twitterHits > 0) parts.push(`X/RapidAPI mentions (${twitterHits})`);
@@ -219,7 +230,7 @@ export async function buildAlphaIntelReport(input: {
       : `${signal.whyAction} ${narrative.summary}${comparable} Confidence ${signal.confidence}%, continuation probability weighted by narrative + flow.`;
 
   const layerHints = [
-    "Narrative acceleration (news, meme, Reddit, Telegram, Discord, X, Stocktwits, Gecko)",
+    "Narrative acceleration (ApeWisdom, Reddit public, HN, Perception, news, Telegram, Discord, X, Gecko)",
     "Smart money (Birdeye whales, buy/sell flow)",
     "Momentum (TA + 24h structure)",
     "Risk (rug, liq, concentration, hype)",

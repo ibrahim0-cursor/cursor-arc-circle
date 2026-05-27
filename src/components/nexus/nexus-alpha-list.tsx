@@ -76,8 +76,8 @@ export function NexusAlphaList({
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-300" />
         <h3 className="text-base font-semibold text-white">Alpha scan running…</h3>
         <p className="mx-auto max-w-md text-sm text-white/60">
-          Analyzing up to 20 tokens — Birdeye, news, narrative layers, and AI thesis. This can take
-          30–90 seconds.
+          Analyzing up to 20 tokens — ApeWisdom mentions, Reddit (free), Hacker News, Perception,
+          Birdeye, and AI thesis. This can take 30–90 seconds.
         </p>
         <div className="mx-auto flex max-w-xs flex-col gap-2 pt-2">
           {[0, 1, 2].map((i) => (
@@ -170,6 +170,11 @@ export function NexusAlphaList({
                       <span className="text-[10px] text-emerald-200/80">
                         Narr +{row.narrativeAcceleration}
                       </span>
+                      {row.apeWisdomRank != null && (
+                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                          Ape #{row.apeWisdomRank}
+                        </span>
+                      )}
                     </div>
                     {row.ecosystemTags.length > 0 && (
                       <p className="mt-0.5 text-[10px] text-cyan-200/70 line-clamp-1">
