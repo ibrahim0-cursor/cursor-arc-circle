@@ -53,12 +53,19 @@ function narrativeAcceleration(
   community: CommunityPulse,
   geckoTrending: boolean,
   gmgnLine?: string,
+  sourceTags?: string[],
 ): { score: number; summary: string } {
   const memeHits = community.items.filter((i) => i.kind === "meme").length;
   const redditHits = community.items.filter((i) => i.kind === "reddit").length;
   const apeHits = community.items.filter((i) => i.kind === "apewisdom").length;
   const hnHits = community.items.filter((i) => i.kind === "hackernews").length;
   const perceptionHits = community.items.filter((i) => i.kind === "perception").length;
+  const opennewsHits = community.items.filter((i) => i.kind === "opennews").length;
+  const opennewsBullish = community.items.filter(
+    (i) =>
+      i.kind === "opennews" &&
+      /\bbull|buy|long|positive|surge|breakout/i.test(i.title),
+  ).length;
   const telegramHits = community.items.filter((i) => i.kind === "telegram").length;
   const discordHits = community.items.filter((i) => i.kind === "discord").length;
   const twitterHits = community.items.filter((i) => i.kind === "twitter").length;
@@ -77,6 +84,7 @@ function narrativeAcceleration(
   score += Math.min(22, apeHits > 0 ? 12 + Math.min(10, apeMentions) : 0);
   score += Math.min(14, hnHits * 7);
   score += Math.min(12, perceptionHits * 10);
+  score += Math.min(18, opennewsHits * 6 + opennewsBullish * 4);
   score += Math.min(15, telegramHits * 8);
   score += Math.min(15, discordHits * 8);
   score += Math.min(12, twitterHits * 6);
@@ -86,20 +94,24 @@ function narrativeAcceleration(
   if (turnover > 0.8 && turnover < 6) score += 12;
   if (buyPressure > 1.15) score += 10;
   if (token.change24h > 6 && token.change24h < 70) score += 8;
+  if (sourceTags?.some((t) => t.includes("signal"))) score += 10;
+  if (sourceTags?.some((t) => t.includes("trending"))) score += 6;
 
   score = Math.min(100, score);
 
   const parts: string[] = [];
   if (geckoTrending) parts.push("GeckoTerminal trending");
   if (gmgnLine) parts.push(gmgnLine);
+  if (sourceTags?.some((t) => /signal/i.test(t))) parts.push("live signal feed");
   if (memeHits > 0) parts.push(`meme/news velocity (${memeHits} headlines)`);
   if (redditHits > 0) parts.push(`Reddit buzz (${redditHits} posts)`);
   if (apeHits > 0) parts.push(`ApeWisdom rank / mentions (${apeItem?.title?.slice(0, 48) ?? "tracked"})`);
   if (hnHits > 0) parts.push(`Hacker News (${hnHits} stories)`);
   if (perceptionHits > 0) parts.push("Perception index signal");
+  if (opennewsHits > 0) parts.push(`scored headlines (${opennewsHits})`);
   if (telegramHits > 0) parts.push(`Telegram velocity (${telegramHits})`);
   if (discordHits > 0) parts.push(`Discord chatter (${discordHits})`);
-  if (twitterHits > 0) parts.push(`X/RapidAPI mentions (${twitterHits})`);
+  if (twitterHits > 0) parts.push(`X mentions (${twitterHits})`);
   if (stocktwitsHits > 0) parts.push(`Stocktwits news (${stocktwitsHits})`);
   if (newsHits > 0) parts.push(`${newsHits} news hits`);
   if (turnover > 1.2) parts.push(`liquidity turnover ${turnover.toFixed(1)}×`);
@@ -202,8 +214,9 @@ export async function buildAlphaIntelReport(input: {
   gmgnLine?: string;
   security?: TokenSecurityReport;
   skipGithub?: boolean;
+  sourceTags?: string[];
 }): Promise<AlphaIntelReport> {
-  const { token, intel, signal, news, community, geckoTrending, gmgnLine } = input;
+  const { token, intel, signal, news, community, geckoTrending, gmgnLine, sourceTags } = input;
   const scam = assessTokenScam(token, intel, input.security);
   const narrative = narrativeAcceleration(
     token,
@@ -211,6 +224,7 @@ export async function buildAlphaIntelReport(input: {
     community,
     Boolean(geckoTrending),
     gmgnLine,
+    sourceTags,
   );
   const risk = riskBreakdown(token, intel, signal, scam);
   const tags = ecosystemTags(token);
@@ -240,12 +254,12 @@ export async function buildAlphaIntelReport(input: {
       : `${signal.whyAction} ${narrative.summary}${comparable} Confidence ${signal.confidence}%, continuation probability weighted by narrative + flow.`;
 
   const layerHints = [
-    "Narrative acceleration (GMGN, ApeWisdom, Reddit, HN, Perception, news, Telegram, Discord, X, Gecko)",
-    "Smart money (Birdeye whales, buy/sell flow)",
-    "Momentum (TA + 24h structure)",
-    "Risk (rug, liq, concentration, hype)",
-    "AI thesis (Groq/heuristic)",
-    ...(githubDev && githubDev.score > 20 ? ["GitHub dev momentum"] : []),
+    "Narrative velocity",
+    "Smart-money flow",
+    "Momentum structure",
+    "Risk gates",
+    "Agent thesis",
+    ...(githubDev && githubDev.score > 20 ? ["Developer activity"] : []),
   ];
 
   return {

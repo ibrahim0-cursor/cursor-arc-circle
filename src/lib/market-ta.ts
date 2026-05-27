@@ -95,10 +95,11 @@ function taFromCandles(
 
 export async function resolveTokenTechnical(
   token: TrendingToken,
+  opts?: { allowBirdeyeOhlcv?: boolean },
 ): Promise<ResolvedTechnical> {
   const changes = normalizePriceChanges(token.priceChange, token.change24h);
 
-  if (hasBirdeyeKey()) {
+  if (hasBirdeyeKey() && opts?.allowBirdeyeOhlcv !== false) {
     const candles = await fetchBirdeyeOhlcv(token.tokenAddress, token.chainId, "1H", 48);
     const closes = candles.map((c) => c.close).filter((c) => c > 0);
     if (closes.length >= 10) {

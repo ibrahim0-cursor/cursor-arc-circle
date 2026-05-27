@@ -464,11 +464,20 @@ async function refreshTokenFromDex(token: TrendingToken): Promise<TrendingToken>
   return { ...token, ...fresh, intel: token.intel };
 }
 
-async function analyzeTokenForMemoryScan(token: TrendingToken) {
+async function analyzeTokenForMemoryScan(
+  token: TrendingToken,
+  tokenIndex = 0,
+  scanKind: "memory" | "alpha" = "memory",
+) {
   const { scoreTokenSecurity } = await import("./token-security");
   const { mergeGmgnIntoSecurityReport } = await import("./gmgn-enrichment");
-  const fresh = await refreshTokenFromDex(token);
-  const bundle = await buildDeepTokenIntel(fresh);
+  const fresh =
+    scanKind === "alpha" && tokenIndex >= 5 ? token : await refreshTokenFromDex(token);
+  const bundle = await buildDeepTokenIntel(fresh, {
+    scanKind,
+    tokenIndex,
+    skipGmgnEnrich: scanKind === "alpha" && tokenIndex >= 3,
+  });
   const intel = bundle.intel;
   let security = scoreTokenSecurity(fresh, intel);
   if (bundle.gmgnSecurity) {
@@ -573,6 +582,11 @@ export type AlphaOpportunity = {
   icon?: string;
   liquidityUsd: number;
   volume24h: number;
+  /** Discovery tags e.g. GMGN signal, DexScreener */
+  sourceTags?: string[];
+  marketSentiment?: string;
+  sentimentScore?: number;
+  intelLayers?: string[];
 };
 
 function scoreOpportunity(
@@ -674,34 +688,30 @@ export async function runAlphaScan(
   const { fetchStableMarketFeed, fetchTokenByAddress } = await import("./dexscreener");
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
 
-  const { fetchGmgnDiscoveryTokens } = await import("./gmgn-discovery");
-  const { fetchGmgnMonitorTokens } = await import("./gmgn-monitor-feed");
-  const [dexFeed, geckoFeed, gmgnDiscovery, gmgnMonitor] = await Promise.all([
+  const { buildAlphaScanUniverse } = await import("./alpha-scan-engine");
+  const [dexFeed, geckoFeed] = await Promise.all([
     fetchStableMarketFeed(Math.min(limit * 2, 30)),
     fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 8),
-    fetchGmgnDiscoveryTokens("sol").catch(() => ({
-      tokens: [] as TrendingToken[],
-      sources: {},
-      errors: [] as string[],
-    })),
-    fetchGmgnMonitorTokens("sol").catch(() => ({
-      tokens: [] as TrendingToken[],
-      sources: {},
-      errors: [] as string[],
-    })),
   ]);
+  const { candidates: mergedCandidates, intel: scanIntel } = await buildAlphaScanUniverse(
+    dexFeed,
+    geckoFeed,
+  );
+  const candidateMap = new Map(
+    mergedCandidates.map((c) => [`${c.chainId}:${c.tokenAddress.toLowerCase()}`, c]),
+  );
   const geckoHot = new Set(
     geckoFeed.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`),
   );
 
   const merged = mergeTrendingWithGecko(
-    [...gmgnMonitor.tokens, ...gmgnDiscovery.tokens, ...dexFeed],
-    geckoFeed,
+    mergedCandidates,
+    [],
     Math.min(limit * 2, 45),
   );
   let tokens: TrendingToken[] = filterTradableTokens(merged).slice(0, limit);
-  if (tokens.length < Math.min(limit, 8) && gmgnDiscovery.tokens.length > 0) {
-    const gmgnOnly = filterTradableTokens(gmgnDiscovery.tokens).slice(0, limit);
+  if (tokens.length < Math.min(limit, 8)) {
+    const gmgnOnly = filterTradableTokens(mergedCandidates).slice(0, limit);
     const seen = new Set(tokens.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`));
     for (const t of gmgnOnly) {
       const k = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
@@ -734,13 +744,11 @@ export async function runAlphaScan(
 
   const { buildAlphaIntelReport } = await import("./alpha-intel");
   const { getApeWisdomMentionMap, lookupApeWisdom } = await import("./apewisdom");
-  const { getGmgnAlphaContext, gmgnBoostForSymbol } = await import("./gmgn-alpha");
   const apeMap = await getApeWisdomMentionMap("all-crypto", 2);
-  const gmgnCtx = await getGmgnAlphaContext();
 
   const analyzed = await mapWithConcurrencySafe(
     tokens,
-    (token) => analyzeTokenForMemoryScan(token),
+    (token, index) => analyzeTokenForMemoryScan(token, index, "alpha"),
     2,
     "alpha-intel",
   );
@@ -754,8 +762,11 @@ export async function runAlphaScan(
     async ({ token, intel, signal, news, social, community, security, gmgnLines }, index) => {
       const key = `${token.chainId}:${token.tokenAddress.toLowerCase()}`;
       const socialHeadline = pickCommunityBuzz(community, news.map((n) => n.title));
-      const gmgn = gmgnBoostForSymbol(token.symbol, gmgnCtx);
+      const candidate = candidateMap.get(key);
       const gmgnExtra = gmgnLines?.length ? gmgnLines.join(" · ") : undefined;
+      const sourceTags = candidate?.sourceTags ?? [];
+      const gmgnTagBoost = sourceTags.some((t) => /signal|trending/i.test(t)) ? 8 : 0;
+      const signalBoost = sourceTags.some((t) => /signal/i.test(t)) ? 6 : 0;
       const report = await buildAlphaIntelReport({
         token,
         intel,
@@ -763,15 +774,17 @@ export async function runAlphaScan(
         news,
         community,
         geckoTrending: geckoHot.has(key),
-        gmgnLine: gmgnExtra ?? gmgn.line,
+        gmgnLine: gmgnExtra,
         security,
-        skipGithub: index >= 8,
+        skipGithub: true,
+        sourceTags,
       });
       const apeRow = lookupApeWisdom(token.symbol, apeMap);
       let legacyScore =
         scoreOpportunity(token, signal, intel, social, news.length) +
         (geckoHot.has(key) ? 5 : 0) +
-        gmgn.boost;
+        gmgnTagBoost +
+        signalBoost;
       if (apeRow) {
         legacyScore += Math.min(18, 8 + Math.min(10, apeRow.mentions));
       }
@@ -813,6 +826,9 @@ export async function runAlphaScan(
         icon: token.icon,
         liquidityUsd: token.liquidityUsd,
         volume24h: token.volume24h,
+        sourceTags,
+        marketSentiment: scanIntel.marketSentiment.publicSummary,
+        sentimentScore: scanIntel.marketSentiment.score,
       };
     },
     2,
@@ -828,13 +844,27 @@ export async function runAlphaScan(
     row.rank = i + 1;
   });
 
+  const buyCount = opportunities.filter((o) => o.action === "BUY").length;
+  const sellCount = opportunities.filter((o) => o.action === "SELL").length;
+  const holdCount = opportunities.length - buyCount - sellCount;
+  const { computeMarketSentiment } = await import("./alpha-scan-engine");
+  scanIntel.marketSentiment = computeMarketSentiment({
+    monitorSources: scanIntel.monitorSources,
+    discoverySources: scanIntel.discoverySources,
+    signalHits: scanIntel.signalHits,
+    buyCount,
+    holdCount,
+    sellCount,
+  });
+
   return {
     opportunities,
     count: opportunities.length,
     scanMode: "alpha" as const,
     criteria:
-      "alpha-20|gmgn-discovery|gmgn-monitor|gmgn-security|apewisdom|reddit-public|hackernews|perception|geckoterminal|github|birdeye|ai-thesis",
+      "alpha-unified|gmgn-discovery|gmgn-monitor|gmgn-security|6551-opennews|6551-twitter|apewisdom|reddit|hn|perception|gecko|birdeye|ai-thesis",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
+    scanIntel,
   };
 }
 
@@ -965,8 +995,10 @@ function finalizeFeedSignal(
 
 async function intelForFeedRank(token: TrendingToken, rank: number): Promise<TokenIntel> {
   const base = token.intel ?? buildLocalTokenIntel(token);
-  if (rank >= 12 || !hasBirdeyeKey()) return base;
-  const ta = await resolveTokenTechnical(token);
+  const { getBirdeyePlan } = await import("./birdeye-policy");
+  const plan = getBirdeyePlan("feed", rank);
+  if (!plan.ohlcv) return base;
+  const ta = await resolveTokenTechnical(token, { allowBirdeyeOhlcv: true });
   return { ...base, technical: technicalToIntel(ta) };
 }
 

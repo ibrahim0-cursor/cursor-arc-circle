@@ -43,8 +43,8 @@ export async function POST(request: Request) {
         error: message,
         hint:
           body.mode === "alpha"
-            ? "Alpha scan analyzes ~20 tokens with Birdeye, news, and AI — retry if APIs were slow."
-            : "Memory scan archives ~15 tokens — check DexScreener and wallet on Arc Testnet.",
+            ? "Scan timed out or upstream data was slow — retry in a moment."
+            : "Memory scan could not finish — check connection and Arc Testnet.",
       },
       { status: 500 },
     );

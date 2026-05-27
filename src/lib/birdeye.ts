@@ -395,34 +395,38 @@ export async function fetchTokenIntel(address: string, sourceChain: string) {
 export async function fetchTokenDetection(
   address: string,
   sourceChain: string,
+  opts?: { mode?: "full" | "lite" | "off" },
 ) {
   const chain = birdeyeChainFor(sourceChain);
   const addr = normalizeTokenAddress(address, chain);
-  const cacheKey = `${chain}:${addr}`;
+  const mode = opts?.mode ?? "full";
+  const cacheKey = `${chain}:${addr}:${mode}`;
 
   const hit = detectionCache.get(cacheKey);
   if (hit && Date.now() - hit.at < DETECTION_CACHE_MS) return hit.data;
 
-  if (!hasBirdeyeKey()) {
-    return emptyDetection(chain, ["BIRDEYE_API_KEY missing on server"]);
+  if (!hasBirdeyeKey() || mode === "off") {
+    return emptyDetection(chain, mode === "off" ? [] : ["BIRDEYE_API_KEY missing on server"]);
   }
 
   const errors: string[] = [];
 
-  // EVM: top_traders + legacy txs work on free tier; overview/security often rate-limited
-  const whales = await fetchBirdeyeWhales(address, sourceChain);
+  const whales = await fetchBirdeyeWhales(address, sourceChain, mode === "lite" ? 8 : 12);
   if (!whales.length) errors.push("whales/traders empty or rate-limited");
 
-  const trades = await fetchBirdeyeTrades(address, sourceChain);
-  if (!trades.length) errors.push("trades empty or rate-limited");
-
-  const overview = await fetchBirdeyeOverview(address, sourceChain);
-  if (!overview) errors.push("overview skipped (rate limit OK if traders+txs loaded)");
+  let trades: TokenTx[] = [];
+  let overview: BirdeyeTokenOverview | null = null;
+  if (mode === "full") {
+    trades = await fetchBirdeyeTrades(address, sourceChain);
+    if (!trades.length) errors.push("trades empty or rate-limited");
+    overview = await fetchBirdeyeOverview(address, sourceChain);
+    if (!overview) errors.push("overview skipped (rate limit OK if traders+txs loaded)");
+  }
 
   let security: BirdeyeSecurity | null = null;
-  if (isSolanaChain(sourceChain)) {
+  if (isSolanaChain(sourceChain) && (mode === "full" || whales.length > 0)) {
     security = await fetchBirdeyeSecurity(address, sourceChain);
-    if (!security) errors.push("token_security unavailable");
+    if (!security && mode === "full") errors.push("token_security unavailable");
   }
 
   const snipers = (security?.sniperWallets ?? []).map((wallet, i) => ({

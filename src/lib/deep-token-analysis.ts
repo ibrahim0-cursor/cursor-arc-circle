@@ -1,15 +1,20 @@
 import type { TrendingToken } from "./dexscreener";
 import { buildLocalTokenIntel } from "./token-intel-local";
-import { mergeBirdeyeIntel, fetchTokenIntel, hasBirdeyeKey } from "./birdeye";
+import { mergeBirdeyeIntel } from "./birdeye";
 import { fetchDexPaprikaToken, paprikaIntelFromToken } from "./dexpaprika";
 import { fetchMergedTokenDetection } from "./token-detection";
 import type { CryptoNewsItem } from "./crypto-news";
-import { fetchCommunityPulse, type CommunityPulse } from "./community-pulse";
+import {
+  fetchCommunityPulse,
+  fetchCommunityPulseLite,
+  type CommunityPulse,
+} from "./community-pulse";
 import { fetchMoralisTokenMeta, hasMoralisKey } from "./moralis";
 import type { TokenIntel } from "./storage";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import { tokenSocialFromIntel, type TokenSocialIntel } from "./social-intel";
 import { enrichTokenIntelWithGmgn } from "./gmgn-enrichment";
+import { getBirdeyePlan, type BirdeyeScanKind } from "./birdeye-policy";
 
 export type DeepAnalysisBundle = {
   intel: TokenIntel;
@@ -22,18 +27,49 @@ export type DeepAnalysisBundle = {
   gmgnSecurity?: unknown;
 };
 
-export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<DeepAnalysisBundle> {
+export type DeepIntelOptions = {
+  scanKind?: BirdeyeScanKind;
+  tokenIndex?: number;
+  /** Skip per-token GMGN API (bulk alpha) */
+  skipGmgnEnrich?: boolean;
+};
+
+function intelFromDetectionSummary(
+  summary: Record<string, unknown>,
+): Partial<TokenIntel> {
+  return {
+    holderCount: summary.holderCount as number | undefined,
+    sniperCount: summary.sniperCount as number | undefined,
+    top10HolderPercent: summary.top10Pct as number | undefined,
+    buy24h: summary.buy24h as number | undefined,
+    sell24h: summary.sell24h as number | undefined,
+    whaleCount: summary.whaleCount as number | undefined,
+  };
+}
+
+export async function buildDeepTokenIntel(
+  inputToken: TrendingToken,
+  opts?: DeepIntelOptions,
+): Promise<DeepAnalysisBundle> {
   let token = inputToken;
   const local = buildLocalTokenIntel(token);
+  const plan = getBirdeyePlan(opts?.scanKind ?? "analyze", opts?.tokenIndex ?? 0);
 
   const [paprika, detection, community] = await Promise.all([
     fetchDexPaprikaToken(token.chainId, token.tokenAddress),
-    fetchMergedTokenDetection(token.tokenAddress, token.chainId, {
-      buys: token.txns24h?.buys ?? 0,
-      sells: token.txns24h?.sells ?? 0,
-      volume: token.volume24h,
-    }),
-    fetchCommunityPulse(token.symbol, token.name),
+    fetchMergedTokenDetection(
+      token.tokenAddress,
+      token.chainId,
+      {
+        buys: token.txns24h?.buys ?? 0,
+        sells: token.txns24h?.sells ?? 0,
+        volume: token.volume24h,
+      },
+      { birdeyeMode: plan.detection },
+    ),
+    opts?.scanKind === "alpha"
+      ? fetchCommunityPulseLite(token.symbol, token.name)
+      : fetchCommunityPulse(token.symbol, token.name),
   ]);
 
   const social = community.social ?? {
@@ -57,15 +93,13 @@ export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<De
     .slice(0, 8);
 
   const paprikaIntel: Partial<TokenIntel> = paprika ? paprikaIntelFromToken(paprika) : {};
-  const birdeyeIntel: Partial<TokenIntel> = hasBirdeyeKey()
-    ? (await fetchTokenIntel(token.tokenAddress, token.chainId)).intel
-    : {};
+  const detIntel = intelFromDetectionSummary(detection.summary as Record<string, unknown>);
 
   let intel = mergeBirdeyeIntel(local, {
     ...paprikaIntel,
-    ...birdeyeIntel,
-    marketCap: paprikaIntel.marketCap ?? token.marketCap ?? birdeyeIntel.marketCap,
-    fdv: paprikaIntel.fdv ?? token.fdv ?? birdeyeIntel.fdv,
+    ...detIntel,
+    marketCap: paprikaIntel.marketCap ?? token.marketCap,
+    fdv: paprikaIntel.fdv ?? token.fdv,
     buy24h: detection.summary.buy24h ?? paprikaIntel.buy24h ?? token.txns24h?.buys,
     sell24h: detection.summary.sell24h ?? paprikaIntel.sell24h ?? token.txns24h?.sells,
     trade24h: paprikaIntel.trade24h ?? detection.summary.trade24h,
@@ -95,11 +129,17 @@ export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<De
     if (moralis?.logo) token = { ...token, icon: moralis.logo, name: moralis.name ?? token.name };
   }
 
-  const ta = await resolveTokenTechnical(token);
+  const ta = await resolveTokenTechnical(token, { allowBirdeyeOhlcv: plan.ohlcv });
   intel = { ...intel, technical: technicalToIntel(ta), social: tokenSocialFromIntel(social) };
 
-  const gmgn = await enrichTokenIntelWithGmgn(token.chainId, token.tokenAddress, intel);
-  intel = gmgn.intel;
+  let gmgnLines: string[] | undefined;
+  let gmgnSecurity: unknown;
+  if (!opts?.skipGmgnEnrich) {
+    const gmgn = await enrichTokenIntelWithGmgn(token.chainId, token.tokenAddress, intel);
+    intel = gmgn.intel;
+    gmgnLines = gmgn.enrichment?.lines;
+    gmgnSecurity = gmgn.gmgnSecurity;
+  }
 
   const turnoverRatio =
     token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
@@ -114,7 +154,7 @@ export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<De
     community,
     turnoverRatio,
     buySellRatio,
-    gmgnLines: gmgn.enrichment?.lines,
-    gmgnSecurity: gmgn.gmgnSecurity,
+    gmgnLines,
+    gmgnSecurity,
   };
 }

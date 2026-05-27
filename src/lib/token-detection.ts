@@ -15,8 +15,11 @@ export async function fetchMergedTokenDetection(
   address: string,
   sourceChain: string,
   dexFallback?: { buys: number; sells: number; volume: number },
+  opts?: { birdeyeMode?: "off" | "lite" | "full" },
 ) {
-  const birdeye = await fetchTokenDetection(address, sourceChain);
+  const birdeye = await fetchTokenDetection(address, sourceChain, {
+    mode: opts?.birdeyeMode ?? "full",
+  });
 
   const network = dexpaprikaNetwork(sourceChain);
   let paprikaToken = network ? await fetchDexPaprikaToken(sourceChain, address) : null;

@@ -17,6 +17,12 @@ import {
   hasPerceptionKey,
   matchPerceptionForSymbol,
 } from "./perception";
+import { fetchOpenNewsForSymbol, fetchOpenNewsMacro, hasOpenNewsToken } from "./opennews-6551";
+import {
+  fetchOpenTwitterForToken,
+  hasOpenTwitterToken,
+  searchOpenTwitter,
+} from "./opentwitter-6551";
 
 export type CommunityPulseItem = {
   kind:
@@ -29,7 +35,8 @@ export type CommunityPulseItem = {
     | "twitter"
     | "apewisdom"
     | "hackernews"
-    | "perception";
+    | "perception"
+    | "opennews";
   title: string;
   source: string;
   link?: string;
@@ -51,6 +58,7 @@ export type CommunityPulse = {
   apeWisdomBuzz?: string;
   hackerNewsBuzz?: string;
   perceptionBuzz?: string;
+  opennewsBuzz?: string;
   social?: TokenSocialIntel;
 };
 
@@ -73,20 +81,63 @@ function newsToItems(articles: CryptoNewsItem[], kind: "news" | "meme"): Communi
   }));
 }
 
+/** Fast path for bulk Alpha scan — news + social headline only */
+export async function fetchCommunityPulseLite(topic: string, name?: string): Promise<CommunityPulse> {
+  const key = topic.replace(/^\$/, "").trim() || "crypto";
+  const [news, social, opennews] = await Promise.all([
+    fetchCryptoNewsHeadlines(key, 4),
+    fetchTokenSocialIntel(key, name),
+    hasOpenNewsToken() ? fetchOpenNewsForSymbol(key, name, 4) : Promise.resolve([]),
+  ]);
+
+  const items = dedupeItems([
+    ...newsToItems(news, "news"),
+    ...social.reddit.slice(0, 2).map((p) => ({
+      kind: "reddit" as const,
+      title: p.title,
+      source: `r/${p.subreddit}`,
+      link: p.permalink,
+      subreddit: p.subreddit,
+      score: p.score,
+    })),
+    ...opennews.map((n) => ({
+      kind: "opennews" as const,
+      title: n.signal ? `${n.title} [${n.signal}]` : n.title,
+      source: n.source,
+      link: n.link,
+      score: n.aiScore,
+    })),
+  ]).slice(0, 12);
+
+  return {
+    topic: key,
+    items,
+    headlines: items.map((i) => i.title),
+    newsBuzz: items.find((i) => i.kind === "news")?.title,
+    opennewsBuzz: items.find((i) => i.kind === "opennews")?.title,
+    redditBuzz: items.find((i) => i.kind === "reddit")?.title,
+    social,
+  };
+}
+
 /** Topic = token symbol, event label, or macro query string */
 export async function fetchCommunityPulse(topic: string, name?: string): Promise<CommunityPulse> {
   const key = topic.replace(/^\$/, "").trim() || "crypto";
   const memeQuery = key.length <= 6 ? `${key} meme` : `${key.split(/\s+/)[0]} meme crypto`;
 
-  const twitterPromise = hasSocialDataKey()
-    ? searchSocialDataTweets(key, 5)
-    : hasRapidApiTwitter()
-      ? fetchRapidApiTwitterBuzz(key, 4).then((rows) =>
-          rows.map((r) => ({ id: r.link ?? r.title, text: r.title, author: r.author, url: r.link })),
-        )
-      : Promise.resolve([]);
+  const twitterPromise = hasOpenTwitterToken()
+    ? fetchOpenTwitterForToken(key, name, 6).then((rows) =>
+        rows.map((r) => ({ id: r.url ?? r.text, text: r.text, author: r.author, url: r.url })),
+      )
+    : hasSocialDataKey()
+      ? searchSocialDataTweets(key, 5)
+      : hasRapidApiTwitter()
+        ? fetchRapidApiTwitterBuzz(key, 4).then((rows) =>
+            rows.map((r) => ({ id: r.link ?? r.title, text: r.title, author: r.author, url: r.link })),
+          )
+        : Promise.resolve([]);
 
-  const [news, meme, social, telegram, discord, stocktwits, twitter, apeMap, hnHits, perceptionIndex] =
+  const [news, meme, social, telegram, discord, stocktwits, twitter, apeMap, hnHits, perceptionIndex, opennews] =
     await Promise.all([
       fetchCryptoNewsHeadlines(key, 6),
       fetchCryptoNewsHeadlines(memeQuery, 5),
@@ -98,6 +149,7 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
       getApeWisdomMentionMap("all-crypto", 2),
       searchHackerNewsForToken(key, name),
       hasPerceptionKey() ? getPerceptionIndexCached() : Promise.resolve([]),
+      hasOpenNewsToken() ? fetchOpenNewsForSymbol(key, name, 6) : Promise.resolve([]),
     ]);
 
   const apeRow = lookupApeWisdom(key, apeMap);
@@ -167,7 +219,14 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
           },
         ]
       : []),
-  ]).slice(0, 18);
+    ...opennews.map((n) => ({
+      kind: "opennews" as const,
+      title: n.signal ? `${n.title} [${n.signal}]` : n.title,
+      source: n.source,
+      link: n.link,
+      score: n.aiScore,
+    })),
+  ]).slice(0, 20);
 
   const memeBuzz = items.find((i) => i.kind === "meme")?.title;
   const redditBuzz = items.find((i) => i.kind === "reddit")?.title;
@@ -179,6 +238,7 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
   const apeWisdomBuzz = items.find((i) => i.kind === "apewisdom")?.title;
   const hackerNewsBuzz = items.find((i) => i.kind === "hackernews")?.title;
   const perceptionBuzz = items.find((i) => i.kind === "perception")?.title;
+  const opennewsBuzz = items.find((i) => i.kind === "opennews")?.title;
 
   return {
     topic: key.toUpperCase(),
@@ -194,6 +254,7 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
     apeWisdomBuzz,
     hackerNewsBuzz,
     perceptionBuzz,
+    opennewsBuzz,
     social,
   };
 }
@@ -207,6 +268,7 @@ export function pickCommunityBuzz(pulse: CommunityPulse, newsFallback: string[] 
     pulse.redditBuzz ??
     pulse.hackerNewsBuzz ??
     pulse.perceptionBuzz ??
+    pulse.opennewsBuzz ??
     pulse.twitterBuzz ??
     pulse.stocktwitsBuzz ??
     pulse.memeBuzz ??
@@ -219,10 +281,11 @@ export function pickCommunityBuzz(pulse: CommunityPulse, newsFallback: string[] 
 /** Macro / geopolitical events (PRISM) */
 export async function fetchMacroCommunityPulse(eventLabel: string, query: string): Promise<CommunityPulse> {
   const q = query.trim() || eventLabel;
-  const [news, meme, crypto] = await Promise.all([
+  const [news, meme, crypto, opennewsMacro] = await Promise.all([
     fetchCryptoNewsHeadlines(q.includes("fed") || q.includes("rate") ? "defi" : "bitcoin", 5),
     fetchCryptoNewsHeadlines("meme crypto", 4),
     fetchCryptoNewsHeadlines(q.slice(0, 40), 4),
+    hasOpenNewsToken() ? fetchOpenNewsMacro(q, 8) : Promise.resolve([]),
   ]);
 
   const sym = /btc|bitcoin/i.test(q) ? "BTC" : /eth|ethereum/i.test(q) ? "ETH" : "crypto";
@@ -231,13 +294,17 @@ export async function fetchMacroCommunityPulse(eventLabel: string, query: string
     ? await fetchTokenSocialIntel(sym)
     : null;
 
-  const twitterMacro = hasSocialDataKey()
-    ? searchSocialDataTweets(sym, 4)
-    : hasRapidApiTwitter()
-      ? fetchRapidApiTwitterBuzz(sym, 3).then((rows) =>
-          rows.map((r) => ({ id: r.link ?? r.title, text: r.title, author: r.author, url: r.link })),
-        )
-      : Promise.resolve([]);
+  const twitterMacro = hasOpenTwitterToken()
+    ? searchOpenTwitter({ keywords: q, maxResults: 6, minLikes: 20 }).then((rows) =>
+        rows.map((r) => ({ id: r.url ?? r.text, text: r.text, author: r.author, url: r.url })),
+      )
+    : hasSocialDataKey()
+      ? searchSocialDataTweets(sym, 4)
+      : hasRapidApiTwitter()
+        ? fetchRapidApiTwitterBuzz(sym, 3).then((rows) =>
+            rows.map((r) => ({ id: r.link ?? r.title, text: r.title, author: r.author, url: r.link })),
+          )
+        : Promise.resolve([]);
 
   const [telegram, discord, stocktwits, twitter] = await Promise.all([
     fetchTelegramBuzz(sym),
@@ -279,10 +346,17 @@ export async function fetchMacroCommunityPulse(eventLabel: string, query: string
     ...twitter.map((tw) => ({
       kind: "twitter" as const,
       title: tw.text,
-      source: tw.author ? `X @${tw.author}` : "X",
+      source: tw.author ? `X @${tw.author} (6551)` : "X (6551)",
       link: tw.url,
     })),
-  ]).slice(0, 16);
+    ...opennewsMacro.map((n) => ({
+      kind: "opennews" as const,
+      title: n.signal ? `${n.title} [${n.signal}]` : n.title,
+      source: n.source,
+      link: n.link,
+      score: n.aiScore,
+    })),
+  ]).slice(0, 18);
 
   return {
     topic: eventLabel.slice(0, 48),
@@ -295,6 +369,7 @@ export async function fetchMacroCommunityPulse(eventLabel: string, query: string
     discordBuzz: items.find((i) => i.kind === "discord")?.title,
     stocktwitsBuzz: items.find((i) => i.kind === "stocktwits")?.title,
     twitterBuzz: items.find((i) => i.kind === "twitter")?.title,
+    opennewsBuzz: items.find((i) => i.kind === "opennews")?.title,
     social: social ?? undefined,
   };
 }

@@ -14,6 +14,7 @@ const kindStyles: Record<CommunityPulseItem["kind"], string> = {
   apewisdom: "border-amber-400/40 bg-amber-500/15",
   hackernews: "border-orange-400/35 bg-orange-600/10",
   perception: "border-violet-400/35 bg-violet-500/12",
+  opennews: "border-teal-400/35 bg-teal-500/12",
 };
 
 const kindLabels: Record<CommunityPulseItem["kind"], string> = {
@@ -27,6 +28,7 @@ const kindLabels: Record<CommunityPulseItem["kind"], string> = {
   apewisdom: "ApeWisdom",
   hackernews: "Hacker News",
   perception: "Perception",
+  opennews: "6551 News",
 };
 
 export function CommunityPulsePanel({

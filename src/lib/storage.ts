@@ -191,7 +191,7 @@ async function writeJson<T>(file: string, data: T) {
   }
 }
 
-export async function getNexusDecisions(limit = 50) {
+export async function getNexusDecisions(limit = 15) {
   const supabase = getSupabase();
   if (supabase) {
     const { data, error } = await supabase

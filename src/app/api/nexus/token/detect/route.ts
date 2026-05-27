@@ -19,11 +19,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const detection = await fetchMergedTokenDetection(address, chainId, {
-      buys,
-      sells,
-      volume,
-    });
+    const detection = await fetchMergedTokenDetection(
+      address,
+      chainId,
+      { buys, sells, volume },
+      { birdeyeMode: searchParams.get("full") === "1" ? "full" : "lite" },
+    );
     return NextResponse.json({
       ...detection,
       serverHasKey: hasBirdeyeKey(),

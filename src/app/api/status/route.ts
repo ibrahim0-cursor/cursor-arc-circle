@@ -3,7 +3,7 @@ import { getArcStatus } from "@/lib/arc";
 import { getCircleStatus } from "@/lib/circle";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { probeSupabaseTables } from "@/lib/supabase-health";
-import { hasBirdeyeKey, birdeyeFetchJson } from "@/lib/birdeye-client";
+import { hasBirdeyeKey, probeBirdeyeHealth } from "@/lib/birdeye-client";
 import { probeLunarCrush, hasLunarCrushKey } from "@/lib/lunarcrush";
 import { probeNeynar, hasNeynarKey } from "@/lib/neynar";
 import { probeReddit, hasRedditCredentials } from "@/lib/reddit";
@@ -24,6 +24,8 @@ import { hasPerceptionKey, probePerception } from "@/lib/perception";
 import { hasGmgnApiKey, hasGmgnPrivateKey, probeGmgn } from "@/lib/gmgn-client";
 import { probeGmgnAnalyticsSkills } from "@/lib/gmgn-discovery";
 import { probeGmgnMonitorSkills } from "@/lib/gmgn-monitor";
+import { hasOpenNewsToken, probeOpenNews } from "@/lib/opennews-6551";
+import { hasOpenTwitterToken, probeOpenTwitter } from "@/lib/opentwitter-6551";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +54,8 @@ export async function GET() {
     gmgnProbe,
     gmgnAnalyticsProbe,
     gmgnMonitorProbe,
+    opennewsProbe,
+    opentwitterProbe,
   ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
@@ -91,6 +95,10 @@ export async function GET() {
     hasGmgnApiKey()
       ? probeGmgnMonitorSkills("sol")
       : Promise.resolve({ ok: false, skills: {} }),
+    hasOpenNewsToken() ? probeOpenNews() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
+    hasOpenTwitterToken()
+      ? probeOpenTwitter()
+      : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
   ]);
   const redditEffective =
     redditProbe.ok || redditPublicProbe.ok
@@ -103,24 +111,9 @@ export async function GET() {
         };
   const demoPortfolio = supabaseHealth.demoPortfolio;
 
-  let birdeyeProbe: { ok: boolean; error?: string } = { ok: false, error: "no key" };
-  if (hasBirdeyeKey()) {
-    const probe = await birdeyeFetchJson<{ data?: { symbol?: string } }>(
-      "/defi/token_overview?address=0x912ce59144191c1204e64559fe8253a0e49e6548",
-      "arbitrum",
-    );
-    const hasOverview = Boolean(probe.data?.data?.symbol);
-    birdeyeProbe =
-      probe.ok && hasOverview
-        ? { ok: true }
-        : {
-            ok: false,
-            error:
-              probe.error?.toLowerCase().includes("compute units")
-                ? "Compute units limit — wait or upgrade Birdeye plan; agent still uses DexScreener"
-                : probe.error ?? (probe.ok ? "empty response" : `HTTP ${probe.status}`),
-          };
-  }
+  const birdeyeProbe = hasBirdeyeKey()
+    ? await probeBirdeyeHealth()
+    : { ok: false, error: "no key" };
 
   return NextResponse.json({
     arc,
@@ -159,6 +152,10 @@ export async function GET() {
     gmgnProbe,
     gmgnAnalyticsProbe,
     gmgnMonitorProbe,
+    opennews: hasOpenNewsToken(),
+    opennewsProbe,
+    opentwitter: hasOpenTwitterToken(),
+    opentwitterProbe,
     socialStack: premiumSocial ? "premium" : "free",
     geckoterminal: true,
     geckoProbe,

@@ -37,12 +37,12 @@ export function NexusMemoryList({
         <Database className="mx-auto h-10 w-10 text-cyan-300/60" />
         <h3 className="text-base font-semibold text-white">Agent Memory — your scan archive</h3>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-white/60">
-          <strong className="text-white/80">Memory Scan</strong> saves 20 tokens with full intel, Arc
-          on-chain proof, whale/holder counts, and reasoning at that moment — like a trading journal you
-          can revisit later. The live feed only shows quick RSI/MACD signals.
+          <strong className="text-white/80">Memory Scan</strong> archives up to 15 tokens with scam/risk
+          flags, GMGN + Dex intel, and BUY/SELL/HOLD reasoning at that moment — a local journal, not a
+          guaranteed safe list.
         </p>
         <p className="text-xs text-white/45">
-          Memory Scan = 20 archived · Alpha Scan = 30 ranked opportunities (separate tab)
+          Memory Scan = 15 archived · Alpha Scan = ranked opportunities (separate tab)
         </p>
       </div>
     );

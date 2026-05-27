@@ -90,8 +90,8 @@ export function NexusScanActions({
             </span>
             {!compact && (
               <span className="mt-0.5 block text-[11px] text-white/50">
-                {a.id === "memory" && "Archive feed intel"}
-                {a.id === "alpha" && "Rank opportunities"}
+                {a.id === "memory" && "Archive 15 snapshots"}
+                {a.id === "alpha" && "Ranked opportunities + risk thesis"}
                 {a.id === "research" && "Thesis & risks"}
               </span>
             )}

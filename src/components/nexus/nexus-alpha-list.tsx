@@ -4,9 +4,16 @@ import { Code2, Loader2, Newspaper, ScanLine, Sparkles, TrendingDown, TrendingUp
 import { Badge } from "@/components/ui/badge";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import {
+  ALPHA_SCAN_EMPTY,
+  ALPHA_SCAN_ERROR_TIP,
+  ALPHA_SCAN_LOADING,
+  publicSourceLabel,
+} from "@/lib/nexus-copy";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
+import type { AlphaScanIntel } from "@/lib/alpha-scan-engine";
 
 function tokenAccent(symbol: string): string {
   const hues = [190, 260, 310, 160, 220, 280];
@@ -58,12 +65,14 @@ function TokenAvatar({
 
 export function NexusAlphaList({
   opportunities,
+  scanIntel,
   selectedAddress,
   onSelect,
   scanning = false,
   scanError,
 }: {
   opportunities: AlphaOpportunity[];
+  scanIntel?: AlphaScanIntel | null;
   selectedAddress?: string | null;
   onSelect: (row: AlphaOpportunity) => void;
   scanning?: boolean;
@@ -75,10 +84,7 @@ export function NexusAlphaList({
         <ArcIconBadge icon={ScanLine} theme="nexus" size="lg" className="mx-auto" />
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-300" />
         <h3 className="text-base font-semibold text-white">Alpha scan running…</h3>
-        <p className="mx-auto max-w-md text-sm text-white/60">
-          Analyzing up to 20 tokens — ApeWisdom mentions, Reddit (free), Hacker News, Perception,
-          Birdeye, and AI thesis. This can take 30–90 seconds.
-        </p>
+        <p className="mx-auto max-w-md text-sm text-white/60">{ALPHA_SCAN_LOADING}</p>
         <div className="mx-auto flex max-w-xs flex-col gap-2 pt-2">
           {[0, 1, 2].map((i) => (
             <div
@@ -95,11 +101,9 @@ export function NexusAlphaList({
   if (scanError && opportunities.length === 0) {
     return (
       <div className="space-y-3 rounded-2xl border border-rose-400/35 bg-rose-500/10 p-6 text-sm text-rose-100">
-        <p className="font-semibold text-rose-50">Alpha scan failed</p>
+        <p className="font-semibold text-rose-50">Could not complete Alpha scan</p>
         <p className="leading-relaxed text-rose-100/90">{scanError}</p>
-        <p className="text-xs text-rose-200/70">
-          Tip: stay on Arc Testnet, approve the fee tx, and retry if external APIs were slow.
-        </p>
+        <p className="text-xs text-rose-200/70">{ALPHA_SCAN_ERROR_TIP}</p>
       </div>
     );
   }
@@ -109,27 +113,35 @@ export function NexusAlphaList({
       <div className="arc-panel arc-panel-nexus space-y-3 p-8 text-center">
         <div className="arc-panel-stripe arc-panel-stripe-nexus -mx-8 -mt-8 mb-4 w-[calc(100%+4rem)]" />
         <ArcIconBadge icon={Sparkles} theme="nexus" size="lg" className="mx-auto" />
-        <h3 className="text-base font-semibold text-white">Alpha Scan — early opportunity detection</h3>
-        <p className="mx-auto max-w-md text-sm text-white/60">
-          Six intelligence layers: narrative acceleration, smart money, momentum, risk breakdown, AI
-          thesis, and optional GitHub dev momentum.
-        </p>
-        <p className="text-xs text-white/45">Connect wallet → Alpha Scan → ranked results appear here</p>
+        <h3 className="text-base font-semibold text-white">Alpha Scan</h3>
+        <p className="mx-auto max-w-md text-sm text-white/60">{ALPHA_SCAN_EMPTY}</p>
       </div>
     );
   }
+
+  const sentimentLine =
+    scanIntel?.marketSentiment.publicSummary ??
+    scanIntel?.marketSentiment.summary;
 
   return (
     <div className="space-y-3">
       {scanError && (
         <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-100">
-          Previous scan issue: {scanError}
+          Last run: {scanError}
+        </div>
+      )}
+      {scanIntel && (
+        <div className="arc-glass-card arc-glass-card-nexus space-y-2 px-3 py-2.5 text-xs">
+          <p className="font-semibold text-emerald-100">
+            Market mood: {scanIntel.marketSentiment.label} ({scanIntel.marketSentiment.score})
+          </p>
+          <p className="text-white/60 leading-relaxed">{sentimentLine}</p>
         </div>
       )}
       <div className="arc-glass-card arc-glass-card-nexus px-3 py-2.5 text-xs text-emerald-100/90">
-        <p className="font-semibold">{opportunities.length} probabilistic opportunities (sorted by Alpha Score)</p>
+        <p className="font-semibold">{opportunities.length} ranked opportunities</p>
         <p className="mt-1 text-white/55">
-          Narrative acceleration is weighted highest. Tap a row for chart, trade panel, and full thesis.
+          Sorted by Alpha Score. Open a row for chart, trade panel, and full thesis.
         </p>
       </div>
       <div className="space-y-2">
@@ -170,11 +182,14 @@ export function NexusAlphaList({
                       <span className="text-[10px] text-emerald-200/80">
                         Narr +{row.narrativeAcceleration}
                       </span>
-                      {row.apeWisdomRank != null && (
-                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
-                          Ape #{row.apeWisdomRank}
+                      {row.sourceTags?.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-200/90"
+                        >
+                          {publicSourceLabel(tag)}
                         </span>
-                      )}
+                      ))}
                     </div>
                     {row.ecosystemTags.length > 0 && (
                       <p className="mt-0.5 text-[10px] text-cyan-200/70 line-clamp-1">
@@ -207,13 +222,13 @@ export function NexusAlphaList({
 
               <div className="mt-2 grid gap-1 text-[10px] text-white/50">
                 <p>
-                  <span className="text-fuchsia-200/80">Smart money:</span> {row.smartMoneySignal}
+                  <span className="text-fuchsia-200/80">Flow:</span> {row.smartMoneySignal}
                 </p>
                 <p>
                   <span className="text-emerald-200/80">Momentum:</span> {row.momentumHealth}
                 </p>
                 <p className="line-clamp-2 text-violet-100/75">
-                  <span className="text-violet-200/90">AI thesis:</span> {row.aiThesis}
+                  <span className="text-violet-200/90">Thesis:</span> {row.aiThesis}
                 </p>
               </div>
 
@@ -252,16 +267,9 @@ export function NexusAlphaList({
                   Dev: {row.githubDevSummary}
                 </p>
               )}
-              {row.socialDegraded && !row.socialBuzz && (
-                <p className="mt-1 flex items-start gap-1 text-[10px] text-amber-200/80 line-clamp-1">
-                  <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
-                  {row.socialDegraded}
-                </p>
-              )}
               {row.socialBuzz && (
                 <p className="mt-1 flex items-start gap-1 text-[10px] text-fuchsia-200/75 line-clamp-1">
                   <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
-                  {row.galaxyScore != null ? `Galaxy ${row.galaxyScore} · ` : ""}
                   {row.socialBuzz}
                 </p>
               )}
