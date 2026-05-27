@@ -47,25 +47,19 @@ export function ArcPortalHero({ className = "" }: { className?: string }) {
 
         <div className="arc-portal-horizon">
           <motion.div
-            className="arc-portal-ai-burst"
-            animate={reduced ? undefined : { opacity: [0, 0, 0.9, 0, 0], scale: [0.8, 0.8, 1.25, 0.8, 0.8] }}
-            transition={{ duration: 5.2, repeat: Infinity, times: [0, 0.46, 0.5, 0.54, 1] }}
-          />
-          <motion.div
             className="arc-portal-core"
             animate={
               reduced
                 ? undefined
                 : {
                     boxShadow: [
-                      "0 0 28px rgba(18, 232, 168, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.15)",
-                      "0 0 28px rgba(18, 232, 168, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.15)",
-                      "0 0 48px rgba(34, 211, 238, 0.55), 0 0 80px rgba(168, 85, 247, 0.45), inset 0 0 28px rgba(18, 232, 168, 0.35)",
-                      "0 0 28px rgba(18, 232, 168, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.15)",
+                      "0 0 32px rgba(18, 232, 168, 0.25), inset 0 0 24px rgba(139, 92, 246, 0.12)",
+                      "0 0 40px rgba(34, 211, 238, 0.35), inset 0 0 28px rgba(139, 92, 246, 0.18)",
+                      "0 0 32px rgba(18, 232, 168, 0.25), inset 0 0 24px rgba(139, 92, 246, 0.12)",
                     ],
                   }
             }
-            transition={{ duration: 5.2, repeat: Infinity, times: [0, 0.46, 0.52, 1] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           >
             <div className="arc-portal-core-scan" />
             <div className="arc-portal-core-ring" />

@@ -4,15 +4,24 @@ import { ArcToken3d } from "@/components/landing/arc-token-3d";
 import type { CryptoId } from "@/components/landing/arc-crypto-icons";
 import { cn } from "@/lib/utils";
 
-const ORBIT_TOKENS: { id: CryptoId; angle: number; delay: number; floatDelay: number }[] = [
-  { id: "btc", angle: -90, delay: 0, floatDelay: 0 },
-  { id: "eth", angle: -18, delay: 1.04, floatDelay: 0.35 },
-  { id: "sol", angle: 54, delay: 2.08, floatDelay: 0.7 },
-  { id: "usdc", angle: 126, delay: 3.12, floatDelay: 1.05 },
-  { id: "usdt", angle: 198, delay: 4.16, floatDelay: 1.4 },
+type Planet = {
+  id: CryptoId;
+  angle: number;
+  ring: "inner" | "outer";
+};
+
+/** Solar system layout — inner planets + BTC on outer orbit (bottom) */
+const PLANETS: Planet[] = [
+  { id: "sol", angle: 225, ring: "inner" },
+  { id: "usdc", angle: 315, ring: "inner" },
+  { id: "usdt", angle: 45, ring: "inner" },
+  { id: "eth", angle: 135, ring: "inner" },
+  { id: "btc", angle: 90, ring: "outer" },
 ];
 
-/** Continuous orbit + floating 3D coins around AI core */
+/**
+ * Tokens orbit AI core like a solar system — steady rotation only, no swim/dive.
+ */
 export function ArcPortalOrbit({
   logos,
   className,
@@ -20,29 +29,44 @@ export function ArcPortalOrbit({
   logos: Record<CryptoId, string>;
   className?: string;
 }) {
+  const inner = PLANETS.filter((p) => p.ring === "inner");
+  const outer = PLANETS.filter((p) => p.ring === "outer");
+
   return (
-    <div className={cn("arc-portal-orbit-spin", className)}>
-      {ORBIT_TOKENS.map((t) => (
-        <div
-          key={t.id}
-          className="arc-portal-orbit-slot"
-          style={
-            {
-              "--slot-angle": `${t.angle}deg`,
-              "--dive-delay": `${t.delay}s`,
-              "--float-delay": `${t.floatDelay}s`,
-            } as React.CSSProperties
-          }
-        >
-          <div className="arc-portal-orbit-upright">
-            <div className="arc-portal-orbit-float">
-              <div className="arc-portal-orbit-dive">
-                <ArcToken3d id={t.id} size="lg" logoSrc={logos[t.id]} />
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+    <div className={cn("arc-solar-system", className)}>
+      <div className="arc-solar-track arc-solar-track-inner" aria-hidden />
+      <div className="arc-solar-track arc-solar-track-outer" aria-hidden />
+
+      <div className="arc-solar-ring arc-solar-ring-inner">
+        {inner.map((p) => (
+          <PlanetSlot key={p.id} planet={p} logos={logos} />
+        ))}
+      </div>
+
+      <div className="arc-solar-ring arc-solar-ring-outer">
+        {outer.map((p) => (
+          <PlanetSlot key={p.id} planet={p} logos={logos} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlanetSlot({
+  planet,
+  logos,
+}: {
+  planet: Planet;
+  logos: Record<CryptoId, string>;
+}) {
+  return (
+    <div
+      className={cn("arc-solar-planet-slot", planet.ring === "outer" && "arc-solar-planet-slot-outer")}
+      style={{ "--planet-angle": `${planet.angle}deg` } as React.CSSProperties}
+    >
+      <div className="arc-solar-planet-upright">
+        <ArcToken3d id={planet.id} size="lg" logoSrc={logos[planet.id]} planet />
+      </div>
     </div>
   );
 }

@@ -1,14 +1,6 @@
 import type { CryptoId } from "@/components/landing/arc-crypto-icons";
 
-/** Blue USDC + green USDT — user-provided; others from CoinGecko when available */
-export const LOCAL_TOKEN_LOGOS: Record<CryptoId, string> = {
-  btc: "/tokens/btc.png",
-  eth: "/tokens/eth.png",
-  sol: "/tokens/sol.png",
-  usdc: "/tokens/usdc-blue.png",
-  usdt: "/tokens/usdt-green.png",
-};
-
+/** CoinGecko CDN fallbacks when API is unavailable */
 const COINGECKO_FALLBACK: Record<CryptoId, string> = {
   btc: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
   eth: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
@@ -17,6 +9,7 @@ const COINGECKO_FALLBACK: Record<CryptoId, string> = {
   usdt: "https://assets.coingecko.com/coins/images/325/small/Tether.png",
 };
 
+/** All five portal logos from CoinGecko (no local overrides) */
 export function mergePortalTokenLogos(
   remote: Partial<Record<CryptoId, string>> | null,
 ): Record<CryptoId, string> {
@@ -26,8 +19,6 @@ export function mergePortalTokenLogos(
       if (remote[id]) out[id] = remote[id]!;
     }
   }
-  out.usdc = LOCAL_TOKEN_LOGOS.usdc;
-  out.usdt = LOCAL_TOKEN_LOGOS.usdt;
   return out;
 }
 

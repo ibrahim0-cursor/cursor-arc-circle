@@ -7,19 +7,22 @@ import { cn } from "@/lib/utils";
 
 const sizePx = { sm: 44, md: 52, lg: 64 } as const;
 
-/** Premium 3D coin — logo from CoinGecko API or local USDC/USDT assets */
+/** Premium 3D planet coin — CoinGecko logo texture */
 export function ArcToken3d({
   id,
   size = "md",
   className,
   style,
   logoSrc,
+  planet = false,
 }: {
   id: CryptoId;
   size?: "sm" | "md" | "lg";
   className?: string;
   style?: React.CSSProperties;
   logoSrc?: string;
+  /** Solar-system orbit styling */
+  planet?: boolean;
 }) {
   const brand = TOKEN_BRAND[id];
   const dim = sizePx[size];
@@ -27,7 +30,7 @@ export function ArcToken3d({
 
   return (
     <div
-      className={cn("arc-token-3d", className)}
+      className={cn("arc-token-3d", planet && "arc-token-3d-planet", className)}
       style={
         {
           ...style,
