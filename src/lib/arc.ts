@@ -18,14 +18,32 @@ export function getArcPublicClient() {
   });
 }
 
+type ArcStatus = {
+  connected: boolean;
+  chainId: number;
+  blockNumber: number;
+  rpcUrl: string;
+  feeCurrency: string;
+  estimatedFeeUsd: number;
+  network: string;
+  error?: string;
+};
+
+let arcStatusCache: { at: number; value: ArcStatus } | null = null;
+const ARC_STATUS_TTL_MS = 60_000;
+
 export async function getArcStatus() {
+  if (arcStatusCache && Date.now() - arcStatusCache.at < ARC_STATUS_TTL_MS) {
+    return arcStatusCache.value;
+  }
+
   try {
     const client = getArcPublicClient();
     const [blockNumber, chainId] = await Promise.all([
       client.getBlockNumber(),
       client.getChainId(),
     ]);
-    return {
+    const value = {
       connected: true,
       chainId,
       blockNumber: Number(blockNumber),
@@ -34,8 +52,10 @@ export async function getArcStatus() {
       estimatedFeeUsd: 0.01,
       network: "Arc Testnet",
     };
+    arcStatusCache = { at: Date.now(), value };
+    return value;
   } catch (error) {
-    return {
+    const value = {
       connected: false,
       chainId: ARC_TESTNET_ID,
       blockNumber: 0,
@@ -45,6 +65,8 @@ export async function getArcStatus() {
       network: "Arc Testnet",
       error: error instanceof Error ? error.message : "Arc RPC unavailable",
     };
+    arcStatusCache = { at: Date.now(), value };
+    return value;
   }
 }
 

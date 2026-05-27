@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAiClient, getAiModel } from "./ai-client";
 import { randomUUID } from "crypto";
+import { fetchMacroCommunityPulse } from "./community-pulse";
 import { fetchGdeltArticles, MACRO_EVENTS } from "./gdelt";
 import { fetchNewsArticles } from "./newsapi";
 import { anchorDecisionPayload } from "./arc";
@@ -68,12 +69,14 @@ async function aiPrediction(input: {
   category: PrismPrediction["category"];
   gdelt: Awaited<ReturnType<typeof fetchGdeltArticles>>;
   news: Awaited<ReturnType<typeof fetchNewsArticles>>;
+  communityHeadlines: string[];
 }) {
   const anthropic = getAnthropic();
   const openai = getAiClient();
   const headlines = [
     ...input.gdelt.map((item) => item.title),
     ...input.news.map((item) => item.title),
+    ...input.communityHeadlines,
   ];
 
   const fallback = heuristicPrediction({
@@ -87,6 +90,7 @@ async function aiPrediction(input: {
     category: input.category,
     gdelt: input.gdelt.slice(0, 6),
     news: input.news.slice(0, 6),
+    community: input.communityHeadlines.slice(0, 8),
   });
 
   const systemPrompt =
@@ -150,12 +154,19 @@ export async function runPrismAnalysis(input: EventInput) {
   const category = preset?.category ?? "macro";
   const query = preset?.query ?? event;
 
-  const [gdelt, news] = await Promise.all([
+  const [gdelt, news, community] = await Promise.all([
     fetchGdeltArticles(query, 8),
     fetchNewsArticles(query, 6),
+    fetchMacroCommunityPulse(event, query),
   ]);
 
-  const core = await aiPrediction({ event, category, gdelt, news });
+  const core = await aiPrediction({
+    event,
+    category,
+    gdelt,
+    news,
+    communityHeadlines: community.headlines,
+  });
   const payload = JSON.stringify({ product: "PRISM", ...core, at: new Date().toISOString() });
   const anchor = await anchorDecisionPayload(payload);
 
@@ -170,7 +181,7 @@ export async function runPrismAnalysis(input: EventInput) {
 
   return {
     prediction,
-    intelligence: { gdelt, news },
+    intelligence: { gdelt, news, community },
     events: MACRO_EVENTS,
   };
 }

@@ -65,18 +65,30 @@ export async function scanVaultDeposits(
   if (start > latest) start = windowStart;
 
   const found: Array<{ txHash: string; amountUsdc: number }> = [];
-  const batchSize = BigInt(16);
+  const batchSize = BigInt(4);
+
+  async function getBlockSafe(blockNumber: bigint) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        return await client.getBlock({ blockNumber, includeTransactions: true });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (!msg.includes("429") && !msg.includes("Too Many Requests")) throw error;
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    throw new Error(
+      "Arc RPC rate limit (429) — wait a minute and use Credit deposit with your tx hash instead of Sync.",
+    );
+  }
 
   for (let batchStart = start; batchStart <= latest; batchStart += batchSize) {
     const batchEnd =
       batchStart + batchSize - BigInt(1) > latest ? latest : batchStart + batchSize - BigInt(1);
-    const blocks = Array.from(
-      { length: Number(batchEnd - batchStart + BigInt(1)) },
-      (_, i) => batchStart + BigInt(i),
-    );
-    const blockResults = await Promise.all(
-      blocks.map((n) => client.getBlock({ blockNumber: n, includeTransactions: true })),
-    );
+    const blockResults = [];
+    for (let n = batchStart; n <= batchEnd; n += BigInt(1)) {
+      blockResults.push(await getBlockSafe(n));
+    }
     for (const block of blockResults) {
       for (const tx of block.transactions) {
         if (typeof tx === "string") continue;

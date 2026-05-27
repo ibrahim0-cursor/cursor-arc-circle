@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { getAiClient, getAiModel } from "./ai-client";
 import { fetchCryptoNewsHeadlines } from "./crypto-news";
+import { pickCommunityBuzz } from "./community-pulse";
 import { usePremiumSocialApis } from "./social-config";
 import { fetchTrendingMarketTokens, fetchSwappableTokens, type TrendingToken } from "./dexscreener";
 import { buildDeepTokenIntel } from "./deep-token-analysis";
@@ -194,6 +195,16 @@ function buildReasoningFactors(
     });
   }
 
+  const rd = intel.social?.reddit;
+  if (rd?.topTitle) {
+    factors.push({
+      label: "Reddit buzz",
+      detail: `r/${rd.subreddit ?? "crypto"}: ${rd.topTitle.slice(0, 90)}`,
+      impact: "bullish",
+      weight: 12,
+    });
+  }
+
   const fc = intel.social?.farcaster;
   if (fc?.topCast) {
     factors.push({
@@ -375,6 +386,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
             turnoverRatio: bundle.turnoverRatio,
             buySellRatio: bundle.buySellRatio,
             headlines: bundle.news,
+            community: bundle.community.headlines,
             social: bundle.social,
           }),
         },
@@ -470,7 +482,16 @@ async function analyzeTokenForMemoryScan(token: TrendingToken) {
   const macro = await getMacroRegime();
   let signal = heuristicDecision(fresh, intel, macro);
   signal = applyScamAndSecurity(fresh, intel, signal, security, scam);
-  return { token: { ...fresh, intel }, intel, signal, security, scam, news: bundle.news, social: bundle.social };
+  return {
+    token: { ...fresh, intel },
+    intel,
+    signal,
+    security,
+    scam,
+    news: bundle.news,
+    social: bundle.social,
+    community: bundle.community,
+  };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -630,11 +651,8 @@ export async function runAlphaScan(
   const analyzed = await mapWithConcurrency(tokens, analyzeTokenForMemoryScan, 3);
 
   const opportunities: AlphaOpportunity[] = analyzed
-    .map(({ token, intel, signal, news, social }) => {
-      const socialHeadline =
-        social.farcaster[0]?.text ??
-        social.reddit[0]?.title ??
-        social.lunarcrushPosts[0]?.title;
+    .map(({ token, intel, signal, news, social, community }) => {
+      const socialHeadline = pickCommunityBuzz(community, news.map((n) => n.title));
       return {
       rank: 0,
       symbol: token.symbol,
@@ -668,7 +686,7 @@ export async function runAlphaScan(
     opportunities,
     count: opportunities.length,
     scanMode: "alpha" as const,
-    criteria: "alpha-30|news|meme-news|social|birdeye|dexscreener|ta|macro|scam-filter",
+    criteria: "alpha-30|community|news|meme|reddit|birdeye|dexscreener|ta|macro|scam-filter",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

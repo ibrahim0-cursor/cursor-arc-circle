@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MeshBackground } from "@/components/layout/mesh-background";
 import { formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
+import type { CommunityPulse } from "@/lib/community-pulse";
+import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
 import { useToast } from "@/components/ui/toast-provider";
 
 type EventOption = {
@@ -37,6 +39,7 @@ export function PrismConsole() {
   const [latestIntel, setLatestIntel] = useState<{
     gdelt: Array<{ title: string; source: string }>;
     news: Array<{ title: string; source: string }>;
+    community?: CommunityPulse;
   } | null>(null);
 
   const load = useCallback(async () => {
@@ -244,9 +247,14 @@ export function PrismConsole() {
                 {(latestIntel?.news ?? []).slice(0, 3).map((item, index) => (
                   <IntelRow key={`n-${index}`} source={item.source} title={item.title} />
                 ))}
+                {latestIntel?.community && latestIntel.community.items.length > 0 && (
+                  <div className="mt-3 border-t border-white/10 pt-3">
+                    <CommunityPulsePanel pulse={latestIntel.community} title="Crypto community" compact />
+                  </div>
+                )}
                 {!latestIntel && (
                   <p className="py-4 text-center text-sm text-white/55">
-                    Tap <strong className="text-violet-200">Generate Forecast</strong> for GDELT + news.
+                    Tap <strong className="text-violet-200">Generate Forecast</strong> for GDELT, news, and community pulse.
                   </p>
                 )}
               </CardContent>

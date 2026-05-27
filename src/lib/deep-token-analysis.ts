@@ -3,15 +3,17 @@ import { buildLocalTokenIntel } from "./token-intel-local";
 import { mergeBirdeyeIntel, fetchTokenIntel, hasBirdeyeKey } from "./birdeye";
 import { fetchDexPaprikaToken, paprikaIntelFromToken } from "./dexpaprika";
 import { fetchMergedTokenDetection } from "./token-detection";
-import { fetchCryptoNewsHeadlines, type CryptoNewsItem } from "./crypto-news";
+import type { CryptoNewsItem } from "./crypto-news";
+import { fetchCommunityPulse, type CommunityPulse } from "./community-pulse";
 import type { TokenIntel } from "./storage";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
-import { fetchTokenSocialIntel, tokenSocialFromIntel, type TokenSocialIntel } from "./social-intel";
+import { tokenSocialFromIntel, type TokenSocialIntel } from "./social-intel";
 
 export type DeepAnalysisBundle = {
   intel: TokenIntel;
   news: CryptoNewsItem[];
   social: TokenSocialIntel;
+  community: CommunityPulse;
   turnoverRatio: number;
   buySellRatio: number;
 };
@@ -19,26 +21,35 @@ export type DeepAnalysisBundle = {
 export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAnalysisBundle> {
   const local = buildLocalTokenIntel(token);
 
-  const [paprika, detection, news, social] = await Promise.all([
+  const [paprika, detection, community] = await Promise.all([
     fetchDexPaprikaToken(token.chainId, token.tokenAddress),
     fetchMergedTokenDetection(token.tokenAddress, token.chainId, {
       buys: token.txns24h?.buys ?? 0,
       sells: token.txns24h?.sells ?? 0,
       volume: token.volume24h,
     }),
-    Promise.all([
-      fetchCryptoNewsHeadlines(token.symbol, 4),
-      fetchCryptoNewsHeadlines(`${token.symbol} meme`, 3),
-    ]).then(([a, b]) => {
-      const seen = new Set<string>();
-      return [...a, ...b].filter((n) => {
-        if (seen.has(n.link)) return false;
-        seen.add(n.link);
-        return true;
-      }).slice(0, 6);
-    }),
-    fetchTokenSocialIntel(token.symbol, token.name),
+    fetchCommunityPulse(token.symbol, token.name),
   ]);
+
+  const social = community.social ?? {
+    symbol: token.symbol.toUpperCase(),
+    lunarcrush: null,
+    lunarcrushPosts: [],
+    reddit: [],
+    farcaster: [],
+    status: { lunarcrush: "missing", reddit: "missing", neynar: "missing" },
+    hasData: false,
+  };
+
+  const news: CryptoNewsItem[] = community.items
+    .filter((i) => i.kind !== "reddit")
+    .map((i) => ({
+      title: i.title,
+      source: i.source,
+      link: i.link ?? "",
+      category: i.kind,
+    }))
+    .slice(0, 8);
 
   const paprikaIntel: Partial<TokenIntel> = paprika ? paprikaIntelFromToken(paprika) : {};
   const birdeyeIntel: Partial<TokenIntel> = hasBirdeyeKey()
@@ -83,5 +94,5 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
     (token.txns24h?.buys ?? intel.buy24h ?? 1) /
     Math.max(token.txns24h?.sells ?? intel.sell24h ?? 1, 1);
 
-  return { intel, news, social, turnoverRatio, buySellRatio };
+  return { intel, news, social, community, turnoverRatio, buySellRatio };
 }

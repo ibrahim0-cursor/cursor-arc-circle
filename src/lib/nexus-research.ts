@@ -59,7 +59,10 @@ export function buildResearchReport(input: {
   if (agent.riskScore >= 65) risks.push(`Agent risk score ${agent.riskScore}/100 — treat as speculative`);
   if (risks.length === 0) risks.push("No major structural flags — still use stops; feed signal can flip on next refresh");
 
-  const catalysts = news.slice(0, 4).map((n) => `${n.title}${n.source ? ` (${n.source})` : ""}`);
+  const catalysts = news.slice(0, 4).map((n) => {
+    const tag = n.category === "meme" ? "[meme] " : "";
+    return `${tag}${n.title}${n.source ? ` (${n.source})` : ""}`;
+  });
   if (social?.lunarcrush?.galaxyScore) {
     catalysts.unshift(
       `LunarCrush Galaxy Score ${social.lunarcrush.galaxyScore}${social.lunarcrush.socialVolume24h ? ` · ${social.lunarcrush.socialVolume24h.toLocaleString()} social vol (24h)` : ""}`,

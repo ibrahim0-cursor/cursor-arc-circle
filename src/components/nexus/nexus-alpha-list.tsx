@@ -20,8 +20,8 @@ export function NexusAlphaList({
         <Sparkles className="mx-auto h-10 w-10 text-violet-300/70" />
         <h3 className="text-base font-semibold text-white">Alpha Scan — opportunity radar</h3>
         <p className="mx-auto max-w-sm text-sm text-white/60">
-          Runs news + meme headlines, Birdeye on-chain intel, TA, macro regime, and AI scoring on up
-          to 30 tokens. Best setups ranked by opportunity score — not just the live feed signal.
+          Community pulse (news, meme buzz, Reddit when connected), Birdeye on-chain intel, TA,
+          macro, and AI scoring on up to 30 tokens — ranked by opportunity score.
         </p>
         <p className="text-xs text-white/45">Connect wallet → Alpha Scan → results appear here</p>
       </div>

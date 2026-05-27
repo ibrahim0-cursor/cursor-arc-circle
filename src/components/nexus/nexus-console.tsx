@@ -18,6 +18,8 @@ import { MeshBackground } from "@/components/layout/mesh-background";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
+import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
+import type { CommunityPulse } from "@/lib/community-pulse";
 import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
 import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
@@ -125,6 +127,7 @@ export function NexusConsole() {
   const [heroCompact, setHeroCompact] = useState(true);
   const [deepResearch, setDeepResearch] = useState<NexusResearchReport | null>(null);
   const [socialIntel, setSocialIntel] = useState<TokenSocialIntel | null>(null);
+  const [communityPulse, setCommunityPulse] = useState<CommunityPulse | null>(null);
   const isMobile = useIsMobile();
 
   const loadSaved = useCallback(async () => {
@@ -398,6 +401,7 @@ export function NexusConsole() {
       const agent = data.agent ?? data;
       if (data.research) setDeepResearch(data.research as NexusResearchReport);
       if (data.social) setSocialIntel(data.social as TokenSocialIntel);
+      if (data.community) setCommunityPulse(data.community as CommunityPulse);
       setSelectedToken((prev) =>
         prev
           ? {
@@ -589,6 +593,11 @@ export function NexusConsole() {
       />
       {deepResearch && (
         <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
+      )}
+      {communityPulse && communityPulse.items.length > 0 && (
+        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3">
+          <CommunityPulsePanel pulse={communityPulse} title={`Community · ${communityPulse.topic}`} compact />
+        </div>
       )}
       {socialIntel && <NexusSocialIntelPanel social={socialIntel} />}
       {displayDecision && !deepResearch && <NexusTokenDetail decision={displayDecision} />}
