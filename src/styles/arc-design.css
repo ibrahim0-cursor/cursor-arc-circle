@@ -1520,6 +1520,24 @@ html[data-arc-theme="nexus"] .arc-panel-stripe-nexus {
   padding-bottom: 1rem;
 }
 
+.nexus-action-bar {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.nexus-alpha-hero-glow {
+  background: radial-gradient(ellipse 80% 60% at 20% 0%, rgba(168, 85, 247, 0.22), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(18, 232, 168, 0.12), transparent 50%);
+}
+
+.nexus-alpha-hero-cycle {
+  line-height: 1.25;
+}
+
+.nexus-trade-confirm-footer {
+  flex-shrink: 0;
+}
+
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   grid-template-columns: minmax(320px, 34%) minmax(420px, 1.25fr) minmax(320px, 34%) !important;
 }
@@ -1550,6 +1568,18 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
 
 .nexus-center-intel {
   scroll-padding-bottom: 1rem;
+}
+
+.nexus-holder-table-wrap {
+  max-height: 220px;
+}
+
+.nexus-data-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.nexus-research-dossier .nexus-research-at-glance {
+  border-radius: 1rem;
 }
 
 .nexus-metrics-compact .arc-glass-card-nexus {
@@ -1608,6 +1638,7 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row:hover {
 
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {
   align-self: stretch;
+  height: min(720px, calc(100vh - 5.5rem));
   max-height: min(720px, calc(100vh - 5.5rem));
 }
 

@@ -3,6 +3,17 @@
 export const NEXUS_TAGLINE =
   "We read the market so you don't have to stare at 50 columns like a pro terminal.";
 
+/** Cycling hero headlines — Alpha Scan / agent research focus */
+export const NEXUS_ALPHA_HERO_LINES = [
+  "momentum before the crowd",
+  "liquidity · sentiment · risk",
+  "alpha ranked by your agent",
+  "research — not a data wall",
+] as const;
+
+export const NEXUS_ALPHA_HERO_SUB =
+  "One tap runs a deep multi-source scan. You get a short ranked list with BUY · SELL · HOLD verdicts.";
+
 export const NEXUS_VALUE_STEPS = [
   {
     title: "Agent scans",
@@ -31,7 +42,7 @@ export const ALPHA_SCAN_LOADING =
   "Your agent is doing the hard work — ranking setups by momentum, sentiment, liquidity, and risk. About a minute.";
 
 export const ALPHA_SCAN_EMPTY =
-  "Tap Run Alpha Scan. The agent will research dozens of tokens and return a short ranked list — not a data wall.";
+  "Run a scan from the hero above — the agent will research dozens of tokens and return a short ranked list.";
 
 export const ALPHA_SCAN_ERROR_TIP =
   "Stay on Arc Testnet, approve the scan fee if prompted, and try again in a moment.";

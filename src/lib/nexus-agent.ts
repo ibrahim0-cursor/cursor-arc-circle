@@ -587,6 +587,8 @@ export type AlphaOpportunity = {
   marketSentiment?: string;
   sentimentScore?: number;
   intelLayers?: string[];
+  /** One-line pro dossier for alpha cards (cheap heuristic) */
+  researchGlance?: string;
 };
 
 function scoreOpportunity(
@@ -795,6 +797,8 @@ export async function runAlphaScan(
         skipGithub: true,
         sourceTags,
       });
+      const { buildDossierGlance } = await import("./nexus-research-dossier");
+      const researchGlance = buildDossierGlance(token, intel, signal);
       const apeRow = lookupApeWisdom(token.symbol, apeMap);
       let legacyScore =
         scoreOpportunity(token, signal, intel, social, news.length) +
@@ -845,6 +849,7 @@ export async function runAlphaScan(
         sourceTags,
         marketSentiment: scanIntel.marketSentiment.publicSummary,
         sentimentScore: scanIntel.marketSentiment.score,
+        researchGlance,
       };
     },
     2,

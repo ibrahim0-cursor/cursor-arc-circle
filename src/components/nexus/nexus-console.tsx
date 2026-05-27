@@ -9,7 +9,7 @@ import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
-import { NexusValueStrip } from "@/components/nexus/nexus-value-strip";
+import { NexusAlphaHero } from "@/components/nexus/nexus-alpha-hero";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
 import type { CommunityPulse } from "@/lib/community-pulse";
@@ -30,6 +30,7 @@ import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
 import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
 import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
+import { NexusResearchDossierPanel } from "@/components/nexus/nexus-research-dossier";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
 import { NexusFeedTabs, type NexusFeedTab } from "@/components/nexus/nexus-feed-tabs";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
@@ -334,13 +335,7 @@ export function NexusConsole() {
 
   const feedPanel = (
     <div className="nexus-feed-panel flex min-h-0 flex-1 flex-col max-lg:!border-0 max-lg:!bg-transparent">
-      <NexusFeedTabs
-        active={feedTab}
-        onChange={setFeedTab}
-        alphaCount={alphaOpportunities.length}
-        onAlphaScan={() => void runAlphaScan()}
-        alphaScanning={alphaScanning}
-      />
+      <NexusFeedTabs active={feedTab} onChange={setFeedTab} alphaCount={alphaOpportunities.length} />
       <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-[280px] lg:min-h-0">
         {feedTab === "live" && (
           <NexusTrendingFeed
@@ -430,9 +425,7 @@ export function NexusConsole() {
       </div>
 
       <div className="nexus-center-intel min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pt-1">
-        <p className="arc-caption hidden px-1 text-white/40 lg:block">
-          Deep intel (optional) — agent already decided above; expand only if you want detail
-        </p>
+        <NexusResearchDossierPanel token={selectedToken} />
         <NexusTAPanel
           technical={displayDecision?.technical ?? selectedToken.intel?.technical}
           priceUsd={selectedToken.priceUsd}
@@ -470,8 +463,8 @@ export function NexusConsole() {
   );
 
   const tradePanel = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-24">
-      <div className="lg:hidden mb-2 space-y-2">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-4">
+      <div className="lg:hidden mb-2 shrink-0 space-y-2">
         <NexusTokenStrip
           tokens={feedTokens}
           selected={selectedToken}
@@ -480,13 +473,15 @@ export function NexusConsole() {
         />
         {selectedToken && <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />}
       </div>
-      <NexusTradeHub
-        embedded
-        token={selectedToken}
-        activeTab={tradeTab}
-        onTabChange={setTradeTab}
-        onTradeComplete={() => setPortfolioKey((k) => k + 1)}
-      />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <NexusTradeHub
+          embedded
+          token={selectedToken}
+          activeTab={tradeTab}
+          onTabChange={setTradeTab}
+          onTradeComplete={() => setPortfolioKey((k) => k + 1)}
+        />
+      </div>
     </div>
   );
 
@@ -503,7 +498,7 @@ export function NexusConsole() {
 
   const rightColumnPanel = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mb-2 flex gap-1.5 border-b border-white/[0.06] pb-2">
+      <div className="mb-2 flex shrink-0 gap-1.5 border-b border-white/[0.06] pb-2">
         <button
           type="button"
           onClick={() => setRightTab("trade")}
@@ -527,7 +522,7 @@ export function NexusConsole() {
           Portfolio
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {rightTab === "trade" ? tradePanel : portfolioPanel}
       </div>
     </div>
@@ -539,7 +534,12 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1920px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8 xl:px-6">
-        <NexusValueStrip />
+        <NexusAlphaHero
+          onAlphaScan={() => void runAlphaScan()}
+          alphaScanning={alphaScanning}
+          alphaCount={alphaOpportunities.length}
+          disabled={arcFeePending}
+        />
         <NexusPremiumHero stableCount={STABLE_FEED_LIMIT} />
 
         <NexusMobileContextBar
@@ -586,10 +586,10 @@ export function NexusConsole() {
         </div>
 
         <div
-          className="hidden items-start gap-4 lg:grid lg:gap-5 xl:gap-6"
+          className="hidden items-stretch gap-4 lg:grid lg:gap-5 xl:gap-6"
           data-nexus-layout="desktop"
         >
-          <div className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-5.25rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]">
+          <div className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]">
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
             <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
               <p className="arc-caption text-emerald-300/80">Discovery</p>
@@ -601,7 +601,7 @@ export function NexusConsole() {
           </div>
           <div
             id="nexus-chart-panel"
-            className="nexus-column-shell nexus-center-panel nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-5.25rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
+            className="nexus-column-shell nexus-center-panel nexus-column-panel arc-panel arc-panel-nexus flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
           >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
             <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
@@ -614,7 +614,7 @@ export function NexusConsole() {
           </div>
           <div
             id="nexus-trade-panel"
-            className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-5.25rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
+            className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
           >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
             <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">

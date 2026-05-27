@@ -1,0 +1,78 @@
+import { NextResponse } from "next/server";
+import { fetchTokenByAddress } from "@/lib/dexscreener";
+import { buildResearchReport } from "@/lib/nexus-research";
+import { buildTokenDossierPayload } from "@/lib/nexus-research-dossier";
+import { analyzeTokenSignal } from "@/lib/nexus-agent";
+import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
+import { fetchMergedTokenDetection } from "@/lib/token-detection";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const chainId = searchParams.get("chainId");
+  const address = searchParams.get("address");
+  const buys = Number(searchParams.get("buys") ?? 0);
+  const sells = Number(searchParams.get("sells") ?? 0);
+  const volume = Number(searchParams.get("volume") ?? 0);
+
+  if (!chainId || !address) {
+    return NextResponse.json({ error: "chainId and address required" }, { status: 400 });
+  }
+
+  try {
+    const loaded = await fetchTokenByAddress(chainId, address);
+    const token = loaded ?? {
+      symbol: searchParams.get("symbol") ?? "???",
+      name: searchParams.get("name") ?? "Token",
+      tokenAddress: address,
+      chainId,
+      pairAddress: searchParams.get("pair") ?? "",
+      priceUsd: Number(searchParams.get("price") ?? 0),
+      change24h: Number(searchParams.get("change24h") ?? 0),
+      volume24h: volume,
+      liquidityUsd: Number(searchParams.get("liquidity") ?? 0),
+      url: `https://dexscreener.com/${chainId}/${address}`,
+      txns24h: { buys, sells },
+    };
+
+    const dexStats = {
+      buys: token.txns24h?.buys ?? buys,
+      sells: token.txns24h?.sells ?? sells,
+      volume: token.volume24h ?? volume,
+    };
+
+    const [bundle, detection] = await Promise.all([
+      buildDeepTokenIntel(token, { scanKind: "analyze" }),
+      fetchMergedTokenDetection(token.tokenAddress, token.chainId, dexStats),
+    ]);
+
+    const agent = await analyzeTokenSignal(token, bundle.intel, false);
+    const research = buildResearchReport({
+      token,
+      agent,
+      intel: bundle.intel,
+      technical: bundle.intel.technical,
+      news: bundle.news,
+      social: bundle.social,
+    });
+
+    const payload = await buildTokenDossierPayload(token, {
+      intel: bundle.intel,
+      agent,
+      community: bundle.community,
+      news: bundle.news,
+      research,
+      detection,
+    });
+
+    return NextResponse.json(payload);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Dossier failed" },
+      { status: 500 },
+    );
+  }
+}

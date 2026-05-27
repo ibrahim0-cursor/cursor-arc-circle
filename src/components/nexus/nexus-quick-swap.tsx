@@ -132,16 +132,26 @@ export function NexusQuickSwap({
 
   useEffect(() => {
     if (!payToken && payOptions[0]) setPayToken(payOptions[0].tokenAddress);
-    if (!receiveToken) {
-      const next = sortedTradable.find(
-        (t) => t.tokenAddress.toLowerCase() !== payToken.toLowerCase(),
-      );
-      if (next) setReceiveToken(next.tokenAddress);
-    }
-  }, [payOptions, sortedTradable, payToken, receiveToken]);
+  }, [payOptions, payToken]);
+
+  useEffect(() => {
+    if (!payToken) return;
+    const needsReceive =
+      !receiveToken ||
+      receiveToken.toLowerCase() === payToken.toLowerCase();
+    if (!needsReceive) return;
+    const next = sortedTradable.find(
+      (t) => t.tokenAddress.toLowerCase() !== payToken.toLowerCase(),
+    );
+    if (next) setReceiveToken(next.tokenAddress);
+  }, [sortedTradable, payToken, receiveToken]);
 
   const pay = sortedTradable.find((t) => t.tokenAddress === payToken) ?? payOptions[0];
   const receive = sortedTradable.find((t) => t.tokenAddress === receiveToken);
+  const sameToken =
+    !!pay &&
+    !!receive &&
+    pay.tokenAddress.toLowerCase() === receive.tokenAddress.toLowerCase();
   const posPay = positions.find((p) => p.tokenAddress.toLowerCase() === payToken.toLowerCase());
   const balancePay = posPay?.tokenAmount ?? 0;
 
@@ -281,7 +291,9 @@ export function NexusQuickSwap({
           label="You receive"
           value={receiveToken}
           onChange={setReceiveToken}
-          tokens={sortedTradable.filter((t) => t.tokenAddress !== payToken)}
+          tokens={sortedTradable.filter(
+            (t) => t.tokenAddress.toLowerCase() !== payToken.toLowerCase(),
+          )}
           showBalanceOnly
         />
       </div>
@@ -358,11 +370,20 @@ export function NexusQuickSwap({
         <Button
           variant="nexus"
           className="min-h-[48px] w-full"
-          disabled={loading || arcPending || !pay || !receive || balancePay <= 0}
+          disabled={
+            loading ||
+            arcPending ||
+            !pay ||
+            !receive ||
+            sameToken ||
+            balancePay <= 0
+          }
           onClick={() => void executeSwap()}
         >
           {loading || arcPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Swap {pay?.symbol ?? "—"} → {receive?.symbol ?? "—"}
+          {sameToken
+            ? "Pick two different tokens"
+            : `Swap ${pay?.symbol ?? "—"} → ${receive?.symbol ?? "—"}`}
         </Button>
       ) : (
         <p className="text-center text-xs text-white/50">Connect wallet (top right) to swap</p>

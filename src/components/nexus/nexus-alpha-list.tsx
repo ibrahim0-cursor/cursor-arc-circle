@@ -188,7 +188,7 @@ export function NexusAlphaList({
                       </p>
                     )}
                     <p className="mt-1 text-[11px] text-white/55 line-clamp-2 lg:line-clamp-1">
-                      {row.narrativeSummary}
+                      {row.researchGlance ?? row.narrativeSummary}
                     </p>
                   </div>
                 </div>

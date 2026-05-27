@@ -4,6 +4,7 @@ import { analyzeTokenSignal, buildDecision } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
 import { scoreTokenSecurity } from "@/lib/token-security";
 import { buildResearchReport } from "@/lib/nexus-research";
+import { buildDossierGlance } from "@/lib/nexus-research-dossier";
 import { addNexusDecision } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
         technical: ta,
         intel: decision.intel,
         research,
+        dossierAtAGlance: buildDossierGlance(token, intelWithTa, agent, research),
         news: bundle.news.slice(0, 4),
         social: bundle.social,
         community: bundle.community,
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
       research,
       security,
       technical: ta,
+      dossierAtAGlance: buildDossierGlance(token, intelWithTa, agent, research),
       mode: body.deep ? "deep" : "quick",
       message: `Research report generated — see thesis & risks (not just ${agent.action})`,
     });

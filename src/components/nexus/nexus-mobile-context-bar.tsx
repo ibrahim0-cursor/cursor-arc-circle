@@ -98,7 +98,7 @@ export function NexusMobileContextBar({
       </div>
 
       <p className="mb-2 text-center text-[10px] text-white/45">
-        Tokens tab: <strong className="text-emerald-200/90">Live Feed</strong> · Alpha · Swap
+        Tokens tab: <strong className="text-emerald-200/90">Live Feed</strong> · Alpha results · Swap
       </p>
     </div>
   );

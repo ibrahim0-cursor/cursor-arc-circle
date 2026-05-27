@@ -268,10 +268,51 @@ export function NexusTradeHub({
           } as TrendingMarketToken)
         : null;
 
+  const tradeConfirmFooter =
+    tradeTab !== "agent" && trade ? (
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-cyan-100/80">
+          <span>Arc network fee</span>
+          <span className="font-semibold">~${feeUsd} USDC</span>
+        </div>
+        {isConnected ? (
+          <Button
+            variant="nexus"
+            className="min-h-[48px] w-full text-base font-semibold"
+            onClick={executeDemoTrade}
+            disabled={loading || arcPending || amountNum <= 0}
+          >
+            {loading || arcPending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              `Confirm ${side === "buy" ? "Buy" : "Sell"}`
+            )}
+          </Button>
+        ) : (
+          <p className="text-center text-sm text-white/60">Connect wallet on Arc Testnet to trade</p>
+        )}
+        {error && <p className="text-sm text-rose-300">{error}</p>}
+        {lastTx && (
+          <a
+            href={arcExplorerTx(lastTx.hash)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-500/15 text-sm font-medium text-emerald-100"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View on Arc Scan
+          </a>
+        )}
+        <p className="text-center text-[11px] text-white/45">
+          Demo fills · real Arc USDC fee tx · prices from DexScreener
+        </p>
+      </div>
+    ) : null;
+
   const shell = (
-    <>
+    <div className={embedded ? "flex min-h-0 flex-1 flex-col overflow-hidden" : undefined}>
         {!embedded && <div className="arc-panel-stripe arc-panel-stripe-nexus" />}
-        <div className={embedded ? "" : "border-b border-white/[0.08] px-4 py-3"}>
+        <div className={cn(embedded ? "shrink-0 px-1 pt-0.5" : "border-b border-white/[0.08] px-4 py-3")}>
           {!embedded && (
           <div className="nexus-trade-hub-header mb-3 flex flex-wrap items-center gap-3">
             <ArcIconFrame icon={ArrowDownUp} variant="nexus" size="md" active />
@@ -325,7 +366,11 @@ export function NexusTradeHub({
           </div>
         </div>
 
-      <div className="space-y-3 p-4">
+      <div
+        className={cn(
+          embedded ? "nexus-trade-column-scroll min-h-0 flex-1 space-y-3 px-1 py-2" : "space-y-3 p-4",
+        )}
+      >
         {!trade && tradeTab !== "agent" ? (
           <p className="text-center text-sm text-white/60">Select a token from the feed to trade.</p>
         ) : (
@@ -497,57 +542,24 @@ export function NexusTradeHub({
                 </div>
               )}
 
-              <div className="flex justify-between text-xs text-cyan-100/80">
-                <span>Arc network fee</span>
-                <span className="font-semibold">~${feeUsd} USDC</span>
-              </div>
-
-              {isConnected ? (
-                <Button
-                  variant="nexus"
-                  className="min-h-[48px] w-full text-base font-semibold"
-                  onClick={executeDemoTrade}
-                  disabled={loading || arcPending || amountNum <= 0}
-                >
-                  {loading || arcPending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    `Confirm ${side === "buy" ? "Buy" : "Sell"}`
-                  )}
-                </Button>
-              ) : (
-                <p className="text-center text-sm text-white/60">Connect wallet on Arc Testnet to trade</p>
-              )}
-
-              {error && <p className="text-sm text-rose-300">{error}</p>}
-
-              {lastTx && (
-                <a
-                  href={arcExplorerTx(lastTx.hash)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-500/15 text-sm font-medium text-emerald-100"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View on Arc Scan
-                </a>
-              )}
-
-              <p className="text-center text-[11px] text-white/45">
-                Demo fills · real Arc USDC fee tx · prices from DexScreener
-              </p>
+              {!embedded && tradeConfirmFooter}
             </>
             ) : null}
           </>
         )}
       </div>
-    </>
+      {embedded && tradeConfirmFooter && (
+        <div className="nexus-trade-confirm-footer shrink-0 border-t border-white/10 bg-[#080b12]/98 p-3 shadow-[0_-8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+          {tradeConfirmFooter}
+        </div>
+      )}
+    </div>
   );
 
   return (
     <NexusAgentWalletProvider>
       {embedded ? (
-        <div className="overflow-hidden rounded-xl">{shell}</div>
+        shell
       ) : (
         <div className="arc-panel arc-panel-nexus overflow-hidden">{shell}</div>
       )}
