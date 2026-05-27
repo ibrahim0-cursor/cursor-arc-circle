@@ -55,7 +55,7 @@ export function ArcEcosystemHero() {
         </h1>
 
         <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
-          Institutional AI for crypto and macro — live portal routing, six-layer alpha, Arc-native execution.
+          Institutional AI for crypto and macro — BTC · ETH · SOL · USDC · USDT pulse through the live portal.
         </p>
 
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">

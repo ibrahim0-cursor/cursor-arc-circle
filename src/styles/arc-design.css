@@ -628,24 +628,24 @@ html.arc-fancy-pointer select {
   border-radius: 12px;
 }
 
-/* ——— Home portal hero ——— */
+/* ——— Home portal hero (dot globe + token orbit) ——— */
 .arc-portal-hero {
   position: relative;
-  width: min(480px, 92vw);
-  height: min(420px, 52vh);
+  width: min(520px, 94vw);
+  height: min(460px, 56vh);
   margin: 0 auto;
-  perspective: 900px;
+  perspective: 1000px;
   transform: translateZ(0);
   contain: layout style paint;
 }
 
 .arc-portal-hero-glow {
   position: absolute;
-  inset: 5% 0 15%;
+  inset: 0 4% 8%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.45), transparent 68%);
-  filter: blur(28px);
-  animation: arc-portal-glow 5s ease-in-out infinite;
+  background: radial-gradient(ellipse at 50% 48%, rgba(168, 85, 247, 0.5), transparent 70%);
+  filter: blur(32px);
+  animation: arc-portal-glow 6s ease-in-out infinite;
 }
 
 .arc-portal-ring {
@@ -653,103 +653,139 @@ html.arc-fancy-pointer select {
   left: 50%;
   top: 50%;
   border-radius: 50%;
-  border: 1px solid rgba(192, 132, 252, 0.45);
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.35);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  box-shadow: 0 0 40px rgba(139, 92, 246, 0.28);
   transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .arc-portal-ring-outer {
   width: 100%;
   height: 100%;
-  animation: arc-portal-spin 24s linear infinite;
+  opacity: 0.85;
+  animation: arc-portal-spin 32s linear infinite;
 }
 
 .arc-portal-ring-inner {
-  width: 72%;
-  height: 72%;
-  border-color: rgba(232, 121, 249, 0.55);
-  animation: arc-portal-spin-rev 16s linear infinite;
+  width: 78%;
+  height: 78%;
+  border-color: rgba(232, 121, 249, 0.4);
+  animation: arc-portal-spin-rev 22s linear infinite;
 }
 
-.arc-portal-core {
+.arc-portal-lens {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 28%;
+  height: 12%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.35), transparent 70%);
+  filter: blur(8px);
+  opacity: 0.7;
+  animation: arc-portal-glow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.arc-portal-globe-layer {
+  position: absolute;
+  inset: 6%;
+  z-index: 2;
+  opacity: 0.98;
+}
+
+.arc-portal-globe-layer .arc-dot-globe-orbit {
+  opacity: 0.5;
+}
+
+.arc-portal-orbit {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 38%;
-  height: 38%;
+  width: var(--orbit-size, 100%);
+  height: var(--orbit-size, 100%);
   transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.9) 0%, rgba(88, 28, 135, 0.5) 55%, transparent 100%);
-  box-shadow: 0 0 60px rgba(168, 85, 247, 0.5);
+  animation: arc-portal-spin var(--orbit-dur, 16s) linear infinite;
+  animation-delay: var(--orbit-delay, 0s);
+  pointer-events: none;
+  z-index: 4;
 }
 
-.arc-portal-vortex {
-  position: absolute;
-  inset: 12%;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent,
-    rgba(192, 132, 252, 0.5),
-    transparent,
-    rgba(99, 102, 241, 0.45),
-    transparent
-  );
-  animation: arc-portal-spin 6s linear infinite;
-}
-
-.arc-portal-coin-track {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 88%;
-  height: 88%;
-  transform: translate(-50%, -50%);
-  animation: arc-portal-spin 11s linear infinite;
-}
-
-.arc-portal-coin-track-alt {
-  animation-duration: 14s;
-  animation-direction: reverse;
-  opacity: 0.75;
-}
-
-.arc-portal-coin {
+.arc-portal-token {
   position: absolute;
   left: 50%;
   top: 0;
   display: flex;
-  height: 44px;
-  width: 44px;
+  min-height: 40px;
+  min-width: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 1.25rem;
+  padding: 0 6px;
+  font-size: 0.7rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: #fff;
   transform: translate(-50%, -50%);
-  animation: arc-portal-coin-depth 11s linear infinite;
-  will-change: transform, opacity;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  animation: arc-portal-token-pulse 2.8s ease-in-out infinite;
+  will-change: transform;
 }
 
-.arc-portal-coin-track-alt .arc-portal-coin {
-  animation-duration: 14s;
-  animation-direction: reverse;
+.arc-portal-token span {
+  line-height: 1;
 }
 
-.arc-portal-coin-btc {
-  background: linear-gradient(145deg, #f59e0b, #d97706);
-  box-shadow:
-    0 0 20px rgba(245, 158, 11, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+.arc-portal-token-btc {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 1.2rem;
+  background: linear-gradient(145deg, #fbbf24, #d97706);
+  box-shadow: 0 0 22px rgba(245, 158, 11, 0.5);
 }
 
-.arc-portal-coin-eth {
-  height: 36px;
-  width: 36px;
+.arc-portal-token-eth {
+  min-width: 42px;
+  min-height: 42px;
+  font-size: 1.1rem;
+  background: linear-gradient(145deg, #a5b4fc, #4f46e5);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+.arc-portal-token-sol {
+  min-width: 40px;
+  min-height: 40px;
   font-size: 1rem;
-  background: linear-gradient(145deg, #818cf8, #4f46e5);
-  box-shadow: 0 0 18px rgba(99, 102, 241, 0.5);
+  background: linear-gradient(145deg, #c084fc, #7c3aed);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.45);
+}
+
+.arc-portal-token-usdc {
+  font-size: 0.58rem;
+  font-weight: 800;
+  background: linear-gradient(145deg, #38bdf8, #2563eb);
+  box-shadow: 0 0 18px rgba(37, 99, 235, 0.45);
+}
+
+.arc-portal-token-usdt {
+  min-width: 42px;
+  min-height: 42px;
+  font-size: 1.05rem;
+  background: linear-gradient(145deg, #34d399, #059669);
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.45);
+}
+
+@keyframes arc-portal-token-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    filter: brightness(1.12);
+  }
 }
 
 @keyframes arc-portal-spin {
@@ -780,33 +816,6 @@ html.arc-fancy-pointer select {
   }
 }
 
-@keyframes arc-portal-coin-depth {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.2;
-    filter: brightness(1);
-  }
-  20% {
-    opacity: 1;
-  }
-  48% {
-    transform: translate(-50%, -50%) scale(0.32);
-    opacity: 0.5;
-    filter: brightness(0.7);
-  }
-  52% {
-    transform: translate(-50%, -50%) scale(0.28);
-    opacity: 0.35;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.2;
-    filter: brightness(1);
-  }
-}
 
 /* ——— 3D icon tiles (home) ——— */
 .arc-icon-3d {
@@ -893,9 +902,9 @@ html.arc-fancy-pointer select {
   .arc-dot-globe-glow,
   .arc-dot-globe-orbit,
   .arc-portal-ring,
-  .arc-portal-vortex,
-  .arc-portal-coin-track,
-  .arc-portal-coin,
+  .arc-portal-orbit,
+  .arc-portal-token,
+  .arc-portal-lens,
   .arc-portal-hero-glow,
   .arc-icon-3d {
     animation: none !important;
