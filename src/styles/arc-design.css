@@ -1265,8 +1265,10 @@ html.arc-fancy-pointer select {
 }
 
 .arc-icon-3d-nexus .arc-icon-3d-plate {
-  color: #a7f3d0;
-  box-shadow: 0 12px 28px -10px rgba(18, 232, 168, 0.4);
+  color: #d8b4fe;
+  box-shadow:
+    0 12px 28px -10px rgba(168, 85, 247, 0.45),
+    0 8px 20px -8px rgba(18, 232, 168, 0.35);
 }
 
 .arc-icon-3d-prism .arc-icon-3d-plate {
@@ -1365,6 +1367,110 @@ html.arc-fancy-pointer select {
   box-shadow: 0 0 8px rgba(167, 139, 250, 0.6);
 }
 
+/* ——— NEXUS premium workspace (violet + emerald glass) ——— */
+html[data-arc-theme="nexus"] .arc-gradient-text {
+  background: linear-gradient(
+    105deg,
+    #c4b5fd 0%,
+    #12e8a8 38%,
+    #f5f7fb 55%,
+    #38bdf8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+html[data-arc-theme="nexus"] .arc-panel-stripe-nexus {
+  background: linear-gradient(90deg, #a855f7, #12e8a8, #38bdf8, #a855f7);
+  background-size: 200% 100%;
+  animation: arc-nexus-stripe-shift 8s linear infinite;
+}
+
+@keyframes arc-nexus-stripe-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.nexus-premium-hero {
+  box-shadow:
+    0 0 0 1px rgba(168, 85, 247, 0.12) inset,
+    0 28px 60px -28px rgba(18, 232, 168, 0.22),
+    0 24px 48px -24px rgba(0, 0, 0, 0.85);
+}
+
+.nexus-premium-hero-glow {
+  position: absolute;
+  inset: -20% 10% auto;
+  height: 55%;
+  background: radial-gradient(ellipse 55% 80% at 50% 0%, rgba(168, 85, 247, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.nexus-premium-title {
+  text-shadow: 0 4px 32px rgba(168, 85, 247, 0.2);
+}
+
+.nexus-column-panel {
+  box-shadow:
+    0 0 0 1px rgba(18, 232, 168, 0.08) inset,
+    0 20px 50px -24px rgba(168, 85, 247, 0.15);
+}
+
+.nexus-token-avatar-frame {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.65), rgba(18, 232, 168, 0.55));
+  box-shadow:
+    0 0 20px rgba(168, 85, 247, 0.25),
+    0 0 12px rgba(18, 232, 168, 0.15);
+}
+
+.nexus-token-avatar-frame img,
+.nexus-token-avatar-frame > div {
+  display: block;
+  border-radius: 12px;
+}
+
+.nexus-token-strip-shell {
+  border-radius: 20px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: linear-gradient(165deg, rgba(168, 85, 247, 0.08) 0%, rgba(0, 0, 0, 0.55) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px -20px rgba(18, 232, 168, 0.2);
+}
+
+.nexus-token-chip {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.nexus-token-chip-active {
+  border-color: rgba(168, 85, 247, 0.55);
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.2), rgba(18, 232, 168, 0.12));
+  box-shadow:
+    0 0 24px rgba(168, 85, 247, 0.28),
+    0 0 16px rgba(18, 232, 168, 0.18);
+}
+
+.nexus-trade-hub-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.25rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arc-border-trace::before,
   .arc-icon-active,
@@ -1385,7 +1491,8 @@ html.arc-fancy-pointer select {
   .arc-portal-core-scan,
   .arc-portal-core-ring,
   .arc-icon-3d,
-  .arc-icon-3d {
+  .arc-icon-3d,
+  html[data-arc-theme="nexus"] .arc-panel-stripe-nexus {
     animation: none !important;
   }
 }

@@ -7,7 +7,8 @@ type Theme = "home" | "nexus" | "prism" | "neutral";
 
 const styles: Record<Theme, string> = {
   home: "from-violet-500/35 to-indigo-600/25 text-violet-100 ring-violet-400/35 shadow-[0_0_20px_rgba(168,85,247,0.25)]",
-  nexus: "from-emerald-500/35 to-cyan-600/25 text-emerald-100 ring-emerald-400/40 shadow-[0_0_20px_rgba(18,232,168,0.28)]",
+  nexus:
+    "from-violet-500/40 to-emerald-500/30 text-emerald-50 ring-violet-400/35 shadow-[0_0_22px_rgba(168,85,247,0.28),0_0_14px_rgba(18,232,168,0.2)]",
   prism: "from-amber-500/40 to-orange-600/25 text-amber-100 ring-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.28)]",
   neutral: "from-white/15 to-white/5 text-white/85 ring-white/20",
 };

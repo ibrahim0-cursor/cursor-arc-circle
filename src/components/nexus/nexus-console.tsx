@@ -2,22 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import {
-  Bot,
-  Brain,
-  Database,
-  LineChart,
-  Loader2,
-  Radio,
-  Sparkles,
-  Zap,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Database, LineChart, Loader2, Radio, Sparkles } from "lucide-react";
 import { ArcBackground } from "@/components/layout/arc-background";
-import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcPanel } from "@/components/ui/arc-panel";
+import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
@@ -129,7 +118,6 @@ export function NexusConsole() {
     type: "success" | "info" | "error";
   } | null>(null);
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
-  const [heroCompact, setHeroCompact] = useState(true);
   const [deepResearch, setDeepResearch] = useState<NexusResearchReport | null>(null);
   const [socialIntel, setSocialIntel] = useState<TokenSocialIntel | null>(null);
   const [communityPulse, setCommunityPulse] = useState<CommunityPulse | null>(null);
@@ -504,7 +492,7 @@ export function NexusConsole() {
       theme="nexus"
       title="Market feed"
       icon={Radio}
-      className="max-lg:!border-0 max-lg:!bg-transparent lg:flex lg:h-full lg:min-h-0 lg:flex-col"
+      className="nexus-column-panel max-lg:!border-0 max-lg:!bg-transparent lg:flex lg:h-full lg:min-h-0 lg:flex-col"
     >
       <div className="-mt-2 mb-3 flex flex-wrap items-center gap-1.5 max-lg:mb-2">
         <button
@@ -700,96 +688,18 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
-        <div className="arc-panel arc-panel-nexus mb-3 hidden sm:mb-8 sm:block">
-          <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-          <div className="p-4 sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
-            <div className="max-w-2xl flex-1">
-              <div className="mb-3 flex flex-wrap items-center gap-3">
-                <ArcIconFrame icon={Zap} variant="nexus" size="md" active />
-                <Badge variant="nexus">NEXUS AI Agent</Badge>
-                <Badge variant="default" className="border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
-                  RSI · MACD · Whales
-                </Badge>
-              </div>
-              <h1 className="arc-gradient-text text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-                Crypto Intelligence
-              </h1>
-              {!heroCompact && (
-                <p className="mt-2 text-sm leading-relaxed text-white/80 sm:mt-3 sm:text-base">
-                  Live feed with RSI, MACD, whales, and AI BUY · SELL · HOLD. Arc fees ~${feeUsd}/tx.
-                </p>
-              )}
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button
-                variant="outline"
-                className="arc-btn-pill arc-glass-interactive min-h-[44px] w-full gap-2 sm:w-auto"
-                title={`Archive ${MEMORY_SCAN_LIMIT} tokens with full intel to Memory tab`}
-                onClick={() => void runMemoryScan()}
-                disabled={scanning || alphaScanning || arcFeePending}
-              >
-                {scanning || arcFeePending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Database className="h-4 w-4" />
-                )}
-                Memory Scan
-              </Button>
-              <Button
-                variant="outline"
-                className={cn(
-                  "arc-btn-pill arc-glass-interactive min-h-[44px] w-full gap-2 border-emerald-400/35 sm:w-auto",
-                  alphaScanning && "arc-ai-pulse",
-                )}
-                title={`Rank ${ALPHA_SCAN_LIMIT} opportunities — news, meme headlines, Birdeye, AI`}
-                onClick={() => void runAlphaScan()}
-                disabled={scanning || alphaScanning || arcFeePending}
-              >
-                {alphaScanning ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Alpha Scan
-              </Button>
-              <Button
-                variant="nexus"
-                className="arc-btn-pill arc-glass-interactive min-h-[44px] w-full gap-2 sm:w-auto"
-                title="Thesis, risks, catalysts & levels for selected token (chart panel) — not the same as feed BUY/SELL"
-                onClick={runDeepAnalyze}
-                disabled={loading || arcFeePending || !selectedToken}
-              >
-                {loading || arcFeePending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Brain className="h-4 w-4" />
-                )}
-                Deep Research
-              </Button>
-              <span className="hidden text-[10px] text-white/40 xl:inline" title="Thesis, risks, news — not just BUY/SELL">
-                ≠ feed signal
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 hidden gap-3 sm:mt-6 sm:grid sm:grid-cols-3">
-            {[
-              { icon: Zap, label: `${STABLE_FEED_LIMIT} stable tokens · 45s`, sub: "Same roster — prices & signals refresh" },
-              { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
-              { icon: Sparkles, label: "Wallet score", sub: "Grade every wallet A–F" },
-            ].map((item, i) => (
-              <div key={item.label} className="arc-glass-card arc-glass-card-nexus arc-glass-interactive flex items-center gap-3 px-4 py-3">
-                <ArcIcon3d icon={item.icon} theme="nexus" size="sm" delay={i * 0.15} />
-                <div>
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="arc-caption">{item.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          </div>
-        </div>
+        <NexusPremiumHero
+          stableCount={STABLE_FEED_LIMIT}
+          feeUsd={feeUsd}
+          scanning={scanning}
+          alphaScanning={alphaScanning}
+          researching={loading}
+          arcFeePending={arcFeePending}
+          hasSelectedToken={!!selectedToken}
+          onMemoryScan={() => void runMemoryScan()}
+          onAlphaScan={() => void runAlphaScan()}
+          onDeepResearch={() => void runDeepAnalyze()}
+        />
 
         <NexusMobileContextBar
           selectedToken={selectedToken}
@@ -854,11 +764,13 @@ export function NexusConsole() {
           <div className="flex min-h-0 max-h-[calc(100vh-7rem)] flex-col overflow-hidden lg:sticky lg:top-20">
             {feedPanel}
           </div>
-          <div id="nexus-chart-panel" className="min-w-0 scroll-mt-24 space-y-3">
-            {chartPanel}
+          <div id="nexus-chart-panel" className="nexus-column-panel arc-panel arc-panel-nexus min-w-0 scroll-mt-24">
+            <div className="arc-panel-stripe arc-panel-stripe-nexus" />
+            <div className="arc-panel-body space-y-3">{chartPanel}</div>
           </div>
-          <div className="min-w-0 max-h-[calc(100vh-7rem)] space-y-3 overflow-y-auto lg:sticky lg:top-20 lg:overscroll-contain">
-            {tradePanel}
+          <div className="nexus-column-panel arc-panel arc-panel-nexus min-w-0 max-h-[calc(100vh-7rem)] overflow-y-auto lg:sticky lg:top-20 lg:overscroll-contain">
+            <div className="arc-panel-stripe arc-panel-stripe-nexus" />
+            <div className="arc-panel-body space-y-3">{tradePanel}</div>
           </div>
         </div>
 

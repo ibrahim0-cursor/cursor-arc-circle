@@ -17,7 +17,7 @@ import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
@@ -270,9 +270,12 @@ export function NexusTradeHub({
       <div className="arc-panel arc-panel-nexus overflow-hidden">
         <div className="arc-panel-stripe arc-panel-stripe-nexus" />
         <div className="border-b border-white/[0.08] px-4 py-3">
-          <div className="mb-3 flex items-center gap-2">
-            <ArcIconFrame icon={ArrowDownUp} variant="nexus" size="sm" active />
-            <span className="text-base font-semibold text-white">Arc Trade · Agent</span>
+          <div className="nexus-trade-hub-header mb-3">
+            <ArcIcon3d icon={ArrowDownUp} theme="nexus" size="md" />
+            <div>
+              <p className="arc-caption text-violet-300/85">Execution</p>
+              <span className="text-base font-semibold text-white">Arc Trade · Agent</span>
+            </div>
             {agentLive && (
               <span className="ml-auto rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                 LIVE

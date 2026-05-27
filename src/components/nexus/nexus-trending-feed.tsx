@@ -222,19 +222,19 @@ export function NexusTrendingFeed({
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {token.icon ? (
-              <img
-                src={token.icon}
-                alt=""
+              <div
                 className={cn(
-                  "shrink-0 rounded-xl border border-white/15 object-cover shadow-[0_0_12px_-4px_rgba(34,211,238,0.35)]",
-                  compactDesktop ? "h-8 w-8 lg:h-7 lg:w-7" : "h-12 w-12 max-lg:h-11 max-lg:w-11",
+                  "nexus-token-avatar-frame shrink-0",
+                  compactDesktop ? "h-9 w-9 lg:h-8 lg:w-8" : "h-[52px] w-[52px] max-lg:h-12 max-lg:w-12",
                 )}
-              />
+              >
+                <img src={token.icon} alt="" className="h-full w-full object-cover" />
+              </div>
             ) : (
               <div
                 className={cn(
-                  "flex shrink-0 items-center justify-center rounded-xl border border-white/10 font-bold text-cyan-100 shadow-inner",
-                  compactDesktop ? "h-8 w-8 text-[9px]" : "h-10 w-10 text-[10px]",
+                  "nexus-token-avatar-frame flex shrink-0 items-center justify-center font-bold text-emerald-100",
+                  compactDesktop ? "h-9 w-9 text-[9px] lg:h-8 lg:w-8" : "h-12 w-12 text-[10px]",
                 )}
                 style={{
                   background: `linear-gradient(135deg, hsl(${(tokenAccent(token.symbol) % 360)} 65% 45% / 0.5), hsl(${((tokenAccent(token.symbol) + 50) % 360)} 60% 30% / 0.4))`,
