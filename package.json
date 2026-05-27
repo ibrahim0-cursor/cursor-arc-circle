@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "health": "node scripts/health-check.mjs",
-    "health:local": "node scripts/health-check.mjs http://localhost:3000"
+    "health:local": "node scripts/health-check.mjs http://localhost:3000",
+    "finish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/complete-pending.ps1"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
