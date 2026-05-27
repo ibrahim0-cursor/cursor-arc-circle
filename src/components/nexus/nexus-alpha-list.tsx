@@ -10,57 +10,36 @@ import {
   ALPHA_SCAN_LOADING,
   publicSourceLabel,
 } from "@/lib/nexus-copy";
+import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
+import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
+import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
 import type { AlphaScanIntel } from "@/lib/alpha-scan-engine";
 
-function tokenAccent(symbol: string): string {
-  const hues = [190, 260, 310, 160, 220, 280];
-  const hash = symbol.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return hues[hash % hues.length]!.toString();
-}
-
-function TokenAvatar({
-  symbol,
-  icon,
-  size = "md",
-}: {
-  symbol: string;
-  icon?: string;
-  size?: "sm" | "md";
-}) {
-  const dim = size === "sm" ? "h-9 w-9" : "h-11 w-11";
-  const text = size === "sm" ? "text-[10px]" : "text-xs";
-
-  if (icon) {
-    return (
-      <img
-        src={icon}
-        alt=""
-        className={cn(
-          "shrink-0 rounded-xl border border-white/15 object-cover shadow-[0_0_12px_-4px_rgba(103,232,249,0.35)]",
-          dim,
-        )}
-      />
-    );
-  }
-
-  const hue = tokenAccent(symbol);
-  return (
-    <div
-      className={cn(
-        "arc-token-hex flex shrink-0 items-center justify-center border border-white/10 font-bold text-white shadow-inner",
-        dim,
-        text,
-      )}
-      style={{
-        background: `linear-gradient(135deg, hsl(${hue} 70% 42% / 0.55), hsl(${(Number(hue) + 40) % 360} 65% 28% / 0.45))`,
-      }}
-    >
-      {symbol.slice(0, 2).toUpperCase()}
-    </div>
-  );
+function alphaToChatToken(row: AlphaOpportunity): TrendingMarketToken {
+  return {
+    symbol: row.symbol,
+    name: row.name,
+    tokenAddress: row.tokenAddress,
+    chainId: row.chainId,
+    pairAddress: "",
+    priceUsd: row.priceUsd,
+    change24h: row.change24h,
+    volume24h: row.volume24h,
+    liquidityUsd: row.liquidityUsd,
+    icon: row.icon,
+    url: "",
+    agent: {
+      action: row.action,
+      confidence: row.confidence,
+      riskScore: row.riskScore,
+      reasoning: row.aiThesis || row.reasoning,
+      whyAction: row.whyAction,
+      reasoningFactors: [],
+    },
+  };
 }
 
 export function NexusAlphaList({
@@ -162,13 +141,24 @@ export function NexusAlphaList({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-1 gap-2.5">
-                  <TokenAvatar symbol={row.symbol} icon={row.icon} size="sm" />
+                  <NexusTokenAvatar symbol={row.symbol} icon={row.icon} size="sm" />
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="rounded-md bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-bold text-violet-200">
                         #{row.rank}
                       </span>
                       <span className="text-sm font-semibold text-white">{row.symbol}</span>
+                      <span
+                        className="pointer-events-auto"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        role="presentation"
+                      >
+                        <NexusTokenChatButton
+                          token={alphaToChatToken(row)}
+                          className="!min-h-[28px] !px-2 !py-0.5 !text-[9px]"
+                        />
+                      </span>
                       <Badge
                         variant={
                           row.action === "BUY" ? "buy" : row.action === "SELL" ? "sell" : "hold"

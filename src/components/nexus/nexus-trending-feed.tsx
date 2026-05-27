@@ -17,6 +17,7 @@ import {
   Waves,
 } from "lucide-react";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
+import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,10 +54,6 @@ export type TrendingMarketToken = {
 const REFRESH_MS = 45_000;
 const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
-
-function tokenAccent(symbol: string): number {
-  return symbol.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-}
 
 function chainLabel(chainId: string): string {
   const id = chainId.toLowerCase();
@@ -224,28 +221,12 @@ export function NexusTrendingFeed({
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            {token.icon ? (
-              <div
-                className={cn(
-                  "nexus-token-avatar-frame shrink-0",
-                  compactDesktop ? "h-9 w-9 lg:h-8 lg:w-8" : "h-[52px] w-[52px] max-lg:h-12 max-lg:w-12",
-                )}
-              >
-                <img src={token.icon} alt="" className="h-full w-full object-cover" />
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  "nexus-token-avatar-frame flex shrink-0 items-center justify-center font-bold text-emerald-100",
-                  compactDesktop ? "h-9 w-9 text-[9px] lg:h-8 lg:w-8" : "h-12 w-12 text-[10px]",
-                )}
-                style={{
-                  background: `linear-gradient(135deg, hsl(${(tokenAccent(token.symbol) % 360)} 65% 45% / 0.5), hsl(${((tokenAccent(token.symbol) + 50) % 360)} 60% 30% / 0.4))`,
-                }}
-              >
-                {token.symbol.slice(0, 2).toUpperCase()}
-              </div>
-            )}
+            <NexusTokenAvatar
+              symbol={token.symbol}
+              icon={token.icon}
+              size={compactDesktop ? "sm" : "md"}
+              className={compactDesktop ? "lg:!h-8 lg:!w-8" : "max-lg:!h-12 max-lg:!w-12"}
+            />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1">
                 <span

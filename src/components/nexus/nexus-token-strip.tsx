@@ -1,7 +1,7 @@
 "use client";
 
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
+import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { Layers } from "lucide-react";
 import { cn, formatUsd } from "@/lib/utils";
 
@@ -50,11 +50,12 @@ export function NexusTokenStrip({
                 active && "nexus-token-chip-active",
               )}
             >
-              {t.icon ? (
-                <div className={cn("nexus-token-avatar-frame shrink-0", compact ? "h-6 w-6" : "mb-1.5 h-7 w-7")}>
-                  <img src={t.icon} alt="" className="h-full w-full object-cover" />
-                </div>
-              ) : null}
+              <NexusTokenAvatar
+                symbol={t.symbol}
+                icon={t.icon}
+                size="sm"
+                className={cn("shrink-0", compact ? "!h-6 !w-6" : "mb-1.5 !h-7 !w-7")}
+              />
               <span className={compact ? "text-xs font-bold text-white" : "text-sm font-bold text-white"}>{t.symbol}</span>
               {!compact && <span className="text-[10px] text-white/55">{formatUsd(t.priceUsd)}</span>}
               {t.agent && !compact && (

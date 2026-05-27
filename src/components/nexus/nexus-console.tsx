@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { ArrowDownUp, Database, LineChart, Loader2, Radio, Sparkles, Wallet } from "lucide-react";
+import { ArrowDownUp, LineChart, Radio, Sparkles, Wallet } from "lucide-react";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
@@ -10,25 +10,16 @@ import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
-import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
-import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
 import type { CommunityPulse } from "@/lib/community-pulse";
-import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
 import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
 import type { AlphaScanIntel } from "@/lib/alpha-scan-engine";
-import {
-  STABLE_FEED_LIMIT,
-  ALPHA_SCAN_LIMIT,
-  MEMORY_SCAN_LIMIT,
-  SAVED_SCANS_MAX,
-} from "@/lib/feed-config";
-import { ALPHA_SCAN_ERROR_TIP, ALPHA_SCAN_SUCCESS, SAVED_SCANS_LABEL } from "@/lib/nexus-copy";
+import { STABLE_FEED_LIMIT, ALPHA_SCAN_LIMIT } from "@/lib/feed-config";
+import { ALPHA_SCAN_ERROR_TIP, ALPHA_SCAN_SUCCESS } from "@/lib/nexus-copy";
+import { tokenKey } from "@/lib/feed-curation";
 import { NexusAbSwap } from "@/components/nexus/nexus-ab-swap";
 import { filterTradableTokens } from "@/lib/token-filters";
-import type { NexusResearchReport } from "@/lib/nexus-research";
-import type { TokenSocialIntel } from "@/lib/social-intel";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
 import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -52,34 +43,6 @@ import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import type { NexusDecision } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-
-const AGENT_MEMORY_KEY = "nexus-agent-memory";
-const SAVED_SCANS_KEY = AGENT_MEMORY_KEY;
-
-function persistSavedScans(decisions: NexusDecision[]) {
-  try {
-    localStorage.setItem(SAVED_SCANS_KEY, JSON.stringify(decisions.slice(0, SAVED_SCANS_MAX)));
-  } catch {
-    /* ignore */
-  }
-}
-
-const LEGACY_SAVED_SCANS_KEY = "nexus-saved-scans";
-
-function readSavedScansCache(): NexusDecision[] {
-  try {
-    const raw = localStorage.getItem(SAVED_SCANS_KEY);
-    if (raw) return JSON.parse(raw) as NexusDecision[];
-    const legacy = localStorage.getItem(LEGACY_SAVED_SCANS_KEY);
-    if (!legacy) return [];
-    const parsed = JSON.parse(legacy) as NexusDecision[];
-    persistSavedScans(parsed);
-    localStorage.removeItem(LEGACY_SAVED_SCANS_KEY);
-    return parsed;
-  } catch {
-    return [];
-  }
-}
 
 function tokenToDecision(token: TrendingMarketToken): NexusDecision | null {
   if (!token.agent) return null;
@@ -112,17 +75,12 @@ export function NexusConsole() {
   const [lastArcFeeTx, setLastArcFeeTx] = useState<string | null>(null);
   const [portfolioKey, setPortfolioKey] = useState(0);
 
-  const [savedDecisions, setSavedDecisions] = useState<NexusDecision[]>([]);
-  const [memoryScanCount, setMemoryScanCount] = useState<number | null>(null);
   const [selectedToken, setSelectedToken] = useState<TrendingMarketToken | null>(null);
-  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const [alphaScanning, setAlphaScanning] = useState(false);
   const [alphaScanError, setAlphaScanError] = useState<string | null>(null);
   const [alphaOpportunities, setAlphaOpportunities] = useState<AlphaOpportunity[]>([]);
   const [alphaScanIntel, setAlphaScanIntel] = useState<AlphaScanIntel | null>(null);
-  const [activeTab, setActiveTab] = useState<"live" | "saved" | "alpha">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "alpha">("live");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
   const [tradeTab, setTradeTab] = useState<"buy" | "sell" | "agent">("buy");
   const [actionBanner, setActionBanner] = useState<{
@@ -131,43 +89,19 @@ export function NexusConsole() {
     type: "success" | "info" | "error";
   } | null>(null);
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
-  const [deepResearch, setDeepResearch] = useState<NexusResearchReport | null>(null);
-  const [socialIntel, setSocialIntel] = useState<TokenSocialIntel | null>(null);
   const [communityPulse, setCommunityPulse] = useState<CommunityPulse | null>(null);
   const isMobile = useIsMobile();
 
-  const loadSaved = useCallback(async () => {
-    const res = await fetch(`/api/nexus/decisions?t=${Date.now()}`);
-    const data = (await res.json()) as NexusDecision[];
-    if (data.length > 0) {
-      const capped = data.slice(0, SAVED_SCANS_MAX);
-      setSavedDecisions(capped);
-      persistSavedScans(capped);
-      return;
-    }
-    const cached = readSavedScansCache().slice(0, SAVED_SCANS_MAX);
-    if (cached.length > 0) {
-      setSavedDecisions(cached);
-      persistSavedScans(cached);
+  useEffect(() => {
+    try {
+      localStorage.removeItem("nexus-agent-memory");
+      localStorage.removeItem("nexus-saved-scans");
+    } catch {
+      /* ignore */
     }
   }, []);
 
-  useEffect(() => {
-    loadSaved();
-  }, [loadSaved]);
-
-  const liveDecision = selectedToken ? tokenToDecision(selectedToken) : null;
-  const selectedSaved = savedDecisions.find((d) => d.id === selectedSavedId) ?? null;
-  const displayDecision =
-    activeTab === "saved"
-      ? selectedSaved
-      : liveDecision ?? (selectedToken ? tokenToDecision(selectedToken) : null);
-
-  useEffect(() => {
-    if (activeTab === "saved" && savedDecisions.length > 0 && !selectedSavedId) {
-      setSelectedSavedId(savedDecisions[0].id);
-    }
-  }, [activeTab, savedDecisions, selectedSavedId]);
+  const displayDecision = selectedToken ? tokenToDecision(selectedToken) : null;
 
   const scrollToMobileContent = useCallback(() => {
     requestAnimationFrame(() => {
@@ -204,8 +138,6 @@ export function NexusConsole() {
   const handleTokenSelect = useCallback(
     (token: TrendingMarketToken, openChart = true) => {
       setSelectedToken(token);
-      setDeepResearch(null);
-      setSocialIntel(null);
       if (openChart) openChartView();
     },
     [openChartView],
@@ -298,52 +230,6 @@ export function NexusConsole() {
     }
   }
 
-  async function runMemoryScan() {
-    setScanning(true);
-    try {
-      if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
-      const arcFeeTxHash = await payOptionalArcFee("SCAN", `memory-${Date.now()}`);
-
-      const res = await fetch("/api/nexus/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "memory", walletChainId, arcFeeTxHash }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Scan failed");
-
-      const decisions = (data.decisions ?? []) as NexusDecision[];
-      if (decisions.length === 0 && !data.error) {
-        throw new Error("Scan returned 0 tokens — try again in a few seconds");
-      }
-      const merged = [...decisions, ...readSavedScansCache()].slice(0, SAVED_SCANS_MAX);
-      setSavedDecisions(merged);
-      persistSavedScans(merged);
-      if (merged[0]) setSelectedSavedId(merged[0].id);
-      const count = data.count ?? decisions.length;
-      setMemoryScanCount(count);
-      setActiveTab("saved");
-      setMobilePanel("feed");
-      scrollToMobileContent();
-      setActionBanner({
-        type: "success",
-        title: "Memory scan complete",
-        message: `${count} tokens archived with full intel — open Memory tab.`,
-      });
-      toast({
-        type: "success",
-        title: "Memory scan complete",
-        message: `${count} tokens saved (max ${MEMORY_SCAN_LIMIT})`,
-      });
-      await loadSaved();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Scan failed";
-      toast({ type: "error", title: "Memory scan failed", message: msg, durationMs: 12_000 });
-    } finally {
-      setScanning(false);
-    }
-  }
-
   async function runAlphaScan() {
     setAlphaScanning(true);
     setAlphaScanError(null);
@@ -362,6 +248,7 @@ export function NexusConsole() {
           arcFeeTxHash,
           chainId: selectedToken?.chainId,
           tokenAddress: selectedToken?.tokenAddress,
+          liveFeedKeys: feedTokens.map((t) => tokenKey(t)),
         }),
         signal: controller.signal,
       });
@@ -428,6 +315,7 @@ export function NexusConsole() {
         change24h: row.change24h,
         volume24h: row.volume24h,
         liquidityUsd: row.liquidityUsd,
+        icon: row.icon,
         url: "",
         agent: {
           action: row.action,
@@ -442,90 +330,10 @@ export function NexusConsole() {
     );
   }
 
-  async function runDeepAnalyze() {
-    if (!selectedToken) {
-      toast({ type: "error", title: "Select a token", message: "Pick a token from Live Feed first" });
-      setMobilePanel("feed");
-      scrollToMobileContent();
-      return;
-    }
-    if (!isConnected) {
-      toast({ type: "error", title: "Connect wallet", message: "Connect on Arc Testnet to run AI analyze" });
-      return;
-    }
-    setLoading(true);
-    try {
-      await ensureArcNetwork();
-      const fee = await payArcFee("ANALYZE", selectedToken.tokenAddress);
-      setLastArcFeeTx(fee.txHash);
-
-      const res = await fetch("/api/nexus/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chainId: selectedToken.chainId,
-          tokenAddress: selectedToken.tokenAddress,
-          deep: true,
-          save: true,
-          arcFeeTxHash: fee.txHash,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Analyze failed");
-
-      const agent = data.agent ?? data;
-      if (data.research) setDeepResearch(data.research as NexusResearchReport);
-      if (data.social) setSocialIntel(data.social as TokenSocialIntel);
-      if (data.community) setCommunityPulse(data.community as CommunityPulse);
-      setSelectedToken((prev) =>
-        prev
-          ? {
-              ...prev,
-              agent: {
-                action: agent.action,
-                confidence: agent.confidence,
-                riskScore: agent.riskScore,
-                reasoning: agent.reasoning,
-                whyAction: agent.whyAction,
-                reasoningFactors: agent.reasoningFactors ?? [],
-              },
-              intel: { ...prev.intel, ...data.intel, technical: data.technical ?? data.intel?.technical },
-            }
-          : prev,
-      );
-      setMobilePanel("chart");
-      scrollToMobileContent();
-      setActionBanner({
-        type: "success",
-        title: "Deep Research ready",
-        message: "Thesis, risks, catalysts & levels — chart panel (not just BUY/SELL/HOLD).",
-      });
-      toast({
-        type: "success",
-        title: "Deep Research",
-        message: "Open chart panel for thesis, risks & news",
-      });
-      if (data.saved && data.agent) {
-        const saved = data.agent as NexusDecision;
-        setSavedDecisions((prev) => {
-          const next = [saved, ...prev.filter((d) => d.id !== saved.id)].slice(0, SAVED_SCANS_MAX);
-          persistSavedScans(next);
-          return next;
-        });
-      }
-      await loadSaved();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Analyze failed";
-      toast({ type: "error", title: "AI analyze failed", message: msg });
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const feedPanel = (
     <NexusCollapsible
       label="Market feed"
-      hint="Live · Saved · Alpha"
+      hint="Live movers · Alpha scan"
       icon={Radio}
       variant="reasoning"
       defaultOpen
@@ -535,10 +343,7 @@ export function NexusConsole() {
       <div className="mb-3 flex flex-wrap items-center gap-1.5 max-lg:mb-2">
         <button
           type="button"
-          onClick={() => {
-            setActiveTab("live");
-            setSelectedSavedId(null);
-          }}
+          onClick={() => setActiveTab("live")}
           className={cn(
             "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
             activeTab === "live" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
@@ -546,25 +351,6 @@ export function NexusConsole() {
         >
           <ArcIconBadge icon={Radio} theme="nexus" size="sm" className="!h-7 !w-7" />
           Live Feed
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("saved")}
-          className={cn(
-            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
-            activeTab === "saved" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
-          )}
-        >
-          <ArcIconBadge icon={Database} theme="nexus" size="sm" className="!h-7 !w-7" />
-          {SAVED_SCANS_LABEL(
-            memoryScanCount ?? savedDecisions.length,
-            SAVED_SCANS_MAX,
-          )}
-          {memoryScanCount != null ? (
-            <span className="rounded-md bg-emerald-500/20 px-1.5 text-[10px] font-bold text-emerald-200">
-              {memoryScanCount}
-            </span>
-          ) : null}
         </button>
         <button
           type="button"
@@ -580,12 +366,6 @@ export function NexusConsole() {
           Alpha ({alphaOpportunities.length})
         </button>
       </div>
-      {activeTab === "saved" && savedDecisions.length > 0 && memoryScanCount == null && (
-        <p className="arc-caption mb-2 text-white/45">
-          Archived decisions (max {SAVED_SCANS_MAX}) — not a vetted safe list; scam flags are snapshots from scan time.
-          Run <strong className="text-emerald-200/90">Memory Scan</strong> to refresh.
-        </p>
-      )}
       <div className="flex min-h-0 flex-1 flex-col max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] lg:min-h-0">
         {activeTab === "live" ? (
           <NexusTrendingFeed
@@ -600,7 +380,7 @@ export function NexusConsole() {
               scrollToMobileContent();
             }}
           />
-        ) : activeTab === "alpha" ? (
+        ) : (
           <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
             <NexusAlphaList
               opportunities={alphaOpportunities}
@@ -609,44 +389,6 @@ export function NexusConsole() {
               onSelect={selectAlphaRow}
               scanning={alphaScanning}
               scanError={alphaScanError}
-            />
-          </div>
-        ) : (
-          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
-            <NexusMemoryList
-              decisions={savedDecisions}
-              selectedId={selectedSavedId}
-              onSelect={(decision) => {
-                setActiveTab("saved");
-                setSelectedSavedId(decision.id);
-                setDeepResearch(null);
-                setSocialIntel(null);
-                handleTokenSelect(
-                  {
-                    symbol: decision.symbol,
-                    name: decision.name ?? decision.symbol,
-                    tokenAddress: decision.token,
-                    chainId: decision.chainId,
-                    pairAddress: decision.pairAddress ?? "",
-                    priceUsd: decision.priceUsd,
-                    change24h: decision.change24h,
-                    volume24h: decision.volume24h ?? 0,
-                    liquidityUsd: decision.liquidityUsd ?? 0,
-                    icon: decision.icon,
-                    url: decision.dexUrl ?? "",
-                    intel: decision.intel,
-                    agent: {
-                      action: decision.action,
-                      confidence: decision.confidence,
-                      riskScore: decision.riskScore,
-                      reasoning: decision.reasoning,
-                      whyAction: decision.whyAction,
-                      reasoningFactors: decision.reasoningFactors ?? [],
-                    },
-                  },
-                  true,
-                );
-              }}
             />
           </div>
         )}
@@ -722,16 +464,12 @@ export function NexusConsole() {
           agentAction={displayDecision?.action}
           onIntelUpdate={handleBirdeyeIntel}
         />
-        {deepResearch && (
-          <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
-        )}
         {communityPulse && communityPulse.items.length > 0 && (
           <ArcPanel theme="nexus" title={`Community · ${communityPulse.topic}`} icon={Radio}>
             <CommunityPulsePanel pulse={communityPulse} compact />
           </ArcPanel>
         )}
-        {socialIntel && <NexusSocialIntelPanel social={socialIntel} />}
-        {displayDecision && !deepResearch && (
+        {displayDecision && (
           <NexusCollapsible
             label="Agent decision"
             hint={`${displayDecision.action} · ${displayDecision.confidence}% confidence`}
@@ -806,14 +544,9 @@ export function NexusConsole() {
         <NexusPremiumHero
           stableCount={STABLE_FEED_LIMIT}
           feeUsd={feeUsd}
-          scanning={scanning}
           alphaScanning={alphaScanning}
-          researching={loading}
           arcFeePending={arcFeePending}
-          hasSelectedToken={!!selectedToken}
-          onMemoryScan={() => void runMemoryScan()}
           onAlphaScan={() => void runAlphaScan()}
-          onDeepResearch={() => void runDeepAnalyze()}
         />
 
         <NexusMobileContextBar
@@ -823,12 +556,8 @@ export function NexusConsole() {
             setMobilePanel(p);
             scrollToMobileContent();
           }}
-          onMemoryScan={() => void runMemoryScan()}
           onAlphaScan={() => void runAlphaScan()}
-          onResearch={() => void runDeepAnalyze()}
-          scanning={scanning}
           alphaScanning={alphaScanning}
-          researching={loading}
           arcFeePending={arcFeePending}
         />
 

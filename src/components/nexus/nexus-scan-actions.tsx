@@ -1,11 +1,11 @@
 "use client";
 
-import { Brain, Database, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { cn } from "@/lib/utils";
 
-export type NexusScanActionId = "memory" | "alpha" | "research";
+export type NexusScanActionId = "alpha";
 
 type Action = {
   id: NexusScanActionId;
@@ -16,22 +16,10 @@ type Action = {
   loading?: boolean;
 };
 
-const frameVariant: Record<NexusScanActionId, "nexus" | "home" | "prism"> = {
-  memory: "nexus",
-  alpha: "home",
-  research: "prism",
-};
+const btnClass =
+  "nexus-scan-btn-alpha border-violet-400/35 bg-gradient-to-br from-violet-500/22 to-indigo-950/50 hover:border-violet-400/55 hover:shadow-[0_0_28px_rgba(168,85,247,0.28)]";
 
-const btnClass: Record<NexusScanActionId, string> = {
-  memory:
-    "nexus-scan-btn-memory border-emerald-400/35 bg-gradient-to-br from-emerald-500/20 to-emerald-950/40 hover:border-emerald-400/55 hover:shadow-[0_0_28px_rgba(18,232,168,0.25)]",
-  alpha:
-    "nexus-scan-btn-alpha border-violet-400/35 bg-gradient-to-br from-violet-500/22 to-indigo-950/50 hover:border-violet-400/55 hover:shadow-[0_0_28px_rgba(168,85,247,0.28)]",
-  research:
-    "nexus-scan-btn-research border-amber-400/30 bg-gradient-to-br from-amber-500/18 to-violet-950/40 hover:border-amber-400/50 hover:shadow-[0_0_28px_rgba(251,191,36,0.2)]",
-};
-
-/** Primary scan controls — visually distinct from stat chips below */
+/** Primary scan control — Alpha Scan only */
 export function NexusScanActions({
   actions,
   className,
@@ -45,7 +33,7 @@ export function NexusScanActions({
     <div
       className={cn(
         "nexus-scan-actions",
-        compact ? "flex flex-col gap-2 sm:flex-row sm:flex-wrap" : "grid gap-3 sm:grid-cols-3",
+        compact ? "flex flex-col gap-2" : "grid gap-3",
         className,
       )}
       role="group"
@@ -64,8 +52,9 @@ export function NexusScanActions({
           aria-label={a.label}
           className={cn(
             "nexus-scan-btn relative isolate z-[1] flex min-h-[56px] items-center gap-3 rounded-2xl border-2 px-3 py-3 text-left transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
-            btnClass[a.id],
-            compact && "min-h-[52px] flex-1 sm:min-w-[140px]",
+            btnClass,
+            compact && "min-h-[52px] w-full",
+            !compact && "sm:max-w-md",
           )}
         >
           {a.loading ? (
@@ -75,7 +64,7 @@ export function NexusScanActions({
           ) : (
             <ArcIconFrame
               icon={a.icon}
-              variant={frameVariant[a.id]}
+              variant="home"
               size="sm"
               active
               className="shrink-0 pointer-events-none"
@@ -90,9 +79,7 @@ export function NexusScanActions({
             </span>
             {!compact && (
               <span className="mt-0.5 block text-[11px] text-white/50">
-                {a.id === "memory" && "Archive 15 snapshots"}
-                {a.id === "alpha" && "Ranked opportunities + risk thesis"}
-                {a.id === "research" && "Thesis & risks"}
+                Deep multi-source analysis · 2x+ movers ranked
               </span>
             )}
           </span>

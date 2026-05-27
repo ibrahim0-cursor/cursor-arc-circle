@@ -1,8 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { TrendingUp } from "lucide-react";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
+import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { cn, formatPct, formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusDecision } from "@/lib/storage";
@@ -22,13 +21,7 @@ export function NexusCenterTokenHeader({
   return (
     <div className="nexus-center-header arc-glass-card arc-glass-card-nexus flex flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        {token.icon ? (
-          <div className="nexus-token-avatar-frame h-11 w-11 shrink-0">
-            <img src={token.icon} alt="" className="h-full w-full object-cover" />
-          </div>
-        ) : (
-          <ArcIconBadge icon={TrendingUp} theme="nexus" size="md" />
-        )}
+        <NexusTokenAvatar symbol={token.symbol} icon={token.icon} size="md" />
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
             <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{token.symbol}</h2>

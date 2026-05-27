@@ -7,6 +7,7 @@ import {
 } from "./dexpaprika";
 import type { TokenIntel } from "./storage";
 import { isStablecoin } from "./token-filters";
+import { isBlueChip } from "./feed-curation";
 
 export type TrendingToken = {
   symbol: string;
@@ -161,31 +162,41 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
   return arr;
 }
 
-/** Stable live feed — same query set every refresh (no shuffle); top N by volume */
+/** Discovery live feed — movers & alts (not blue-chip volume leaders). */
 export async function fetchStableMarketFeed(limit = 15) {
-  return fetchTrendingMarketTokens(limit, { stable: true });
+  return fetchTrendingMarketTokens(limit, { stable: true, discovery: true });
 }
 
 /** Trending tokens — `stable: true` keeps deterministic top tokens for the live feed */
 export async function fetchTrendingMarketTokens(
   limit = 100,
-  opts?: { stable?: boolean },
+  opts?: { stable?: boolean; discovery?: boolean },
 ) {
   const tokens: TrendingToken[] = [];
   const seen = new Set<string>();
   const stable = opts?.stable === true;
+  const discovery = opts?.discovery === true || stable;
   const cycle = stable ? 0 : Math.floor(Date.now() / 45_000);
   const querySets = [
-    ["trending", "volume", "hot", "meme", "ai"],
-    ["new", "launch", "surge"],
-    ["meme", "ai", "defi"],
-    ["usdc", "swap", "pair"],
+    ["meme", "pump", "ai", "agent", "trending"],
+    ["surge", "launch", "new", "100x"],
+    ["degen", "base", "sol"],
+    ["hot", "volume", "pair"],
   ];
-  const queries = stable ? querySets[0] : querySets[cycle % querySets.length];
+  const discoveryQueries = [
+    ["meme", "pump", "ai agent"],
+    ["surge", "launch", "degen"],
+    ["new pair", "100x", "moon"],
+    ["base meme", "sol trending"],
+  ];
+  const queries = discovery
+    ? discoveryQueries[cycle % discoveryQueries.length]
+    : querySets[cycle % querySets.length];
 
   function addToken(token: TrendingToken | null) {
     if (!token || token.priceUsd <= 0) return;
     if (isStablecoin(token.symbol, token.name)) return;
+    if (isBlueChip(token.symbol, token.name)) return;
     const key = `${token.chainId}:${token.tokenAddress}`;
     if (seen.has(key)) return;
     seen.add(key);
@@ -236,10 +247,16 @@ export async function fetchTrendingMarketTokens(
     }
   }
 
-  const ranked = tokens.sort(
-    (a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd,
-  );
-  const sorted = stable ? ranked.slice(0, limit) : shuffleWithSeed(ranked, cycle).slice(0, limit);
+  let sorted: TrendingToken[];
+  if (discovery) {
+    const { curateLiveFeed } = await import("./feed-curation");
+    sorted = curateLiveFeed(tokens, limit * 3).slice(0, limit);
+  } else {
+    const ranked = tokens.sort(
+      (a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd,
+    );
+    sorted = stable ? ranked.slice(0, limit) : shuffleWithSeed(ranked, cycle).slice(0, limit);
+  }
 
   return sorted.map((token) => ({
     ...token,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { Bot, Loader2, MessageCircle, Send, X } from "lucide-react";
+import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { useToast } from "@/components/ui/toast-provider";
 import { useAgentWallet } from "@/hooks/use-agent-wallet";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -138,7 +139,7 @@ export function NexusTokenChatPanel({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-3"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-3"
       onClick={onClose}
       role="presentation"
     >
@@ -149,13 +150,7 @@ export function NexusTokenChatPanel({
         aria-label={`Chat about ${token.symbol}`}
       >
         <div className="flex items-center gap-2 border-b border-violet-400/20 px-3 py-2.5">
-          {token.icon ? (
-            <img src={token.icon} alt="" className="h-9 w-9 rounded-lg border border-white/10" />
-          ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/20 text-xs font-bold text-violet-100">
-              {token.symbol.slice(0, 2)}
-            </span>
-          )}
+          <NexusTokenAvatar symbol={token.symbol} icon={token.icon} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-white">{token.symbol} Copilot</p>
             <p className="truncate text-[10px] text-white/50">Fundamentals · TA · buy/sell help</p>

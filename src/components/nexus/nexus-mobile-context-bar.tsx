@@ -2,8 +2,6 @@
 
 import {
   ArrowDownUp,
-  Brain,
-  Database,
   LineChart,
   Radio,
   Sparkles,
@@ -12,6 +10,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NexusScanActions } from "@/components/nexus/nexus-scan-actions";
+import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { formatPct, formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
@@ -21,23 +20,15 @@ export function NexusMobileContextBar({
   selectedToken,
   activePanel,
   onPanelChange,
-  onMemoryScan,
   onAlphaScan,
-  onResearch,
-  scanning,
   alphaScanning,
-  researching,
   arcFeePending,
 }: {
   selectedToken: TrendingMarketToken | null;
   activePanel: NexusMobilePanel;
   onPanelChange: (p: NexusMobilePanel) => void;
-  onMemoryScan: () => void;
   onAlphaScan: () => void;
-  onResearch: () => void;
-  scanning?: boolean;
   alphaScanning?: boolean;
-  researching?: boolean;
   arcFeePending?: boolean;
 }) {
   const panels: { id: NexusMobilePanel; label: string; icon: typeof LineChart }[] = [
@@ -50,15 +41,7 @@ export function NexusMobileContextBar({
     <div className="sticky top-14 z-40 -mx-4 border-b border-[var(--arc-border)] bg-[rgba(2,8,6,0.94)] px-3 py-2.5 backdrop-blur-xl sm:-mx-6 lg:hidden">
       {selectedToken ? (
         <div className="arc-glass-card arc-glass-card-nexus mb-2.5 flex items-center gap-3 px-3 py-2.5">
-          {selectedToken.icon ? (
-            <div className="nexus-token-avatar-frame h-11 w-11">
-              <img src={selectedToken.icon} alt="" className="h-full w-full object-cover" />
-            </div>
-          ) : (
-            <div className="nexus-token-avatar-frame flex h-11 w-11 items-center justify-center text-sm font-bold text-emerald-100">
-              {selectedToken.symbol.slice(0, 2)}
-            </div>
-          )}
+          <NexusTokenAvatar symbol={selectedToken.symbol} icon={selectedToken.icon} size="md" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-base font-bold text-white">{selectedToken.symbol}</span>
@@ -125,28 +108,12 @@ export function NexusMobileContextBar({
         className="mb-0"
         actions={[
           {
-            id: "memory",
-            label: "Memory Scan",
-            icon: Database,
-            onClick: onMemoryScan,
-            disabled: scanning || alphaScanning || researching,
-            loading: scanning,
-          },
-          {
             id: "alpha",
             label: "Alpha Scan",
             icon: Sparkles,
             onClick: onAlphaScan,
-            disabled: scanning || alphaScanning || researching,
+            disabled: alphaScanning || arcFeePending,
             loading: alphaScanning,
-          },
-          {
-            id: "research",
-            label: "Deep Research",
-            icon: Brain,
-            onClick: onResearch,
-            disabled: scanning || alphaScanning || researching || !selectedToken,
-            loading: researching,
           },
         ]}
       />

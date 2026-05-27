@@ -682,16 +682,25 @@ export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTx
 /** Alpha scan — rank up to 20 opportunities (news + meme headlines + on-chain + AI) */
 export async function runAlphaScan(
   limit = 20,
-  opts?: { preferredChain?: string; focusToken?: TrendingToken },
+  opts?: { preferredChain?: string; focusToken?: TrendingToken; liveFeedKeys?: string[] },
 ) {
   const { filterTradableTokens } = await import("./token-filters");
-  const { fetchStableMarketFeed, fetchTokenByAddress } = await import("./dexscreener");
+  const { fetchStableMarketFeed, fetchTokenByAddress, fetchTrendingMarketTokens } =
+    await import("./dexscreener");
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
+  const { curateAlphaCandidates, tokenKey } = await import("./feed-curation");
+  const { enrichTokensWithIcons } = await import("./token-icons");
 
   const { buildAlphaScanUniverse } = await import("./alpha-scan-engine");
+  const liveKeys = new Set((opts?.liveFeedKeys ?? []).map((k) => k.toLowerCase()));
+  if (liveKeys.size === 0) {
+    const live = await fetchStableMarketFeed(15);
+    for (const t of live) liveKeys.add(tokenKey(t));
+  }
+
   const [dexFeed, geckoFeed] = await Promise.all([
-    fetchStableMarketFeed(Math.min(limit * 2, 30)),
-    fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 8),
+    fetchTrendingMarketTokens(Math.min(limit * 3, 45), { stable: true, discovery: false }),
+    fetchGeckoAlphaCandidates(["base", "arbitrum", "eth", "solana"], 12),
   ]);
   const { candidates: mergedCandidates, intel: scanIntel } = await buildAlphaScanUniverse(
     dexFeed,
@@ -709,7 +718,12 @@ export async function runAlphaScan(
     [],
     Math.min(limit * 2, 45),
   );
-  let tokens: TrendingToken[] = filterTradableTokens(merged).slice(0, limit);
+  let tokens: TrendingToken[] = curateAlphaCandidates(
+    filterTradableTokens(merged),
+    liveKeys,
+    limit,
+    3,
+  );
   if (tokens.length < Math.min(limit, 8)) {
     const gmgnOnly = filterTradableTokens(mergedCandidates).slice(0, limit);
     const seen = new Set(tokens.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`));
@@ -741,6 +755,8 @@ export async function runAlphaScan(
   if (tokens.length === 0) {
     throw new Error("No tradable tokens for alpha scan. Check DexScreener connection.");
   }
+
+  tokens = await enrichTokensWithIcons(tokens, limit);
 
   const { buildAlphaIntelReport } = await import("./alpha-intel");
   const { getApeWisdomMentionMap, lookupApeWisdom } = await import("./apewisdom");

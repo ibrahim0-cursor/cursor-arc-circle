@@ -4,6 +4,7 @@ import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { filterTradableTokens } from "@/lib/token-filters";
 import { analyzeTrendingFeed, analyzeTrendingFeedQuick } from "@/lib/nexus-agent";
 import { trendingToDemoToken } from "@/lib/demo-trading";
+import { enrichTokensWithIcons } from "@/lib/token-icons";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -71,6 +72,7 @@ export async function GET(request: Request) {
     );
 
     let tokens = filterTradableTokens(await fetchStableMarketFeed(limit));
+    tokens = await enrichTokensWithIcons(tokens, limit);
     tokens = await enrichMissingPairs(tokens, quick ? 8 : 16);
 
     if (quick) {

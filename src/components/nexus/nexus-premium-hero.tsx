@@ -1,15 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  BarChart3,
-  Brain,
-  Cpu,
-  Database,
-  Radio,
-  Shield,
-  Sparkles,
-} from "lucide-react";
+import { BarChart3, Cpu, Radio, Shield, Sparkles } from "lucide-react";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +9,7 @@ import { NexusScanActions } from "@/components/nexus/nexus-scan-actions";
 import { cn } from "@/lib/utils";
 
 const stats = [
-  { icon: Radio, label: "Live roster", sub: "stable tokens · 45s refresh", tone: "emerald" as const },
+  { icon: Radio, label: "Live movers", sub: "alts & memes · no blue chips", tone: "emerald" as const },
   { icon: BarChart3, label: "TA + AI", sub: "RSI · MACD · whale risk", tone: "violet" as const },
   { icon: Shield, label: "Wallet grade", sub: "Score every wallet A–F", tone: "cyan" as const },
 ] as const;
@@ -25,25 +17,15 @@ const stats = [
 export function NexusPremiumHero({
   stableCount,
   feeUsd,
-  scanning,
   alphaScanning,
-  researching,
   arcFeePending,
-  hasSelectedToken,
-  onMemoryScan,
   onAlphaScan,
-  onDeepResearch,
 }: {
   stableCount: number;
   feeUsd: string | number;
-  scanning: boolean;
   alphaScanning: boolean;
-  researching: boolean;
   arcFeePending: boolean;
-  hasSelectedToken: boolean;
-  onMemoryScan: () => void;
   onAlphaScan: () => void;
-  onDeepResearch: () => void;
 }) {
   return (
     <section className="nexus-premium-hero arc-panel arc-panel-nexus mb-3 hidden overflow-hidden sm:mb-6 sm:block">
@@ -74,38 +56,23 @@ export function NexusPremiumHero({
             </motion.h1>
 
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-[var(--arc-text-muted)] sm:text-base">
-              Live market feed, institutional glass panels, and AI BUY · SELL · HOLD — Arc fees ~${feeUsd}/tx.
+              Live feed surfaces moving alts; Alpha Scan runs deep multi-source analysis — Arc fees ~$
+              {feeUsd}/tx.
             </p>
           </div>
         </div>
 
         <div>
-          <p className="arc-caption mb-2 text-emerald-200/80">Agent actions</p>
+          <p className="arc-caption mb-2 text-emerald-200/80">Agent action</p>
           <NexusScanActions
             actions={[
-              {
-                id: "memory",
-                label: "Memory Scan",
-                icon: Database,
-                onClick: onMemoryScan,
-                disabled: scanning || alphaScanning || researching,
-                loading: scanning,
-              },
               {
                 id: "alpha",
                 label: "Alpha Scan",
                 icon: Sparkles,
                 onClick: onAlphaScan,
-                disabled: scanning || alphaScanning || researching || arcFeePending,
+                disabled: alphaScanning || arcFeePending,
                 loading: alphaScanning,
-              },
-              {
-                id: "research",
-                label: "Deep Research",
-                icon: Brain,
-                onClick: onDeepResearch,
-                disabled: scanning || alphaScanning || researching || !hasSelectedToken,
-                loading: researching,
               },
             ]}
           />

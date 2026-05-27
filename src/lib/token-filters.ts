@@ -1,4 +1,13 @@
-/** Symbols/names treated as stablecoins — hidden from live feed & memory scan */
+export {
+  isBlueChip,
+  tokenKey,
+  scoreLiveFeedToken,
+  scoreAlphaCandidate,
+  curateLiveFeed,
+  curateAlphaCandidates,
+} from "./feed-curation";
+
+/** Symbols/names treated as stablecoins — hidden from live feed */
 const STABLE_SYMBOLS = new Set([
   "usdc",
   "usdt",
