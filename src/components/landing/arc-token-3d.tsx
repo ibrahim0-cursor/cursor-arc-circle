@@ -3,11 +3,14 @@
 import Image from "next/image";
 import { TOKEN_BRAND, type CryptoId } from "@/components/landing/arc-crypto-icons";
 import { ArcCryptoIcon } from "@/components/landing/arc-crypto-icons";
+import type { PortalTokenId } from "@/lib/portal-tokens";
 import { cn } from "@/lib/utils";
 
-const sizePx = { sm: 44, md: 52, lg: 64 } as const;
+const sizePx = { sm: 44, md: 52, lg: 64, xl: 76 } as const;
 
-/** Premium 3D planet coin — CoinGecko logo texture */
+type TokenId = CryptoId | PortalTokenId;
+
+/** Premium 3D planet coin — CoinGecko logo on metallic disc */
 export function ArcToken3d({
   id,
   size = "md",
@@ -16,15 +19,14 @@ export function ArcToken3d({
   logoSrc,
   planet = false,
 }: {
-  id: CryptoId;
-  size?: "sm" | "md" | "lg";
+  id: TokenId;
+  size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   style?: React.CSSProperties;
   logoSrc?: string;
-  /** Solar-system orbit styling */
   planet?: boolean;
 }) {
-  const brand = TOKEN_BRAND[id];
+  const brand = TOKEN_BRAND[id as CryptoId];
   const dim = sizePx[size];
   const isRemote = logoSrc?.startsWith("http");
 
@@ -41,7 +43,9 @@ export function ArcToken3d({
         } as React.CSSProperties
       }
     >
+      <div className="arc-token-3d-halo" />
       <div className="arc-token-3d-shadow" />
+      <div className="arc-token-3d-rim-back" />
       <div className="arc-token-3d-rim" />
       <div className="arc-token-3d-face">
         <div className="arc-token-3d-shine" />
@@ -49,14 +53,17 @@ export function ArcToken3d({
           <Image
             src={logoSrc}
             alt=""
-            width={dim - 8}
-            height={dim - 8}
+            width={dim - 12}
+            height={dim - 12}
             unoptimized={isRemote}
-            className="arc-token-3d-logo object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]"
-            priority={size === "lg"}
+            className="arc-token-3d-logo object-contain"
+            priority={size === "xl" || size === "lg"}
           />
         ) : (
-          <ArcCryptoIcon id={id} size={size === "lg" ? "lg" : size === "sm" ? "sm" : "md"} />
+          <ArcCryptoIcon
+            id={id as CryptoId}
+            size={size === "xl" || size === "lg" ? "lg" : size === "sm" ? "sm" : "md"}
+          />
         )}
       </div>
     </div>

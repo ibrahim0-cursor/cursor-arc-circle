@@ -63,7 +63,7 @@ export function ArcEcosystemHero() {
           </p>
 
           <ul className="arc-hero-bullets mt-6 max-w-lg space-y-2 text-left text-sm text-white/55">
-            <li>BTC · ETH · SOL · USDC · USDT orbit the core in real time</li>
+            <li>BTC · ETH · SOL · USDC orbit the AI core in real time</li>
             <li>On-chain, social, and macro layers fused in one stack</li>
             <li>Explainable AI — every route has a thesis</li>
           </ul>
