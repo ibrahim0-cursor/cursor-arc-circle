@@ -38,7 +38,7 @@ function alphaToChatToken(row: AlphaOpportunity): TrendingMarketToken {
       riskScore: row.riskScore,
       reasoning: row.aiThesis || row.reasoning,
       whyAction: row.whyAction,
-      reasoningFactors: [],
+      reasoningFactors: row.reasoningFactors ?? [],
     },
   };
 }
@@ -188,8 +188,13 @@ export function NexusAlphaList({
                       </p>
                     )}
                     <p className="mt-1 text-[11px] text-white/55 line-clamp-2 lg:line-clamp-1">
-                      {row.researchGlance ?? row.narrativeSummary}
+                      {row.researchGlance ?? row.aiThesis ?? row.whyAction ?? row.narrativeSummary}
                     </p>
+                    {row.smartMoneySignal && (
+                      <p className="mt-0.5 text-[10px] text-cyan-200/65 line-clamp-1">
+                        {row.smartMoneySignal} · {row.momentumHealth}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="shrink-0 text-right text-xs">

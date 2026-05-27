@@ -32,6 +32,8 @@ import {
   NexusResearchDossierDeep,
   NexusResearchDossierLive,
 } from "@/components/nexus/nexus-research-dossier";
+import { NexusIntelCollapsibles } from "@/components/nexus/nexus-intel-collapsibles";
+import { NexusAgentBrief } from "@/components/nexus/nexus-agent-brief";
 import { useTokenDossier } from "@/hooks/use-token-dossier";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
 import { NexusFeedTabs, type NexusFeedTab } from "@/components/nexus/nexus-feed-tabs";
@@ -438,15 +440,6 @@ export function NexusConsole() {
         <NexusTokenMetrics token={selectedToken} compact />
       </div>
 
-      <div className="nexus-center-intel-primary shrink-0 px-0.5">
-        <NexusResearchDossierLive
-          token={selectedToken}
-          payload={tokenDossier.payload}
-          loading={tokenDossier.loading}
-          error={tokenDossier.error}
-        />
-      </div>
-
       <div className="nexus-center-chart shrink-0 py-1 lg:py-1.5">
         <NexusTokenChart
           compact
@@ -454,6 +447,27 @@ export function NexusConsole() {
           pairAddress={selectedToken.pairAddress}
           tokenAddress={selectedToken.tokenAddress}
           symbol={selectedToken.symbol}
+        />
+      </div>
+
+      <div className="nexus-center-intel-below-chart shrink-0 space-y-2 px-0.5">
+        <NexusAgentBrief />
+        {tokenDossier.error && !tokenDossier.loading && (
+          <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
+            {tokenDossier.error}
+          </p>
+        )}
+        <NexusIntelCollapsibles
+          token={selectedToken}
+          payload={tokenDossier.payload}
+          loading={tokenDossier.loading}
+        />
+        <NexusResearchDossierLive
+          token={selectedToken}
+          payload={tokenDossier.payload}
+          loading={tokenDossier.loading}
+          error={tokenDossier.error}
+          holdersOnly
         />
       </div>
 

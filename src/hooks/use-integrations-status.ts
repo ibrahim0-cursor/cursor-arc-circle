@@ -28,6 +28,8 @@ export type IntegrationsStatus = {
   discordBot?: boolean;
   discordOAuth?: boolean;
   discordProbe?: { ok: boolean; configured?: boolean; oauthClient?: boolean; error?: string };
+  gmgn?: boolean;
+  gmgnProbe?: { ok: boolean; error?: string };
   stocktwits?: boolean;
   stocktwitsProbe?: { ok: boolean; configured?: boolean; error?: string };
   rapidApiTwitter?: boolean;

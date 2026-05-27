@@ -1603,6 +1603,10 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   flex-shrink: 0;
 }
 
+.nexus-center-intel-below-chart {
+  flex-shrink: 0;
+}
+
 html[data-arc-theme="nexus"] .nexus-center-layout {
   display: flex;
   flex-direction: column;

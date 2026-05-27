@@ -158,14 +158,14 @@ export function NexusIntelCollapsibles({
         hint={agentHint}
         variant="reasoning"
         icon={Brain}
-        defaultOpen
+        defaultOpen={false}
         showCollapseHint
       >
         <div className="space-y-3">
           {loading && !narrative && (
             <p className="flex items-center gap-2 text-xs text-white/55">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Deep agent pass (Dex · Birdeye · GMGN · news)…
+              Pro trader dossier (Dex · Birdeye · GMGN · 6551 news)…
             </p>
           )}
           <p className="nexus-lead rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] px-3 py-2.5 text-sm leading-relaxed text-white/90">
@@ -192,7 +192,7 @@ export function NexusIntelCollapsibles({
         hint={taHint}
         variant="technical"
         icon={BarChart3}
-        defaultOpen
+        defaultOpen={false}
         showCollapseHint
       >
         {technical ? (

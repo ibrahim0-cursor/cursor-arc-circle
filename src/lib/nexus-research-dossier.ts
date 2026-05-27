@@ -572,7 +572,7 @@ export async function buildTokenDossierPayload(
   }
   if (topHolders.length === 0) {
     topHolders = demoHolders(token);
-    dataNotes.push("Top holders: demo rows (connect Birdeye or GMGN_API_KEY for live data)");
+    dataNotes.push("Top holders: demo rows (no on-chain rows returned for this token — check chain support)");
   } else if (gmgnHolders.length > 0) {
     dataNotes.push("Top holders: GMGN OpenAPI");
   } else {
@@ -599,7 +599,7 @@ export async function buildTokenDossierPayload(
     }));
   } else if (topTraders.length < 2) {
     topTraders = demoTraders(token);
-    dataNotes.push("Top traders: demo rows (Birdeye top-trader / GMGN smart-money for live)");
+    dataNotes.push("Top traders: demo rows (API returned no trader rows for this pair)");
   }
 
   const scam = assessTokenScam(token, intel);

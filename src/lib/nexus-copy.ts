@@ -12,7 +12,19 @@ export const NEXUS_ALPHA_HERO_LINES = [
 ] as const;
 
 export const NEXUS_ALPHA_HERO_SUB =
-  "One tap runs a deep multi-source scan. You get a short ranked list with BUY · SELL · HOLD verdicts.";
+  "Pro meme-coin research in the background — you get ranked setups and plain verdicts, not a 50-column terminal.";
+
+/** Shown above optional intel panels (under chart) */
+export const NEXUS_INTEL_BRIEF =
+  "NEXUS is built for pro meme-coin hunters: the agent fuses on-chain flow, holder concentration, multi-timeframe TA (Birdeye when available), GMGN smart money, OpenNews/Twitter sweeps, and rug heuristics — then outputs BUY · SELL · HOLD with a written thesis. Expand sections below when you want the full reasoning; the feed and Alpha Scan already run a lighter pass on every token.";
+
+export const NEXUS_AGENT_LAYERS = [
+  "Dex liquidity & 24h buy/sell flow",
+  "Birdeye OHLCV · RSI · MACD · MAs",
+  "GMGN holders & smart-money tags",
+  "6551 news / Twitter buzz",
+  "Bubblemaps-style concentration & scam checks",
+] as const;
 
 export const NEXUS_VALUE_STEPS = [
   {

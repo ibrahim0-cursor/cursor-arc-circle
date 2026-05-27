@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusHolderTables } from "@/components/nexus/nexus-holder-table";
-import { NexusIntelCollapsibles } from "@/components/nexus/nexus-intel-collapsibles";
 import { truncateHash } from "@/lib/utils";
 import type { TokenDossierPayload, TokenResearchDossier } from "@/lib/nexus-research-dossier";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -50,16 +49,18 @@ export function NexusResearchDossierLive({
   payload,
   loading,
   error,
+  holdersOnly = false,
 }: {
   token: TrendingMarketToken;
   payload: TokenDossierPayload | null;
   loading: boolean;
   error: string | null;
+  /** Only holder/trader tables (intel panels live under chart) */
+  holdersOnly?: boolean;
 }) {
   return (
     <div className="nexus-research-dossier-live space-y-3">
-      <NexusIntelCollapsibles token={token} payload={payload} loading={loading} />
-      {error && !loading && (
+      {!holdersOnly && error && !loading && (
         <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
           {error}
         </p>

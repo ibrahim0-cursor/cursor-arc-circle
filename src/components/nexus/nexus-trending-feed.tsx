@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
+import { agentVerdictLine } from "@/lib/nexus-copy";
 import { cn } from "@/lib/utils";
 import type { TokenIntel } from "@/lib/storage";
 import type { AgentSignal } from "@/lib/storage";
@@ -301,15 +302,24 @@ export function NexusTrendingFeed({
         )}
 
         {agent && (
-          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/55">
-            <Bot className="h-3 w-3 shrink-0 text-emerald-300/80" />
-            <span className="font-semibold text-emerald-200/95">
-              {agent.confidence}% {agent.action}
-            </span>
-            {!cleanFeed && !compactDesktop && (agent.whyAction || agent.reasoning) && (
-              <span className="line-clamp-1 text-white/45">· {agent.whyAction || agent.reasoning}</span>
+          <div className="mt-1.5 space-y-0.5">
+            <p className="flex items-center gap-1.5 text-[11px] text-white/55">
+              <Bot className="h-3 w-3 shrink-0 text-emerald-300/80" />
+              <span className="font-semibold text-emerald-200/95">
+                {agent.confidence}% {agent.action}
+              </span>
+              {token.intel?.technical && cleanFeed && (
+                <span className="text-[10px] text-violet-200/60">
+                  · RSI {token.intel.technical.rsi.toFixed(0)}
+                </span>
+              )}
+            </p>
+            {(agent.whyAction || agent.reasoning || cleanFeed) && (
+              <p className="line-clamp-2 text-[10px] leading-snug text-white/50">
+                {agentVerdictLine(agent.whyAction, undefined, agent.reasoning)}
+              </p>
             )}
-          </p>
+          </div>
         )}
         {token.intel?.technical && !cleanFeed && !compactDesktop && (
           <p className="mt-1 text-[10px] text-violet-200/60">

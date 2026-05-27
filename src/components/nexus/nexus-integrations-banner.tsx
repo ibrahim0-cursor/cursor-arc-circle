@@ -24,14 +24,22 @@ export function NexusIntegrationsBanner() {
     birdeyeKeyBad &&
     /quota|compute units|usage limit|rate limit/i.test(status.birdeyeProbe.error ?? "");
 
-  if (birdeyeOk) {
+  const gmgnOk = Boolean(status.gmgn && status.gmgnProbe?.ok);
+
+  if (birdeyeOk || gmgnOk) {
     return (
-      <div className="arc-glass-card arc-glass-card-nexus hidden flex-wrap items-center justify-between gap-2 px-3 py-2.5 lg:flex">
+      <div className="arc-glass-card arc-glass-card-nexus mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
         <div className="flex items-center gap-2 text-sm text-emerald-100">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
           <span>
-            <strong className="font-semibold">Birdeye connected</strong>
-            <span className="text-emerald-200/80"> — live holders, whales &amp; swaps</span>
+            <strong className="font-semibold">Live intel connected</strong>
+            <span className="text-emerald-200/80">
+              {birdeyeOk && gmgnOk
+                ? " — Birdeye whales & OHLCV · GMGN holders & smart money"
+                : birdeyeOk
+                  ? " — Birdeye holders, whales & swaps"
+                  : " — GMGN top holders & smart-money tags"}
+            </span>
           </span>
         </div>
         <span className="nexus-caption text-emerald-200/60">Agent mode: {status.mode}</span>

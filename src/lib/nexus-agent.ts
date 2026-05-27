@@ -589,6 +589,7 @@ export type AlphaOpportunity = {
   intelLayers?: string[];
   /** One-line pro dossier for alpha cards (cheap heuristic) */
   researchGlance?: string;
+  reasoningFactors?: AgentSignal["reasoningFactors"];
 };
 
 function scoreOpportunity(
@@ -797,8 +798,9 @@ export async function runAlphaScan(
         skipGithub: true,
         sourceTags,
       });
-      const { buildDossierGlance } = await import("./nexus-research-dossier");
-      const researchGlance = buildDossierGlance(token, intel, signal);
+      const { buildLiveReasoning } = await import("./nexus-research-dossier");
+      const liveReason = buildLiveReasoning(token, intel, signal);
+      const researchGlance = liveReason.narrative.slice(0, 200);
       const apeRow = lookupApeWisdom(token.symbol, apeMap);
       let legacyScore =
         scoreOpportunity(token, signal, intel, social, news.length) +
@@ -850,6 +852,7 @@ export async function runAlphaScan(
         marketSentiment: scanIntel.marketSentiment.publicSummary,
         sentimentScore: scanIntel.marketSentiment.score,
         researchGlance,
+        reasoningFactors: signal.reasoningFactors,
       };
     },
     2,
@@ -1023,18 +1026,27 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
   return { ...base, technical: technicalToIntel(ta) };
 }
 
-/** Fast path: heuristic + security only (no Groq, no Birdeye OHLCV) — must finish under Vercel limits */
+/** Fast path: heuristic + security; Birdeye TA on top-volume slice */
 export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
   const macro = await getMacroRegime();
+  const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const rankOf = new Map(
+    sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
+  );
+  const birdeyeCap = 8;
   return Promise.all(
     tokens.map(async (token) => {
-    const intel = token.intel ?? buildLocalTokenIntel(token);
-    const security = scoreTokenSecurity(token, intel);
-    let signal = heuristicDecision(token, intel, macro);
-    signal = finalizeFeedSignal(token, intel, signal, security);
-    return { token: { ...token, intel }, intel, signal, security };
-  }),
+      const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
+      const intel =
+        rank < birdeyeCap
+          ? await intelForFeedRank(token, rank)
+          : (token.intel ?? buildLocalTokenIntel(token));
+      const security = scoreTokenSecurity(token, intel);
+      let signal = heuristicDecision(token, intel, macro);
+      signal = finalizeFeedSignal(token, intel, signal, security);
+      return { token: { ...token, intel }, intel, signal, security };
+    }),
   );
 }
 
