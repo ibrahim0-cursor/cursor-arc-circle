@@ -1616,6 +1616,10 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   -webkit-overflow-scrolling: touch;
 }
 
+.nexus-mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
 html[data-arc-theme="nexus"] .nexus-center-layout {
   display: flex;
   flex-direction: column;

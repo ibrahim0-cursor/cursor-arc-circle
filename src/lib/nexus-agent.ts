@@ -1093,6 +1093,15 @@ export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
       let signal = aiMap.get(key) ?? heuristicDecision(token, intel, macro);
       const security = scoreTokenSecurity(token, intel);
       signal = finalizeFeedSignal(token, intel, signal, security);
+      if (rank < 8) {
+        const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
+        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed");
+        signal = {
+          ...signal,
+          whyAction: narrativeToWhyAction(bundle, 170),
+          reasoning: bundle.narrative.slice(0, 400),
+        };
+      }
       return { token: { ...token, intel }, intel, signal, security };
     }),
   );

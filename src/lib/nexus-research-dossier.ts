@@ -542,12 +542,14 @@ export async function buildTokenDossierPayload(
   const dataNotes: string[] = [];
 
   const detectionPromise =
-    opts?.detection ??
-    fetchMergedTokenDetection(token.tokenAddress, token.chainId, {
-      buys: token.txns24h?.buys ?? 0,
-      sells: token.txns24h?.sells ?? 0,
-      volume: token.volume24h,
-    });
+    tier === "feed"
+      ? Promise.resolve(null)
+      : (opts?.detection ??
+        fetchMergedTokenDetection(token.tokenAddress, token.chainId, {
+          buys: token.txns24h?.buys ?? 0,
+          sells: token.txns24h?.sells ?? 0,
+          volume: token.volume24h,
+        }));
 
   const [detection, technicalBlocks, gmgnHolders, gmgnSmart] = await Promise.all([
     detectionPromise,

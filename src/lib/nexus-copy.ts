@@ -26,6 +26,15 @@ export const NEXUS_AGENT_LAYERS = [
   "Bubblemaps-style concentration & scam checks",
 ] as const;
 
+/** GMGN-style skills surfaced on Alpha deep intel (not generic chat copy). */
+export const NEXUS_GMGN_PRO_SKILLS = [
+  "Top holders & wallet % supply",
+  "Smart-money / KOL tagged wallets",
+  "Sniper & insider concentration",
+  "Trending + signal discovery feeds",
+  "Security & honeypot heuristics",
+] as const;
+
 export const NEXUS_VALUE_STEPS = [
   {
     title: "Agent scans",

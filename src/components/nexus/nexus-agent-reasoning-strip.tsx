@@ -5,7 +5,12 @@ import { cn } from "@/lib/utils";
 import type { TokenDossierPayload, LiveReasoningFactor } from "@/lib/nexus-research-dossier";
 import type { AgentSignal } from "@/lib/storage";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
-import { FEED_INTEL_LABEL, ALPHA_INTEL_LABEL, REASONING_HEADLINE } from "@/lib/nexus-copy";
+import {
+  FEED_INTEL_LABEL,
+  ALPHA_INTEL_LABEL,
+  REASONING_HEADLINE,
+  NEXUS_GMGN_PRO_SKILLS,
+} from "@/lib/nexus-copy";
 
 function FactorRow({ factor }: { factor: LiveReasoningFactor }) {
   const Icon =
@@ -132,6 +137,19 @@ export function NexusAgentReasoningStrip({
 
       {!isAlpha && coachLines[0] && (
         <p className="mt-2 text-[11px] text-white/55 italic">{coachLines[0]}</p>
+      )}
+
+      {isAlpha && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {NEXUS_GMGN_PRO_SKILLS.map((skill) => (
+            <span
+              key={skill}
+              className="rounded-md border border-cyan-400/20 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] text-cyan-100/90"
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
       )}
 
       {gmgnNotes.length > 0 && (

@@ -165,10 +165,23 @@ export function NexusConsole() {
     (token: TrendingMarketToken, openChart = true) => {
       setIntelTier("feed");
       setAlphaThesis(undefined);
-      setSelectedToken(token);
+      const key = tokenKey(token);
+      const fromFeed = feedTokens.find((t) => tokenKey(t) === key);
+      setSelectedToken(
+        fromFeed
+          ? {
+              ...fromFeed,
+              ...token,
+              pairAddress: fromFeed.pairAddress || token.pairAddress,
+              url: fromFeed.url || token.url,
+              agent: token.agent ?? fromFeed.agent,
+              intel: token.intel ?? fromFeed.intel,
+            }
+          : token,
+      );
       if (openChart) openChartView();
     },
-    [openChartView],
+    [openChartView, feedTokens],
   );
 
   const handleMobilePanel = useCallback(
@@ -334,18 +347,20 @@ export function NexusConsole() {
   function selectAlphaRow(row: AlphaOpportunity) {
     setIntelTier("alpha");
     setAlphaThesis(row.aiThesis ?? row.researchGlance ?? row.whyAction);
+    const key = `${row.chainId}:${row.tokenAddress.toLowerCase()}`;
+    const feedHit = feedTokens.find((t) => tokenKey(t) === key);
     setSelectedToken({
       symbol: row.symbol,
       name: row.name,
       tokenAddress: row.tokenAddress,
       chainId: row.chainId,
-      pairAddress: "",
+      pairAddress: feedHit?.pairAddress ?? "",
       priceUsd: row.priceUsd,
       change24h: row.change24h,
       volume24h: row.volume24h,
       liquidityUsd: row.liquidityUsd,
       icon: row.icon,
-      url: "",
+      url: feedHit?.url ?? "",
       agent: {
         action: row.action,
         confidence: row.confidence,
@@ -617,11 +632,14 @@ export function NexusConsole() {
             </button>
           </div>
         )}
-        <div className="mb-3 max-lg:hidden">
+        <div className="mb-3">
           <NexusIntegrationsBanner />
         </div>
 
-        <div id="nexus-mobile-content" className="nexus-mobile-panel scroll-mt-36 max-lg:min-h-0 lg:hidden">
+        <div
+          id="nexus-mobile-content"
+          className="nexus-mobile-panel nexus-mobile-scroll scroll-mt-36 max-lg:min-h-[50vh] max-lg:overflow-y-auto lg:hidden"
+        >
           {mobilePanel === "feed" && feedPanel}
           {mobilePanel === "chart" && chartPanel}
           {mobilePanel === "trade" && tradePanel}
@@ -649,7 +667,7 @@ export function NexusConsole() {
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
             <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
               <p className="arc-caption text-violet-300/80">Token intelligence</p>
-              <p className="text-sm font-semibold text-white">Chart · metrics · analysis</p>
+              <p className="text-sm font-semibold text-white">Chart · agent reasoning · TA</p>
             </div>
             <div className="arc-panel-body flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 lg:px-4">
               {chartPanel}

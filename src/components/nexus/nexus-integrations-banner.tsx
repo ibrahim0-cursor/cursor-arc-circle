@@ -25,8 +25,10 @@ export function NexusIntegrationsBanner() {
     /quota|compute units|usage limit|rate limit/i.test(status.birdeyeProbe.error ?? "");
 
   const gmgnOk = Boolean(status.gmgn && status.gmgnProbe?.ok);
+  const news6551Ok = Boolean(status.opennews && status.opennewsProbe?.configured);
+  const news6551Live = Boolean(status.opennews && status.opennewsProbe?.ok);
 
-  if (birdeyeOk || gmgnOk) {
+  if (birdeyeOk || gmgnOk || news6551Ok) {
     return (
       <div className="arc-glass-card arc-glass-card-nexus mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
         <div className="flex items-center gap-2 text-sm text-emerald-100">
@@ -34,11 +36,19 @@ export function NexusIntegrationsBanner() {
           <span>
             <strong className="font-semibold">Live intel connected</strong>
             <span className="text-emerald-200/80">
-              {birdeyeOk && gmgnOk
-                ? " — Birdeye whales & OHLCV · GMGN holders & smart money"
-                : birdeyeOk
-                  ? " — Birdeye holders, whales & swaps"
-                  : " — GMGN top holders & smart-money tags"}
+              {birdeyeOk && gmgnOk && news6551Live
+                ? " — Birdeye · GMGN · 6551 news"
+                : birdeyeOk && gmgnOk
+                  ? " — Birdeye whales & OHLCV · GMGN holders & smart money"
+                  : birdeyeOk
+                    ? " — Birdeye holders, whales & swaps"
+                    : gmgnOk
+                      ? " — GMGN top holders & smart-money tags"
+                      : news6551Ok
+                        ? news6551Live
+                          ? " — 6551 OpenNews connected"
+                          : " — 6551 key set (quota empty — add credits at 6551.io)"
+                        : ""}
             </span>
           </span>
         </div>
