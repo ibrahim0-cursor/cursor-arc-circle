@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { NexusScanActions } from "@/components/nexus/nexus-scan-actions";
 import { formatPct, formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
@@ -26,6 +27,7 @@ export function NexusMobileContextBar({
   scanning,
   alphaScanning,
   researching,
+  arcFeePending,
 }: {
   selectedToken: TrendingMarketToken | null;
   activePanel: NexusMobilePanel;
@@ -36,6 +38,7 @@ export function NexusMobileContextBar({
   scanning?: boolean;
   alphaScanning?: boolean;
   researching?: boolean;
+  arcFeePending?: boolean;
 }) {
   const panels: { id: NexusMobilePanel; label: string; icon: typeof LineChart }[] = [
     { id: "feed", label: "Tokens", icon: Radio },
@@ -44,13 +47,15 @@ export function NexusMobileContextBar({
   ];
 
   return (
-    <div className="sticky top-14 z-40 -mx-4 border-b border-[var(--arc-border)] bg-[rgba(2,8,6,0.92)] px-3 py-2.5 backdrop-blur-xl sm:-mx-6 lg:hidden">
+    <div className="sticky top-14 z-40 -mx-4 border-b border-[var(--arc-border)] bg-[rgba(2,8,6,0.94)] px-3 py-2.5 backdrop-blur-xl sm:-mx-6 lg:hidden">
       {selectedToken ? (
         <div className="arc-glass-card arc-glass-card-nexus mb-2.5 flex items-center gap-3 px-3 py-2.5">
           {selectedToken.icon ? (
-            <img src={selectedToken.icon} alt="" className="h-11 w-11 rounded-xl border border-white/10" />
+            <div className="nexus-token-avatar-frame h-11 w-11">
+              <img src={selectedToken.icon} alt="" className="h-full w-full object-cover" />
+            </div>
           ) : (
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/15 text-sm font-bold text-cyan-100">
+            <div className="nexus-token-avatar-frame flex h-11 w-11 items-center justify-center text-sm font-bold text-emerald-100">
               {selectedToken.symbol.slice(0, 2)}
             </div>
           )}
@@ -96,7 +101,7 @@ export function NexusMobileContextBar({
         </p>
       )}
 
-      <div className="flex gap-1.5">
+      <div className="mb-2.5 flex gap-1.5">
         {panels.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -113,37 +118,39 @@ export function NexusMobileContextBar({
             {label}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={onMemoryScan}
-          disabled={scanning || alphaScanning}
-          className="flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.04] text-[9px] font-bold text-white/60"
-          aria-label="Memory scan"
-        >
-          <Database className={cn("h-4 w-4", scanning && "animate-pulse text-cyan-300")} />
-          Mem
-        </button>
-        <button
-          type="button"
-          onClick={onAlphaScan}
-          disabled={scanning || alphaScanning}
-          className="flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border border-violet-400/25 bg-violet-500/10 text-[9px] font-bold text-violet-100"
-          aria-label="Alpha scan"
-        >
-          <Sparkles className={cn("h-4 w-4", alphaScanning && "animate-pulse")} />
-          Alpha
-        </button>
-        <button
-          type="button"
-          onClick={onResearch}
-          disabled={researching || !selectedToken}
-          className="flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border border-violet-400/25 bg-violet-500/10 text-[9px] font-bold text-violet-100 disabled:opacity-40"
-          aria-label="Deep research"
-        >
-          <Brain className={cn("h-4 w-4", researching && "animate-pulse")} />
-          AI
-        </button>
       </div>
+
+      <NexusScanActions
+        compact
+        className="mb-0"
+        actions={[
+          {
+            id: "memory",
+            label: "Memory Scan",
+            icon: Database,
+            onClick: onMemoryScan,
+            disabled: scanning || alphaScanning || arcFeePending,
+            loading: scanning || arcFeePending,
+          },
+          {
+            id: "alpha",
+            label: "Alpha Scan",
+            icon: Sparkles,
+            onClick: onAlphaScan,
+            disabled: scanning || alphaScanning || arcFeePending,
+            loading: alphaScanning,
+            pulse: alphaScanning,
+          },
+          {
+            id: "research",
+            label: "Deep Research",
+            icon: Brain,
+            onClick: onResearch,
+            disabled: researching || arcFeePending || !selectedToken,
+            loading: researching,
+          },
+        ]}
+      />
     </div>
   );
 }

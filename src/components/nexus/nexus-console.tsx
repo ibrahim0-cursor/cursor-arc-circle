@@ -102,6 +102,7 @@ export function NexusConsole() {
   const [portfolioKey, setPortfolioKey] = useState(0);
 
   const [savedDecisions, setSavedDecisions] = useState<NexusDecision[]>([]);
+  const [memoryScanCount, setMemoryScanCount] = useState<number | null>(null);
   const [selectedToken, setSelectedToken] = useState<TrendingMarketToken | null>(null);
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -289,6 +290,7 @@ export function NexusConsole() {
       persistSavedScans(merged);
       if (merged[0]) setSelectedSavedId(merged[0].id);
       const count = data.count ?? decisions.length;
+      setMemoryScanCount(count);
       setActiveTab("saved");
       setMobilePanel("feed");
       scrollToMobileContent();
@@ -518,7 +520,14 @@ export function NexusConsole() {
           )}
         >
           <Database className="h-4 w-4" />
-          Memory ({savedDecisions.length})
+          Saved scans
+          {memoryScanCount != null ? (
+            <span className="rounded-md bg-emerald-500/20 px-1.5 text-[10px] font-bold text-emerald-200">
+              {memoryScanCount}
+            </span>
+          ) : savedDecisions.length > 0 ? (
+            <span className="text-[10px] font-normal text-white/40">({savedDecisions.length} archived)</span>
+          ) : null}
         </button>
         <button
           type="button"
@@ -534,6 +543,11 @@ export function NexusConsole() {
           Alpha ({alphaOpportunities.length})
         </button>
       </div>
+      {activeTab === "saved" && savedDecisions.length > 0 && memoryScanCount == null && (
+        <p className="arc-caption mb-2 text-white/45">
+          Past scans from your wallet — run <strong className="text-emerald-200/90">Memory Scan</strong> to refresh.
+        </p>
+      )}
       <div className="flex min-h-0 flex-1 flex-col max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] lg:min-h-0">
         {activeTab === "live" ? (
           <NexusTrendingFeed
@@ -714,6 +728,7 @@ export function NexusConsole() {
           scanning={scanning}
           alphaScanning={alphaScanning}
           researching={loading}
+          arcFeePending={arcFeePending}
         />
 
         <div className="mb-3 max-lg:mb-2">
@@ -758,19 +773,26 @@ export function NexusConsole() {
         </div>
 
         <div
-          className="hidden items-start gap-4 lg:grid lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(300px,360px)] lg:gap-5 xl:grid-cols-[minmax(280px,320px)_minmax(0,1fr)_minmax(320px,380px)] xl:gap-6"
+          className="hidden items-stretch gap-4 lg:grid lg:gap-5 xl:gap-6"
           data-nexus-layout="desktop"
         >
-          <div className="flex min-h-0 max-h-[calc(100vh-7rem)] flex-col overflow-hidden lg:sticky lg:top-20">
+          <div className="flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-20">
             {feedPanel}
           </div>
-          <div id="nexus-chart-panel" className="nexus-column-panel arc-panel arc-panel-nexus min-w-0 scroll-mt-24">
+          <div
+            id="nexus-chart-panel"
+            className="nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col scroll-mt-24 lg:sticky lg:top-20"
+          >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="arc-panel-body space-y-3">{chartPanel}</div>
+            <div className="arc-panel-body nexus-feed-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
+              {chartPanel}
+            </div>
           </div>
-          <div className="nexus-column-panel arc-panel arc-panel-nexus min-w-0 max-h-[calc(100vh-7rem)] overflow-y-auto lg:sticky lg:top-20 lg:overscroll-contain">
+          <div className="nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col lg:sticky lg:top-20">
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="arc-panel-body space-y-3">{tradePanel}</div>
+            <div className="arc-panel-body flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+              {tradePanel}
+            </div>
           </div>
         </div>
 

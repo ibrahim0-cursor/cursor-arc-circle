@@ -1471,6 +1471,50 @@ html[data-arc-theme="nexus"] .arc-panel-stripe-nexus {
   padding-bottom: 0.25rem;
 }
 
+.nexus-live-touch-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #a78bfa 40%, #12e8a8 100%);
+  cursor: default;
+}
+
+.nexus-scan-action-tile:hover .arc-icon-3d-plate {
+  transform: rotateX(4deg) rotateY(10deg) translateY(-3px) scale(1.05);
+}
+
+.nexus-collapsible-chevron {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+}
+
+.nexus-trade-column-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 1rem;
+}
+
+html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
+  grid-template-columns: minmax(360px, 28%) minmax(300px, 1fr) minmax(300px, 26%) !important;
+}
+
+@media (min-width: 1280px) {
+  html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
+    grid-template-columns: minmax(400px, 30%) minmax(340px, 1fr) minmax(320px, 24%) !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arc-border-trace::before,
   .arc-icon-active,

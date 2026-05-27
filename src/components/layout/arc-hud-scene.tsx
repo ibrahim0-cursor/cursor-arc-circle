@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { NexusHudLiveTouch } from "@/components/nexus/nexus-hud-live-touch";
 import { cn } from "@/lib/utils";
 
 /**
@@ -37,9 +38,9 @@ export function ArcHudScene({ theme = "home" }: { theme?: "home" | "nexus" | "pr
         />
       ))}
 
-      {/* Horizontal scan */}
+      {/* Horizontal scan — softer on NEXUS so it does not read as text */}
       <motion.div
-        className="arc-scan-line absolute left-0 right-0 h-px"
+        className={cn("arc-scan-line absolute left-0 right-0 h-px", theme === "nexus" && "opacity-30")}
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
         animate={{ top: ["12%", "88%", "12%"] }}
         transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
@@ -73,19 +74,8 @@ export function ArcHudScene({ theme = "home" }: { theme?: "home" | "nexus" | "pr
         />
       )}
 
-      {/* NEXUS: ticker grid pulse */}
-      {theme === "nexus" && (
-        <div className="absolute bottom-[18%] left-[8%] right-[8%] hidden h-8 overflow-hidden border border-emerald-500/15 bg-black/40 sm:block">
-          <motion.div
-            className="arc-ticker whitespace-nowrap font-mono text-[10px] tracking-widest text-emerald-300/70"
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-          >
-            NEXUS · SMART MONEY · ALPHA SCAN · BIRDEYE · SOCIAL VELOCITY · ARC SETTLEMENT · NEXUS · SMART MONEY ·
-            ALPHA SCAN ·
-          </motion.div>
-        </div>
-      )}
+      {/* NEXUS: live-touch strip (no text ticker) */}
+      {theme === "nexus" && <NexusHudLiveTouch />}
     </div>
   );
 }

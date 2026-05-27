@@ -51,9 +51,12 @@ export function NexusCollapsible({
             )}
           </div>
         </div>
-        <ChevronDown
-          className={`h-5 w-5 shrink-0 text-white/55 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
+        <span
+          className={`nexus-collapsible-chevron transition-transform duration-200 ${open ? "rotate-180 bg-violet-500/15" : ""}`}
+          aria-hidden
+        >
+          <ChevronDown className="h-4 w-4" />
+        </span>
       </button>
       {open && (
         <div className="border-t border-white/[0.08] px-4 py-3.5 nexus-panel-body">{children}</div>
