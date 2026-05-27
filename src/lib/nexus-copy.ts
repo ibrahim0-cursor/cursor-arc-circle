@@ -1,16 +1,43 @@
 /** User-facing NEXUS copy — no vendor / pipeline names */
 
+export const NEXUS_TAGLINE =
+  "We read the market so you don't have to stare at 50 columns like a pro terminal.";
+
+export const NEXUS_VALUE_STEPS = [
+  {
+    title: "Agent scans",
+    detail: "Liquidity, whales, social buzz, scams, momentum — handled in the background.",
+  },
+  {
+    title: "You get a verdict",
+    detail: "BUY · SELL · HOLD, risk score, and a plain-English reason — not raw wallet tables.",
+  },
+  {
+    title: "One-tap trade",
+    detail: "Buy, sell, swap, or portfolio P&L on Arc — without leaving the flow.",
+  },
+] as const;
+
+/** What GMGN-style terminals show manually vs what NEXUS automates */
+export const NEXUS_AUTOMATES = [
+  "Top traders & holder tables",
+  "Snipers, insiders, honeypot checks",
+  "Social / trench trending",
+  "24h flow, MC, liquidity bands",
+  "Security badges & rug signals",
+] as const;
+
 export const ALPHA_SCAN_LOADING =
-  "Ranking opportunities by momentum, sentiment, liquidity, and risk. This usually takes about a minute.";
+  "Your agent is doing the hard work — ranking setups by momentum, sentiment, liquidity, and risk. About a minute.";
 
 export const ALPHA_SCAN_EMPTY =
-  "Run Alpha Scan to get a ranked list with scores, thesis, and risk breakdown. Connect your wallet first.";
+  "Tap Run Alpha Scan. The agent will research dozens of tokens and return a short ranked list — not a data wall.";
 
 export const ALPHA_SCAN_ERROR_TIP =
   "Stay on Arc Testnet, approve the scan fee if prompted, and try again in a moment.";
 
 export const ALPHA_SCAN_SUCCESS = (count: number, topSymbol?: string, sentiment?: string) =>
-  `${count} ranked${topSymbol ? ` · top pick ${topSymbol}` : ""}${sentiment ? ` · ${sentiment}` : ""}`;
+  `${count} picks ready${topSymbol ? ` · best: ${topSymbol}` : ""}${sentiment ? ` · ${sentiment}` : ""}`;
 
 export const SAVED_SCANS_LABEL = (n: number, max: number) =>
   n > 0 ? `Saved scans (${Math.min(n, max)} archived)` : "Saved scans";
@@ -33,4 +60,12 @@ export function publicSentimentSummary(label: string, score: number): string {
           ? "Defensive tone — favor capital preservation and tighter risk."
           : "Mixed tape — focus on liquidity and clear catalysts.";
   return `${tone} (index ${score}).`;
+}
+
+/** One-line agent verdict for list rows */
+export function agentVerdictLine(whyAction?: string, thesis?: string, reasoning?: string): string {
+  const line = (whyAction || thesis || reasoning || "").trim();
+  if (!line) return "Agent is still gathering context for this token.";
+  const first = line.split(/[.!?]\s/)[0] ?? line;
+  return first.length > 140 ? `${first.slice(0, 137)}…` : first;
 }

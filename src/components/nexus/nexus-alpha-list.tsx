@@ -8,6 +8,7 @@ import {
   ALPHA_SCAN_EMPTY,
   ALPHA_SCAN_ERROR_TIP,
   ALPHA_SCAN_LOADING,
+  agentVerdictLine,
   publicSourceLabel,
 } from "@/lib/nexus-copy";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
@@ -120,7 +121,7 @@ export function NexusAlphaList({
       <div className="arc-glass-card arc-glass-card-nexus px-3 py-2.5 text-xs text-emerald-100/90">
         <p className="font-semibold">{opportunities.length} ranked opportunities</p>
         <p className="mt-1 text-white/55">
-          Sorted by Alpha Score. Open a row for chart, trade panel, and full thesis.
+          Agent verdicts only — tap a row for chart, chat, and full thesis (no manual tables).
         </p>
       </div>
       <div className="space-y-2">
@@ -210,17 +211,9 @@ export function NexusAlphaList({
                 </div>
               </div>
 
-              <div className="mt-2 grid gap-1 text-[10px] text-white/50">
-                <p>
-                  <span className="text-fuchsia-200/80">Flow:</span> {row.smartMoneySignal}
-                </p>
-                <p>
-                  <span className="text-emerald-200/80">Momentum:</span> {row.momentumHealth}
-                </p>
-                <p className="line-clamp-2 text-violet-100/75">
-                  <span className="text-violet-200/90">Thesis:</span> {row.aiThesis}
-                </p>
-              </div>
+              <p className="mt-2 text-[10px] text-white/40">
+                Tap for chart · trade · full intel
+              </p>
 
               <div className="mt-2 flex flex-wrap gap-1.5 text-[9px]">
                 <span className="rounded-md bg-rose-500/15 px-1.5 py-0.5 text-rose-200/80">

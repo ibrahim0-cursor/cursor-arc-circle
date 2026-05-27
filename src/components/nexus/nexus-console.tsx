@@ -9,6 +9,7 @@ import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
+import { NexusValueStrip } from "@/components/nexus/nexus-value-strip";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
 import type { CommunityPulse } from "@/lib/community-pulse";
@@ -429,7 +430,9 @@ export function NexusConsole() {
       </div>
 
       <div className="nexus-center-intel min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pt-1">
-        <p className="arc-caption hidden px-1 text-white/40 lg:block">Intel &amp; analysis — expand any section below</p>
+        <p className="arc-caption hidden px-1 text-white/40 lg:block">
+          Deep intel (optional) — agent already decided above; expand only if you want detail
+        </p>
         <NexusTAPanel
           technical={displayDecision?.technical ?? selectedToken.intel?.technical}
           priceUsd={selectedToken.priceUsd}
@@ -536,6 +539,7 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1920px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8 xl:px-6">
+        <NexusValueStrip />
         <NexusPremiumHero stableCount={STABLE_FEED_LIMIT} />
 
         <NexusMobileContextBar
