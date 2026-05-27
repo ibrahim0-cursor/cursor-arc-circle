@@ -1587,12 +1587,29 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
 }
 
 .nexus-chart-panel {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
 }
 
 .nexus-chart-iframe {
   display: block;
+}
+
+.nexus-center-intel-primary {
+  flex-shrink: 0;
+}
+
+.nexus-live-reasoning {
+  max-height: min(42vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+html[data-arc-theme="nexus"] .nexus-center-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
 }
 
 .nexus-feed-panel.arc-panel-nexus {

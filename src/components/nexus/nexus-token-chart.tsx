@@ -12,11 +12,14 @@ export function NexusTokenChart({
   pairAddress,
   tokenAddress,
   symbol,
+  compact = false,
 }: {
   chainId?: string;
   pairAddress?: string;
   tokenAddress?: string;
   symbol?: string;
+  /** Shorter embed so reasoning + holders stay visible at 100% zoom */
+  compact?: boolean;
 }) {
   const [resolvedPair, setResolvedPair] = useState(pairAddress ?? "");
   const [dexUrl, setDexUrl] = useState<string | null>(null);
@@ -106,7 +109,11 @@ export function NexusTokenChart({
         <iframe
           title={`${symbol ?? "Token"} chart`}
           src={dexChartEmbedUrl(chainId, resolvedPair)}
-          className="nexus-chart-iframe h-[min(42dvh,320px)] w-full border-0 sm:h-[280px] lg:h-[min(38vh,400px)] lg:min-h-[340px] xl:min-h-[380px]"
+          className={
+            compact
+              ? "nexus-chart-iframe nexus-chart-iframe-compact h-[200px] w-full border-0 sm:h-[220px] lg:h-[240px] lg:max-h-[260px]"
+              : "nexus-chart-iframe h-[min(42dvh,320px)] w-full border-0 sm:h-[280px] lg:h-[min(32vh,300px)] lg:max-h-[300px]"
+          }
           allow="clipboard-write"
         />
       </ArcPanel>

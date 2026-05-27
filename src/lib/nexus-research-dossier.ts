@@ -68,10 +68,28 @@ export type TokenResearchDossier = {
   dataNotes: string[];
 };
 
+export type LiveReasoningFactor = {
+  label: string;
+  detail: string;
+  impact: "bullish" | "bearish" | "neutral";
+};
+
+export type LiveReasoningPayload = {
+  action: "BUY" | "SELL" | "HOLD";
+  confidence: number;
+  riskScore: number;
+  headline: string;
+  narrative: string;
+  factors: LiveReasoningFactor[];
+  taHeadline: string;
+  sources: string[];
+};
+
 export type TokenDossierPayload = {
   dossier: TokenResearchDossier;
   topHolders: HolderTableRow[];
   topTraders: TraderTableRow[];
+  liveReasoning: LiveReasoningPayload;
   fetchedAt: string;
 };
 
@@ -355,12 +373,148 @@ export function buildDossierGlance(
   agent?: AgentSignal,
   research?: NexusResearchReport,
 ): string {
+  return buildLiveReasoning(token, intel, agent, research).headline;
+}
+
+function synthesizeFactors(
+  token: TrendingToken,
+  intel: TokenIntel,
+  technical: TaTimeframeBlock[],
+  pattern: { label: string; detail: string },
+): LiveReasoningFactor[] {
+  const factors: LiveReasoningFactor[] = [];
+  const h1 = technical.find((t) => t.timeframe === "1h");
+  const m15 = technical.find((t) => t.timeframe === "15m");
+  const buys = token.txns24h?.buys ?? intel.buy24h ?? 0;
+  const sells = token.txns24h?.sells ?? intel.sell24h ?? 0;
+  const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
+
+  factors.push({
+    label: "24h tape",
+    detail: `${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% · $${Math.round(token.volume24h).toLocaleString()} vol · ${turnover.toFixed(1)}x turnover`,
+    impact: token.change24h > 3 ? "bullish" : token.change24h < -5 ? "bearish" : "neutral",
+  });
+  factors.push({
+    label: "Flow",
+    detail: `${buys} buys vs ${sells} sells on 24h swaps`,
+    impact: buys > sells * 1.15 ? "bullish" : sells > buys * 1.15 ? "bearish" : "neutral",
+  });
+  if (h1) {
+    factors.push({
+      label: `TA 1h (${h1.source === "birdeye_ohlcv" ? "Birdeye" : "Dex"})`,
+      detail: `RSI ${h1.rsi14} · MACD ${h1.macdSignal} · MA20 ${h1.ma20 != null ? formatMa(h1.ma20) : "—"}`,
+      impact: h1.macdSignal,
+    });
+  }
+  if (m15) {
+    factors.push({
+      label: "TA 15m",
+      detail: `RSI ${m15.rsi14} (${m15.rsiSignal}) · MACD ${m15.macdSignal}`,
+      impact: m15.rsiSignal,
+    });
+  }
+  factors.push({
+    label: "Structure",
+    detail: `${pattern.label} — ${pattern.detail}`,
+    impact: pattern.label.includes("Breakout") || pattern.label.includes("Higher")
+      ? "bullish"
+      : pattern.label.includes("Distribution") || pattern.label.includes("Lower")
+        ? "bearish"
+        : "neutral",
+  });
+  if (intel.top10HolderPercent != null) {
+    factors.push({
+      label: "Concentration",
+      detail: `Top 10 wallets ~${intel.top10HolderPercent.toFixed(0)}% of supply`,
+      impact: intel.top10HolderPercent > 55 ? "bearish" : intel.top10HolderPercent < 35 ? "bullish" : "neutral",
+    });
+  }
+  const scam = assessTokenScam(token, intel);
+  if (scam.flags.length > 0) {
+    factors.push({
+      label: "Risk scan",
+      detail: scam.flags.slice(0, 2).join(" · "),
+      impact: scam.isScam ? "bearish" : "neutral",
+    });
+  }
+  return factors.slice(0, 6);
+}
+
+function formatMa(v: number): string {
+  return v < 1 ? v.toFixed(6) : v < 100 ? v.toFixed(4) : v.toFixed(2);
+}
+
+export function buildLiveReasoning(
+  token: TrendingToken,
+  intel: TokenIntel,
+  agent?: AgentSignal,
+  research?: NexusResearchReport,
+  dossier?: Pick<TokenResearchDossier, "technical" | "pattern" | "socialNews" | "dataNotes">,
+): LiveReasoningPayload {
   const scam = assessTokenScam(token, intel);
   const action = agent?.action ?? "HOLD";
-  const conf = agent?.confidence ?? 0;
-  const narrative = research?.thesis?.slice(0, 120) ?? `${token.symbol} · ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h`;
-  if (scam.isScam) return `Avoid — ${scam.label}. ${scam.flags[0] ?? "Rug heuristics triggered"}.`;
-  return `${action} ${conf}% · ${narrative}${narrative.length >= 120 ? "…" : ""}`;
+  const confidence = agent?.confidence ?? 0;
+  const riskScore = agent?.riskScore ?? 50;
+  const technical = dossier?.technical ?? [];
+  const dexTa = computeTechnicalAnalysis(
+    token.priceUsd,
+    normalizePriceChanges(token.priceChange, token.change24h),
+    token.volume24h,
+    token.liquidityUsd,
+  );
+  const pattern = dossier?.pattern ?? derivePattern(technical.length > 0 ? technical : dexTa, token);
+
+  const m15 = technical.find((t) => t.timeframe === "15m");
+  const h1 = technical.find((t) => t.timeframe === "1h");
+  const taHeadline = [
+    pattern.label,
+    m15 ? `15m RSI ${m15.rsi14} (${m15.rsiSignal})` : null,
+    h1 ? `1h MACD ${h1.macdSignal}` : null,
+    h1?.source === "birdeye_ohlcv" || m15?.source === "birdeye_ohlcv" ? "Birdeye OHLCV" : "Dex momentum est.",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const sources: string[] = [];
+  if (hasBirdeyeKey()) sources.push("Birdeye");
+  if (hasGmgnApiKey()) sources.push("GMGN");
+  sources.push("DexScreener", "Agent stack");
+  if (dossier?.dataNotes?.some((n) => n.includes("6551") || n.includes("OpenNews"))) sources.push("6551 news");
+
+  const narrativeParts = [
+    scam.isScam ? `Avoid — ${scam.label}. ${scam.flags[0] ?? ""}` : null,
+    agent?.whyAction,
+    agent?.reasoning,
+    research?.thesis?.slice(0, 320),
+    !agent?.reasoning && !research?.thesis
+      ? `${token.symbol} on ${token.chainId}: ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h with $${Math.round(token.liquidityUsd).toLocaleString()} liquidity — agent is weighting flow, holder concentration, and multi-timeframe TA before you size a position.`
+      : null,
+  ].filter(Boolean);
+
+  const narrative = narrativeParts.join(" ").trim();
+  const factors =
+    agent?.reasoningFactors?.length && agent.reasoningFactors.length > 0
+      ? agent.reasoningFactors.map((f) => ({
+          label: f.label,
+          detail: f.detail,
+          impact: f.impact,
+        }))
+      : synthesizeFactors(token, intel, technical, pattern);
+
+  const headline = scam.isScam
+    ? `AVOID · ${scam.label}`
+    : `${action} ${confidence}% confidence · risk ${riskScore}/100 · ${pattern.label}`;
+
+  return {
+    action,
+    confidence,
+    riskScore,
+    headline,
+    narrative: narrative || headline,
+    factors,
+    taHeadline,
+    sources,
+  };
 }
 
 export async function buildTokenDossierPayload(
@@ -535,7 +689,7 @@ export async function buildTokenDossierPayload(
   if (intel.isFreezable) rugFlags.push("Freeze authority flagged");
 
   const dossier: TokenResearchDossier = {
-    atAGlance: buildDossierGlance(token, intel, opts?.agent, opts?.research),
+    atAGlance: "",
     fundamentals: fundamentals.slice(0, 3),
     teamLinks,
     creatorRisk: {
@@ -558,10 +712,14 @@ export async function buildTokenDossierPayload(
     dataNotes,
   };
 
+  const liveReasoning = buildLiveReasoning(token, intel, opts?.agent, opts?.research, dossier);
+  dossier.atAGlance = liveReasoning.narrative.slice(0, 280);
+
   return {
     dossier,
     topHolders,
     topTraders,
+    liveReasoning,
     fetchedAt: new Date().toISOString(),
   };
 }

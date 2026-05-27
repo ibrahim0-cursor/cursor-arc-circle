@@ -10,7 +10,6 @@ import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
 import { NexusAlphaHero } from "@/components/nexus/nexus-alpha-hero";
-import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
 import type { CommunityPulse } from "@/lib/community-pulse";
 import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
@@ -29,8 +28,11 @@ import { NexusTradeHub } from "@/components/nexus/nexus-demo-trade-panel";
 import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
 import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
-import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
-import { NexusResearchDossierPanel } from "@/components/nexus/nexus-research-dossier";
+import {
+  NexusResearchDossierDeep,
+  NexusResearchDossierLive,
+} from "@/components/nexus/nexus-research-dossier";
+import { useTokenDossier } from "@/hooks/use-token-dossier";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
 import { NexusFeedTabs, type NexusFeedTab } from "@/components/nexus/nexus-feed-tabs";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
@@ -105,6 +107,7 @@ export function NexusConsole() {
   }, []);
 
   const displayDecision = selectedToken ? tokenToDecision(selectedToken) : null;
+  const tokenDossier = useTokenDossier(selectedToken);
 
   const scrollToMobileContent = useCallback(() => {
     requestAnimationFrame(() => {
@@ -415,8 +418,18 @@ export function NexusConsole() {
         <NexusTokenMetrics token={selectedToken} compact />
       </div>
 
-      <div className="nexus-center-chart shrink-0 py-1 lg:py-2">
+      <div className="nexus-center-intel-primary shrink-0 px-0.5">
+        <NexusResearchDossierLive
+          token={selectedToken}
+          payload={tokenDossier.payload}
+          loading={tokenDossier.loading}
+          error={tokenDossier.error}
+        />
+      </div>
+
+      <div className="nexus-center-chart shrink-0 py-1 lg:py-1.5">
         <NexusTokenChart
+          compact
           chainId={selectedToken.chainId}
           pairAddress={selectedToken.pairAddress}
           tokenAddress={selectedToken.tokenAddress}
@@ -425,13 +438,7 @@ export function NexusConsole() {
       </div>
 
       <div className="nexus-center-intel min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pt-1">
-        <NexusResearchDossierPanel token={selectedToken} />
-        <NexusTAPanel
-          technical={displayDecision?.technical ?? selectedToken.intel?.technical}
-          priceUsd={selectedToken.priceUsd}
-          defaultOpen={false}
-          showCollapseHint
-        />
+        <NexusResearchDossierDeep dossier={tokenDossier.payload?.dossier} loading={tokenDossier.loading} />
         <NexusTokenDetectPanel
           chainId={selectedToken.chainId}
           tokenAddress={selectedToken.tokenAddress}
@@ -445,18 +452,6 @@ export function NexusConsole() {
           <ArcPanel theme="nexus" title={`Community · ${communityPulse.topic}`} icon={Radio}>
             <CommunityPulsePanel pulse={communityPulse} compact />
           </ArcPanel>
-        )}
-        {displayDecision && (
-          <NexusCollapsible
-            label="Agent decision"
-            hint={`${displayDecision.action} · ${displayDecision.confidence}% confidence`}
-            variant="reasoning"
-            icon={Sparkles}
-            defaultOpen={false}
-            showCollapseHint
-          >
-            <NexusTokenDetail decision={displayDecision} />
-          </NexusCollapsible>
         )}
       </div>
     </div>
