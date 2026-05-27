@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   BarChart3,
   Bot,
-  Flame,
   ChevronDown,
   Loader2,
   RefreshCw,
@@ -18,6 +17,7 @@ import {
   Waves,
 } from "lucide-react";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
@@ -395,10 +395,8 @@ export function NexusTrendingFeed({
     <div className={cn("flex min-h-0 flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-orange-400/30 bg-gradient-to-br from-orange-500/20 to-rose-500/10">
-            <Flame className="h-4 w-4 text-orange-300" />
-          </div>
-          <h3 className="text-xs font-medium text-white/80 sm:text-sm">
+          <ArcIconBadge icon={BarChart3} theme="nexus" size="sm" />
+          <h3 className="arc-caption text-white/80 sm:text-sm">
             <span className="lg:hidden">{tokens.length} tokens · {secondsLeft}s</span>
             <span className="hidden lg:inline">
               {tokens.length} tokens (stable roster · max {MAX_FEED}) · refresh in {secondsLeft}s

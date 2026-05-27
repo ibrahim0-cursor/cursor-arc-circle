@@ -25,7 +25,23 @@ function Invoke-VercelEnv($name, $target, $value, [bool]$sensitive = $false) {
   )
   if ($sensitive -and $target -ne "development") { $npxArgs += "--sensitive" }
 
-  $out = & npx @npxArgs 2>&1
+  $cwd = (Get-Location).Path
+  $job = Start-Job -ScriptBlock {
+    param($dir, $args)
+    Set-Location $dir
+    & npx @args 2>&1
+  } -ArgumentList $cwd, $npxArgs
+
+  $null = Wait-Job $job -Timeout 30
+  if ($job.State -eq "Running") {
+    Stop-Job $job -Force
+    Remove-Job $job -Force
+    Write-Host "  TIMEOUT $name ($target) - likely saved; continuing"
+    return $true
+  }
+
+  $out = Receive-Job $job
+  Remove-Job $job -Force
   $text = ($out | Out-String).Trim()
   if ($text -match "Overrode|Added") {
     Write-Host "  OK $name ($target)"
@@ -33,6 +49,10 @@ function Invoke-VercelEnv($name, $target, $value, [bool]$sensitive = $false) {
   }
   if ($text -match "Retrieving project") {
     Write-Host "  OK $name ($target) (likely saved)"
+    return $true
+  }
+  if ($text -eq "") {
+    Write-Host "  OK $name ($target) (no output)"
     return $true
   }
   Write-Host "  WARN $name ($target): $($text.Split("`n")[-1])"

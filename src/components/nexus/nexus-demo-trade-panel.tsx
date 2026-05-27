@@ -17,7 +17,9 @@ import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
+import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
@@ -269,8 +271,8 @@ export function NexusTradeHub({
         <div className="arc-panel-stripe arc-panel-stripe-nexus" />
         <div className="border-b border-white/[0.08] px-4 py-3">
           <div className="mb-3 flex items-center gap-2">
-            <ArrowDownUp className="h-5 w-5 text-emerald-300" />
-            <span className="text-base font-semibold text-cyan-50">Arc Trade · Agent</span>
+            <ArcIconFrame icon={ArrowDownUp} variant="nexus" size="sm" active />
+            <span className="text-base font-semibold text-white">Arc Trade · Agent</span>
             {agentLive && (
               <span className="ml-auto rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                 LIVE
@@ -289,15 +291,16 @@ export function NexusTradeHub({
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold transition active:scale-[0.98] ${
+                className={cn(
+                  "arc-glass-interactive flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold transition active:scale-[0.98]",
                   tradeTab === id
                     ? id === "agent"
                       ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
                       : id === "buy"
                         ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100"
                         : "border-rose-400/50 bg-rose-500/20 text-rose-100"
-                    : "border-white/12 bg-white/[0.03] text-white/65"
-                }`}
+                    : "border-[var(--arc-border)] text-white/65",
+                )}
               >
                 <Icon className="h-4 w-4" />
                 {label}
@@ -328,7 +331,7 @@ export function NexusTradeHub({
               <p className="text-center text-sm text-white/60">Select a token from the feed to trade.</p>
             ) : tradeTab !== "agent" && trade ? (
           <>
-            <div className="flex items-center justify-between gap-2 rounded-xl bg-black/25 px-3 py-2.5">
+            <div className="arc-glass-card arc-glass-card-nexus flex items-center justify-between gap-2 px-3 py-2.5">
               <div>
                 <span className="text-lg font-bold text-white">{trade.symbol}</span>
                 <span className="ml-2 text-sm text-white/70">{formatUsd(livePrice)}</span>
@@ -391,7 +394,7 @@ export function NexusTradeHub({
                         key={v}
                         type="button"
                         onClick={() => applySellUsdcReceive(v)}
-                        className="min-h-[40px] rounded-lg border border-rose-400/20 bg-rose-500/10 text-sm font-medium text-rose-100 active:bg-rose-500/20"
+                        className="arc-glass-interactive min-h-[40px] rounded-lg border border-rose-400/20 bg-rose-500/10 text-sm font-medium text-rose-100 active:bg-rose-500/20"
                       >
                         ${v}
                       </button>
@@ -435,7 +438,7 @@ export function NexusTradeHub({
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full min-h-[48px] rounded-xl border border-cyan-300/20 bg-black/30 px-4 text-lg font-medium text-white outline-none focus:border-cyan-300/50"
+                className="arc-input-glass w-full min-h-[48px] px-4 text-lg font-medium text-white"
                 placeholder={amountMode === "usdc" ? "USDC amount" : `${trade.symbol} amount`}
               />
 
@@ -453,7 +456,7 @@ export function NexusTradeHub({
                     key={pct}
                     type="button"
                     onClick={() => applyPct(pct)}
-                    className="min-h-[44px] rounded-xl border border-violet-400/25 bg-violet-500/10 text-sm font-bold text-violet-100 transition active:scale-95 active:bg-violet-500/25"
+                    className="arc-glass-interactive min-h-[44px] rounded-xl border border-violet-400/25 bg-violet-500/10 text-sm font-bold text-violet-100 transition active:scale-95 active:bg-violet-500/25"
                   >
                     {pct === 100 ? "MAX" : `${pct}%`}
                   </button>

@@ -6,6 +6,7 @@ import {
   Bot,
   Brain,
   Database,
+  LineChart,
   Loader2,
   Radio,
   Sparkles,
@@ -13,9 +14,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
@@ -498,45 +500,53 @@ export function NexusConsole() {
   }
 
   const feedPanel = (
-    <Card className="border-white/10 max-lg:border-0 max-lg:bg-transparent lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-      <CardHeader className="max-lg:px-0 max-lg:pb-2 max-lg:pt-0">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("live");
-              setSelectedSavedId(null);
-            }}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
-              activeTab === "live" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"
-            }`}
-          >
-            <Radio className="h-4 w-4" />
-            Live Feed
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("saved")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
-              activeTab === "saved" ? "bg-cyan-400/15 text-cyan-100" : "text-white/50"
-            }`}
-          >
-            <Database className="h-4 w-4" />
-            Memory ({savedDecisions.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("alpha")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
-              activeTab === "alpha" ? "bg-violet-400/15 text-violet-100" : "text-white/50"
-            }`}
-          >
-            <Sparkles className="h-4 w-4" />
-            Alpha ({alphaOpportunities.length})
-          </button>
-        </div>
-      </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:min-h-0 lg:p-2">
+    <ArcPanel
+      theme="nexus"
+      title="Market feed"
+      icon={Radio}
+      className="max-lg:!border-0 max-lg:!bg-transparent lg:flex lg:h-full lg:min-h-0 lg:flex-col"
+    >
+      <div className="-mt-2 mb-3 flex flex-wrap items-center gap-1.5 max-lg:mb-2">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("live");
+            setSelectedSavedId(null);
+          }}
+          className={cn(
+            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
+            activeTab === "live" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
+          )}
+        >
+          <Radio className="h-4 w-4" />
+          Live Feed
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("saved")}
+          className={cn(
+            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
+            activeTab === "saved" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
+          )}
+        >
+          <Database className="h-4 w-4" />
+          Memory ({savedDecisions.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("alpha")}
+          className={cn(
+            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
+            activeTab === "alpha"
+              ? "border-violet-400/40 bg-violet-500/20 text-violet-100"
+              : "text-white/50",
+          )}
+        >
+          <Sparkles className="h-4 w-4" />
+          Alpha ({alphaOpportunities.length})
+        </button>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] lg:min-h-0">
         {activeTab === "live" ? (
           <NexusTrendingFeed
             className="h-full min-h-0"
@@ -598,12 +608,13 @@ export function NexusConsole() {
             />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ArcPanel>
   );
 
   const chartPanel = !selectedToken ? (
-    <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-12 text-center lg:py-16">
+    <div className="arc-signal-panel arc-signal-panel-nexus flex flex-col items-center justify-center gap-3 px-4 py-12 text-center lg:py-16">
+      <ArcIconFrame icon={LineChart} variant="nexus" size="md" />
       <p className="text-sm text-white/55">Select a token from the feed to view chart &amp; analysis.</p>
     </div>
   ) : (
@@ -647,9 +658,9 @@ export function NexusConsole() {
         <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
       )}
       {communityPulse && communityPulse.items.length > 0 && (
-        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3">
-          <CommunityPulsePanel pulse={communityPulse} title={`Community · ${communityPulse.topic}`} compact />
-        </div>
+        <ArcPanel theme="nexus" title={`Community · ${communityPulse.topic}`} icon={Radio}>
+          <CommunityPulsePanel pulse={communityPulse} compact />
+        </ArcPanel>
       )}
       {socialIntel && <NexusSocialIntelPanel social={socialIntel} />}
       {displayDecision && !deepResearch && <NexusTokenDetail decision={displayDecision} />}
@@ -767,12 +778,12 @@ export function NexusConsole() {
               { icon: Zap, label: `${STABLE_FEED_LIMIT} stable tokens · 45s`, sub: "Same roster — prices & signals refresh" },
               { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
               { icon: Sparkles, label: "Wallet score", sub: "Grade every wallet A–F" },
-            ].map((item) => (
-              <div key={item.label} className="arc-glass-card arc-glass-interactive flex items-center gap-3 px-4 py-3">
-                <item.icon className="h-5 w-5 text-cyan-300" />
+            ].map((item, i) => (
+              <div key={item.label} className="arc-glass-card arc-glass-card-nexus arc-glass-interactive flex items-center gap-3 px-4 py-3">
+                <ArcIcon3d icon={item.icon} theme="nexus" size="sm" delay={i * 0.15} />
                 <div>
                   <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-white/45">{item.sub}</p>
+                  <p className="arc-caption">{item.sub}</p>
                 </div>
               </div>
             ))}
@@ -806,13 +817,12 @@ export function NexusConsole() {
         <ArcSettlementBanner txHash={lastArcFeeTx ?? undefined} />
         {actionBanner && (
           <div
-            className={`mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border px-4 py-3 ${
-              actionBanner.type === "success"
-                ? "border-emerald-400/35 bg-emerald-500/10"
-                : actionBanner.type === "error"
-                  ? "border-rose-400/35 bg-rose-500/10"
-                  : "border-cyan-400/35 bg-cyan-500/10"
-            }`}
+            className={cn(
+              "arc-glass-card mb-4 flex flex-wrap items-start justify-between gap-3 px-4 py-3",
+              actionBanner.type === "success" && "arc-glass-card-nexus border-emerald-400/35",
+              actionBanner.type === "error" && "border-rose-400/35 bg-rose-500/10",
+              actionBanner.type === "info" && "arc-glass-card-nexus",
+            )}
           >
             <div>
               <p className="text-sm font-semibold text-white">{actionBanner.title}</p>

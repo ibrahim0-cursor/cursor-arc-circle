@@ -8,7 +8,7 @@ export function NexusIntegrationsBanner() {
 
   if (loading && !status) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white/70">
+      <div className="arc-glass-card arc-glass-card-nexus flex items-center gap-2 px-3 py-2 text-sm text-white/70">
         <Loader2 className="h-4 w-4 animate-spin text-cyan-300" />
         Checking market data APIs…
       </div>
@@ -23,7 +23,7 @@ export function NexusIntegrationsBanner() {
 
   if (birdeyeOk) {
     return (
-      <div className="hidden flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] px-3 py-2.5 lg:flex">
+      <div className="arc-glass-card arc-glass-card-nexus hidden flex-wrap items-center justify-between gap-2 px-3 py-2.5 lg:flex">
         <div className="flex items-center gap-2 text-sm text-emerald-100">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
           <span>

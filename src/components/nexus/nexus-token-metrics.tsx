@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Activity, BarChart3, Droplets, Layers, TrendingDown, TrendingUp } from "lucide-react";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { formatCompact, formatPct } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
@@ -40,11 +41,13 @@ export function NexusTokenMetrics({ token }: { token: TrendingMarketToken | null
       {items.map((m) => (
         <div
           key={m.label}
-          className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 transition hover:border-cyan-400/20"
+          className="arc-glass-card arc-glass-card-nexus arc-glass-interactive flex items-start gap-2.5 px-3 py-2.5"
         >
-          <m.icon className="mb-1 h-3.5 w-3.5 text-cyan-300/70" />
-          <p className="text-[10px] uppercase tracking-wider text-white/45">{m.label}</p>
-          <p className={`text-sm font-bold ${m.tone ?? "text-white"}`}>{m.value}</p>
+          <ArcIconBadge icon={m.icon} theme="nexus" size="sm" />
+          <div className="min-w-0">
+            <p className="arc-caption !text-[10px]">{m.label}</p>
+            <p className={`font-mono text-sm font-bold ${m.tone ?? "text-white"}`}>{m.value}</p>
+          </div>
         </div>
       ))}
     </motion.div>

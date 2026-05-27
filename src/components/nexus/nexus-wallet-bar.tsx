@@ -16,7 +16,7 @@ export function NexusWalletBar({ compact = false }: { compact?: boolean }) {
 
   if (compact) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-2.5">
+      <div className="arc-glass-card arc-glass-card-nexus flex flex-wrap items-center gap-2 px-3 py-2.5">
         <WalletConnectButton compact />
         {isConnected && balance && (
           <span className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-2 text-sm font-bold text-emerald-100">

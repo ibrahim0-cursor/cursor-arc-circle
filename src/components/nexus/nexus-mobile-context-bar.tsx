@@ -44,9 +44,9 @@ export function NexusMobileContextBar({
   ];
 
   return (
-    <div className="sticky top-14 z-40 -mx-4 border-b border-cyan-400/20 bg-[#050508]/95 px-3 py-2.5 backdrop-blur-xl sm:-mx-6 lg:hidden">
+    <div className="sticky top-14 z-40 -mx-4 border-b border-[var(--arc-border)] bg-[rgba(2,8,6,0.92)] px-3 py-2.5 backdrop-blur-xl sm:-mx-6 lg:hidden">
       {selectedToken ? (
-        <div className="mb-2.5 flex items-center gap-3 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2.5">
+        <div className="arc-glass-card arc-glass-card-nexus mb-2.5 flex items-center gap-3 px-3 py-2.5">
           {selectedToken.icon ? (
             <img src={selectedToken.icon} alt="" className="h-11 w-11 rounded-xl border border-white/10" />
           ) : (
@@ -91,8 +91,8 @@ export function NexusMobileContextBar({
           </div>
         </div>
       ) : (
-        <p className="mb-2.5 rounded-xl border border-dashed border-white/15 bg-white/[0.03] px-3 py-2.5 text-center text-sm text-white/55">
-          Tap a token in <strong className="text-cyan-200">Tokens</strong> to see chart &amp; trade
+        <p className="arc-signal-panel arc-signal-panel-nexus mb-2.5 px-3 py-2.5 text-center text-sm text-white/55">
+          Tap a token in <strong className="text-emerald-200">Tokens</strong> to see chart &amp; trade
         </p>
       )}
 
@@ -105,11 +105,11 @@ export function NexusMobileContextBar({
             className={cn(
               "flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border text-[11px] font-bold transition active:scale-[0.98]",
               activePanel === id
-                ? "border-cyan-400/45 bg-cyan-500/25 text-cyan-50"
-                : "border-white/10 bg-white/[0.04] text-white/55",
+                ? "arc-nav-pill-active border-emerald-400/35 text-emerald-50"
+                : "arc-glass-interactive border-[var(--arc-border)] text-white/55",
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className={cn("h-5 w-5", activePanel === id && "text-emerald-300")} />
             {label}
           </button>
         ))}

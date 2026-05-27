@@ -12,7 +12,9 @@ import {
   Minus,
 } from "lucide-react";
 import { useState } from "react";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { formatCompact, formatPct, formatUsd, truncateHash } from "@/lib/utils";
 import type { NexusDecision } from "@/lib/storage";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
@@ -40,11 +42,12 @@ export function NexusDecisionCard({
       onClick={onSelect}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`w-full rounded-2xl border p-5 text-left transition ${
+      className={cn(
+        "arc-glass-card w-full p-5 text-left transition",
         selected
-          ? "border-cyan-400/50 bg-cyan-400/[0.08] shadow-[0_0_40px_rgba(34,211,238,0.12)]"
-          : "border-white/10 bg-black/20 hover:border-white/20"
-      }`}
+          ? "arc-glass-card-nexus arc-glass-interactive border-emerald-400/40 shadow-[0_0_24px_-6px_var(--nexus-glow)]"
+          : "arc-glass-interactive hover:border-emerald-400/30",
+      )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -194,8 +197,8 @@ function FactorRow({
 export function NexusTokenDetail({ decision }: { decision: NexusDecision | null }) {
   if (!decision) {
     return (
-      <div className="flex min-h-[80px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-white/45">
-        <Crosshair className="mb-2 h-6 w-6 text-cyan-300/50" />
+      <div className="arc-signal-panel arc-signal-panel-nexus flex min-h-[80px] flex-col items-center justify-center gap-2 p-6 text-center text-sm text-white/45">
+        <ArcIconBadge icon={Crosshair} theme="nexus" size="sm" />
         Select a token for verdict and intel
       </div>
     );
@@ -208,8 +211,9 @@ export function NexusTokenDetail({ decision }: { decision: NexusDecision | null 
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-400/30 bg-gradient-to-r from-cyan-500/10 to-violet-500/10 px-4 py-3">
+      <div className="arc-glass-card arc-glass-card-nexus flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <div className="flex items-center gap-2">
+          <ArcIconBadge icon={Brain} theme="nexus" size="sm" />
           <Badge
             variant={decision.action === "BUY" ? "buy" : decision.action === "SELL" ? "sell" : "hold"}
           >
@@ -219,8 +223,8 @@ export function NexusTokenDetail({ decision }: { decision: NexusDecision | null 
             {decision.symbol} · {formatUsd(decision.priceUsd)}
           </span>
         </div>
-        <span className="text-xs font-medium text-white/75">
-          Confidence <span className="text-cyan-200">{decision.confidence}%</span>
+        <span className="arc-caption text-white/75">
+          Confidence <span className="text-emerald-200">{decision.confidence}%</span>
           <span className="mx-1.5 text-white/30">·</span>
           Risk <span className="text-amber-200">{decision.riskScore}/100</span>
         </span>
