@@ -10,7 +10,7 @@ export function ArcLivePulseCard() {
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.6, duration: 0.45 }}
-      className="arc-glass-card arc-live-pulse absolute right-[3%] top-[38%] z-20 hidden max-w-[220px] p-3 lg:block"
+      className="arc-glass-card arc-live-pulse absolute right-[2%] top-[16%] z-20 hidden max-w-[220px] p-3 xl:block"
     >
       <div className="flex items-center gap-3">
         <ArcIcon3d icon={Zap} theme="home" size="sm" />

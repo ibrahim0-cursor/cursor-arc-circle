@@ -4,8 +4,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArcToken3d } from "@/components/landing/arc-token-3d";
 import type { CryptoId } from "@/components/landing/arc-crypto-icons";
 
-const ORBIT_R = 168;
-const CYCLE = 5.8;
+const ORBIT_R = 132;
+const CYCLE = 5.2;
 
 type Props = {
   id: CryptoId;
@@ -33,7 +33,7 @@ export function ArcPortalTokenFlight({ id, angleDeg, delay }: Props) {
     );
   }
 
-  const half = 28;
+  const half = 32;
 
   return (
     <motion.div
@@ -41,19 +41,19 @@ export function ArcPortalTokenFlight({ id, angleDeg, delay }: Props) {
       data-token={id}
       initial={false}
       animate={{
-        x: [ox - half, (ox - half) * 0.22, -half, -half, (ox - half) * 0.22, ox - half],
-        y: [oy - half, (oy - half) * 0.22, -half, -half, (oy - half) * 0.22, oy - half],
-        scale: [1, 0.9, 0.05, 0.05, 0.9, 1],
-        rotateY: [0, 220, 520, 520, 760, 980],
-        rotateX: [14, 32, 58, 58, 20, 14],
-        opacity: [0, 1, 1, 0, 1, 0],
-        z: [0, 48, 96, 96, 48, 0],
+        x: [ox - half, (ox - half) * 0.18, -half, -half, (ox - half) * 0.18, ox - half],
+        y: [oy - half, (oy - half) * 0.18, -half, -half, (oy - half) * 0.18, oy - half],
+        scale: [1, 0.92, 0.08, 0.08, 0.92, 1],
+        rotateY: [0, 200, 480, 480, 700, 900],
+        rotateX: [12, 28, 50, 50, 18, 12],
+        opacity: [1, 1, 1, 0, 1, 1],
+        z: [0, 40, 80, 80, 40, 0],
       }}
       transition={{
         duration: CYCLE,
         delay,
         repeat: Infinity,
-        times: [0, 0.1, 0.44, 0.52, 0.6, 0.94, 1],
+        times: [0, 0.12, 0.4, 0.5, 0.58, 0.92, 1],
         ease: [
           [0.16, 1, 0.3, 1],
           [0.55, 0.06, 0.68, 0.53],

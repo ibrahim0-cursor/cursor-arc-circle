@@ -631,11 +631,19 @@ html.arc-fancy-pointer select {
 /* ——— Home AI portal (premium vortex + token flights) ——— */
 .arc-portal-hero {
   position: relative;
-  width: min(560px, 94vw);
-  height: min(480px, 58vh);
+  width: min(420px, 92vw);
+  height: min(420px, 52vh);
   margin: 0 auto;
   transform: translateZ(0);
   contain: layout style paint;
+}
+
+@media (min-width: 1024px) {
+  .arc-portal-hero {
+    width: min(440px, 100%);
+    height: min(460px, 56vh);
+    margin: 0;
+  }
 }
 
 .arc-portal-stage {
@@ -733,7 +741,7 @@ html.arc-fancy-pointer select {
   border-radius: 50%;
   background: rgba(34, 211, 238, 0.9);
   box-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
-  transform: rotate(var(--p-angle)) translateY(-168px);
+  transform: rotate(var(--p-angle)) translateY(-132px);
   animation: arc-portal-particle-in 2.8s ease-in infinite;
   animation-delay: var(--p-delay, 0s);
 }
@@ -826,10 +834,11 @@ html.arc-fancy-pointer select {
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 8;
+  z-index: 12;
   transform-style: preserve-3d;
   will-change: transform, opacity;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
 }
 
 .arc-portal-token-wrap[data-token="btc"] {
@@ -890,14 +899,20 @@ html.arc-fancy-pointer select {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.28) 0%, rgba(0, 0, 0, 0.35) 55%);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.25) 55%);
+  border: 2px solid rgba(255, 255, 255, 0.22);
   box-shadow:
     0 14px 32px rgba(0, 0, 0, 0.6),
-    inset 0 3px 6px rgba(255, 255, 255, 0.25),
+    inset 0 3px 6px rgba(255, 255, 255, 0.2),
     inset 0 -4px 10px rgba(0, 0, 0, 0.35);
   transform: translateZ(10px);
   overflow: hidden;
+}
+
+.arc-token-3d-logo {
+  position: relative;
+  z-index: 1;
+  border-radius: 50%;
 }
 
 .arc-token-3d-shine {
@@ -968,7 +983,7 @@ html.arc-fancy-pointer select {
 @keyframes arc-portal-particle-in {
   0% {
     opacity: 0;
-    transform: rotate(var(--p-angle)) translateY(-168px) scale(0.4);
+    transform: rotate(var(--p-angle)) translateY(-132px) scale(0.4);
   }
   25% {
     opacity: 1;
@@ -1070,8 +1085,74 @@ html.arc-fancy-pointer select {
 
 .arc-home-hero-shell {
   position: relative;
-  min-height: min(88vh, 920px);
-  padding-top: 2rem;
+  min-height: min(82vh, 880px);
+  padding-top: 1.5rem;
+}
+
+.arc-home-hero-grid {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .arc-home-hero-grid {
+    grid-template-columns: minmax(300px, 42%) 1fr;
+    gap: 2.5rem;
+    min-height: min(72vh, 640px);
+  }
+}
+
+.arc-home-hero-visual {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  justify-content: center;
+  min-height: min(380px, 48vh);
+}
+
+@media (min-width: 1024px) {
+  .arc-home-hero-visual {
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+  }
+}
+
+.arc-home-hero-copy {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .arc-home-hero-copy {
+    text-align: left;
+    padding-top: 2rem;
+  }
+}
+
+.arc-hero-bullets {
+  list-style: none;
+  padding: 0;
+}
+
+.arc-hero-bullets li {
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.arc-hero-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a78bfa, #22d3ee);
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

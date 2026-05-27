@@ -32,50 +32,63 @@ const metrics = [
 export function ArcEcosystemHero() {
   return (
     <section className="arc-home-hero-shell relative mx-auto max-w-[1680px] px-4 pb-10 sm:px-6">
-      <div className="pointer-events-none absolute inset-x-0 top-[4%] z-0 flex justify-center">
-        <ArcPortalHero />
+      <div className="arc-home-hero-grid">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          className="arc-home-hero-visual"
+        >
+          <ArcPortalHero />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.08 }}
+          className="arc-home-hero-copy"
+        >
+          <div className="mb-5 flex items-center gap-3 sm:justify-start">
+            <ArcIcon3d icon={Sparkles} theme="home" size="sm" />
+            <p className="arc-caption text-violet-300/85">ARC CIRCLE · Intelligence OS</p>
+          </div>
+
+          <h1 className="arc-display text-left text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+            <span className="block">Autonomous</span>
+            <span className="arc-gradient-text block">market intelligence</span>
+          </h1>
+
+          <p className="mt-5 max-w-xl text-left text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
+            Watch live assets route through the AI portal — scanned, scored, and released as institutional-grade signals for NEXUS and PRISM.
+          </p>
+
+          <ul className="arc-hero-bullets mt-6 max-w-lg space-y-2 text-left text-sm text-white/55">
+            <li>BTC · ETH · SOL · USDC · USDT orbit the core in real time</li>
+            <li>On-chain, social, and macro layers fused in one stack</li>
+            <li>Explainable AI — every route has a thesis</li>
+          </ul>
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link href="/nexus" className="w-full sm:w-auto">
+              <Button variant="default" size="lg" className="arc-btn-pill min-h-[54px] w-full gap-2 px-8 sm:w-auto">
+                <Zap className="h-5 w-5" strokeWidth={1.5} />
+                Launch NEXUS
+                <ArrowUpRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/prism" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="arc-btn-pill min-h-[54px] w-full gap-2 border-white/20 px-8 sm:w-auto">
+                <Radar className="h-5 w-5" strokeWidth={1.5} />
+                Open PRISM
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
       </div>
 
       <ArcLivePulseCard />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55 }}
-        className="relative z-10 mx-auto max-w-4xl pt-6 text-center sm:pt-10"
-      >
-        <div className="mb-5 flex items-center justify-center gap-3">
-          <ArcIcon3d icon={Sparkles} theme="home" size="sm" />
-          <p className="arc-caption text-violet-300/85">ARC CIRCLE · Intelligence OS</p>
-        </div>
-
-        <h1 className="arc-display text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
-          <span className="block">Autonomous</span>
-          <span className="arc-gradient-text block">market intelligence</span>
-        </h1>
-
-        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
-          Institutional AI for crypto and macro — tokens jump into the portal, processed live by AI, and route back out.
-        </p>
-
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link href="/nexus" className="w-full sm:w-auto">
-            <Button variant="default" size="lg" className="arc-btn-pill min-h-[54px] w-full gap-2 px-8 sm:w-auto">
-              <Zap className="h-5 w-5" strokeWidth={1.5} />
-              Launch NEXUS
-              <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/prism" className="w-full sm:w-auto">
-            <Button variant="outline" size="lg" className="arc-btn-pill min-h-[54px] w-full gap-2 border-white/20 px-8 sm:w-auto">
-              <Radar className="h-5 w-5" strokeWidth={1.5} />
-              Open PRISM
-            </Button>
-          </Link>
-        </div>
-      </motion.div>
-
-      <div className="relative z-10">
+      <div className="relative z-10 mt-6">
         <ArcGlassPreview />
       </div>
 

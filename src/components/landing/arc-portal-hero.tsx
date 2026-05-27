@@ -7,11 +7,11 @@ import type { CryptoId } from "@/components/landing/arc-crypto-icons";
 import { cn } from "@/lib/utils";
 
 const TOKENS: { id: CryptoId; angle: number; delay: number }[] = [
-  { id: "btc", angle: -90, delay: 0 },
-  { id: "eth", angle: -18, delay: 1.15 },
-  { id: "sol", angle: 54, delay: 2.3 },
-  { id: "usdc", angle: 126, delay: 3.45 },
-  { id: "usdt", angle: 198, delay: 4.6 },
+  { id: "btc", angle: -72, delay: 0 },
+  { id: "eth", angle: 0, delay: 1.04 },
+  { id: "sol", angle: 72, delay: 2.08 },
+  { id: "usdc", angle: 144, delay: 3.12 },
+  { id: "usdt", angle: 216, delay: 4.16 },
 ];
 
 const PARTICLES = Array.from({ length: 14 }, (_, i) => ({
