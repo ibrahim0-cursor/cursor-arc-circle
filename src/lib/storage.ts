@@ -12,6 +12,32 @@ export type ReasoningFactor = {
   weight: number;
 };
 
+export type TokenSocialSnapshot = {
+  lunarcrush?: {
+    topic?: string;
+    galaxyScore?: number;
+    altRank?: number;
+    sentiment?: number;
+    socialVolume24h?: number;
+    socialDominance?: number;
+    contributors?: number;
+    degraded?: boolean;
+    reason?: string;
+  };
+  farcaster?: {
+    castCount?: number;
+    topCast?: string;
+    author?: string;
+    degraded?: boolean;
+    reason?: string;
+  };
+  reddit?: {
+    postCount?: number;
+    topTitle?: string;
+    subreddit?: string;
+  };
+};
+
 export type TokenIntel = {
   marketCap?: number;
   fdv?: number;
@@ -28,6 +54,7 @@ export type TokenIntel = {
   sniperWallets?: string[];
   insiderCount?: number;
   technical?: TechnicalSnapshot;
+  social?: TokenSocialSnapshot;
 };
 
 export type TokenTx = {

@@ -2,6 +2,7 @@ import type { CryptoNewsItem } from "./crypto-news";
 import type { TrendingToken } from "./dexscreener";
 import { assessTokenScam } from "./scam-detection";
 import type { AgentSignal, TechnicalSnapshot, TokenIntel } from "./storage";
+import type { TokenSocialIntel } from "./social-intel";
 
 export type NexusResearchReport = {
   symbol: string;
@@ -23,8 +24,9 @@ export function buildResearchReport(input: {
   intel: TokenIntel;
   technical?: TechnicalSnapshot;
   news?: CryptoNewsItem[];
+  social?: TokenSocialIntel;
 }): NexusResearchReport {
-  const { token, agent, intel, technical, news = [] } = input;
+  const { token, agent, intel, technical, news = [], social } = input;
   const ta = technical ?? intel.technical;
   const liq = token.liquidityUsd;
   const vol = token.volume24h;
@@ -58,6 +60,17 @@ export function buildResearchReport(input: {
   if (risks.length === 0) risks.push("No major structural flags — still use stops; feed signal can flip on next refresh");
 
   const catalysts = news.slice(0, 4).map((n) => `${n.title}${n.source ? ` (${n.source})` : ""}`);
+  if (social?.lunarcrush?.galaxyScore) {
+    catalysts.unshift(
+      `LunarCrush Galaxy Score ${social.lunarcrush.galaxyScore}${social.lunarcrush.socialVolume24h ? ` · ${social.lunarcrush.socialVolume24h.toLocaleString()} social vol (24h)` : ""}`,
+    );
+  }
+  if (social?.reddit[0]) {
+    catalysts.push(`Reddit r/${social.reddit[0].subreddit}: ${social.reddit[0].title}`);
+  }
+  if (social?.farcaster[0]) {
+    catalysts.push(`Farcaster @${social.farcaster[0].authorUsername ?? "user"}: ${social.farcaster[0].text.slice(0, 120)}`);
+  }
   if (catalysts.length === 0) {
     catalysts.push("No symbol-specific headlines — watch macro and chain volume on DexScreener");
   }

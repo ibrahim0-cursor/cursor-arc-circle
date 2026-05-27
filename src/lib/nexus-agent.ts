@@ -12,6 +12,7 @@ import { fetchTokenByAddress } from "./dexscreener";
 import { getMacroRegime, type MacroRegime } from "./macro-regime";
 import { hasBirdeyeKey } from "./birdeye-client";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
+import type { TokenSocialIntel } from "./social-intel";
 
 
 function buildReasoningFactors(
@@ -172,6 +173,40 @@ function buildReasoningFactors(
       detail: `${intel.buy24h} buys vs ${intel.sell24h} sells (24h)`,
       impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
       weight: 16,
+    });
+  }
+
+  const lc = intel.social?.lunarcrush;
+  if (lc?.degraded) {
+    factors.push({
+      label: "Social (LunarCrush)",
+      detail: lc.reason ?? "Subscription required",
+      impact: "neutral",
+      weight: 4,
+    });
+  } else if (lc?.galaxyScore != null) {
+    factors.push({
+      label: "Social Galaxy Score",
+      detail: `LunarCrush ${lc.galaxyScore}${lc.sentiment != null ? ` · sentiment ${lc.sentiment}` : ""}`,
+      impact: lc.galaxyScore >= 65 ? "bullish" : lc.galaxyScore < 40 ? "bearish" : "neutral",
+      weight: lc.galaxyScore >= 65 ? 14 : 8,
+    });
+  }
+
+  const fc = intel.social?.farcaster;
+  if (fc?.topCast) {
+    factors.push({
+      label: "Farcaster Buzz",
+      detail: `@${fc.author ?? "user"}: ${fc.topCast.slice(0, 80)}`,
+      impact: "bullish",
+      weight: 10,
+    });
+  } else if (fc?.degraded && fc.reason) {
+    factors.push({
+      label: "Farcaster",
+      detail: fc.reason,
+      impact: "neutral",
+      weight: 3,
     });
   }
 
@@ -339,6 +374,7 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
             turnoverRatio: bundle.turnoverRatio,
             buySellRatio: bundle.buySellRatio,
             headlines: bundle.news,
+            social: bundle.social,
           }),
         },
       ],
@@ -433,7 +469,7 @@ async function analyzeTokenForMemoryScan(token: TrendingToken) {
   const macro = await getMacroRegime();
   let signal = heuristicDecision(fresh, intel, macro);
   signal = applyScamAndSecurity(fresh, intel, signal, security, scam);
-  return { token: { ...fresh, intel }, intel, signal, security, scam, news: bundle.news };
+  return { token: { ...fresh, intel }, intel, signal, security, scam, news: bundle.news, social: bundle.social };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -467,6 +503,9 @@ export type AlphaOpportunity = {
   reasoning: string;
   whyAction: string;
   newsHeadlines: string[];
+  socialBuzz?: string;
+  galaxyScore?: number;
+  socialDegraded?: string;
   liquidityUsd: number;
   volume24h: number;
 };
@@ -475,6 +514,7 @@ function scoreOpportunity(
   token: TrendingToken,
   signal: AgentSignal,
   intel: TokenIntel,
+  social?: TokenSocialIntel,
 ): number {
   let score = signal.confidence;
   if (signal.action === "BUY") score += 22;
@@ -485,6 +525,8 @@ function scoreOpportunity(
   else if (token.liquidityUsd > 50_000) score += 6;
   if (token.change24h > 5 && token.change24h < 80) score += 8;
   if ((token.txns24h?.buys ?? 0) > (token.txns24h?.sells ?? 1)) score += 6;
+  if (social?.lunarcrush?.galaxyScore && social.lunarcrush.galaxyScore >= 60) score += 8;
+  if (social?.hasData) score += 4;
   score -= Math.min(40, signal.riskScore * 0.35);
   return Math.round(Math.min(100, Math.max(0, score)));
 }
@@ -584,7 +626,12 @@ export async function runAlphaScan(
   const analyzed = await mapWithConcurrency(tokens, analyzeTokenForMemoryScan, 3);
 
   const opportunities: AlphaOpportunity[] = analyzed
-    .map(({ token, intel, signal, news }) => ({
+    .map(({ token, intel, signal, news, social }) => {
+      const socialHeadline =
+        social.farcaster[0]?.text ??
+        social.reddit[0]?.title ??
+        social.lunarcrushPosts[0]?.title;
+      return {
       rank: 0,
       symbol: token.symbol,
       name: token.name,
@@ -594,13 +641,20 @@ export async function runAlphaScan(
       change24h: token.change24h,
       action: signal.action,
       confidence: signal.confidence,
-      opportunityScore: scoreOpportunity(token, signal, intel),
+      opportunityScore: scoreOpportunity(token, signal, intel, social),
       reasoning: signal.reasoning,
       whyAction: signal.whyAction,
       newsHeadlines: news.slice(0, 3).map((n) => n.title),
+      socialBuzz: socialHeadline,
+      galaxyScore: social.lunarcrush?.galaxyScore,
+      socialDegraded:
+        social.status.lunarcrush === "402"
+          ? "Social: LunarCrush subscription required"
+          : social.degradedMessage,
       liquidityUsd: token.liquidityUsd,
       volume24h: token.volume24h,
-    }))
+    };
+    })
     .sort((a, b) => b.opportunityScore - a.opportunityScore)
     .map((row, i) => ({ ...row, rank: i + 1 }));
 
@@ -608,7 +662,7 @@ export async function runAlphaScan(
     opportunities,
     count: opportunities.length,
     scanMode: "alpha" as const,
-    criteria: "alpha-30|news|meme-news|birdeye|dexscreener|ta|macro|scam-filter",
+    criteria: "alpha-30|news|meme-news|social|birdeye|dexscreener|ta|macro|scam-filter",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

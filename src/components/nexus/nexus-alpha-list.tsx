@@ -99,6 +99,19 @@ export function NexusAlphaList({
                   {row.newsHeadlines[0]}
                 </p>
               )}
+              {row.socialDegraded && !row.socialBuzz && (
+                <p className="mt-1 flex items-start gap-1 text-[10px] text-amber-200/80 line-clamp-1">
+                  <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
+                  {row.socialDegraded}
+                </p>
+              )}
+              {row.socialBuzz && (
+                <p className="mt-1 flex items-start gap-1 text-[10px] text-fuchsia-200/75 line-clamp-1">
+                  <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
+                  {row.galaxyScore != null ? `Galaxy ${row.galaxyScore} · ` : ""}
+                  {row.socialBuzz}
+                </p>
+              )}
             </button>
           );
         })}

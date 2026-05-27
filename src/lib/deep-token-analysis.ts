@@ -6,10 +6,12 @@ import { fetchMergedTokenDetection } from "./token-detection";
 import { fetchCryptoNewsHeadlines, type CryptoNewsItem } from "./crypto-news";
 import type { TokenIntel } from "./storage";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
+import { fetchTokenSocialIntel, tokenSocialFromIntel, type TokenSocialIntel } from "./social-intel";
 
 export type DeepAnalysisBundle = {
   intel: TokenIntel;
   news: CryptoNewsItem[];
+  social: TokenSocialIntel;
   turnoverRatio: number;
   buySellRatio: number;
 };
@@ -17,7 +19,7 @@ export type DeepAnalysisBundle = {
 export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAnalysisBundle> {
   const local = buildLocalTokenIntel(token);
 
-  const [paprika, detection, news] = await Promise.all([
+  const [paprika, detection, news, social] = await Promise.all([
     fetchDexPaprikaToken(token.chainId, token.tokenAddress),
     fetchMergedTokenDetection(token.tokenAddress, token.chainId, {
       buys: token.txns24h?.buys ?? 0,
@@ -35,6 +37,7 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
         return true;
       }).slice(0, 6);
     }),
+    fetchTokenSocialIntel(token.symbol, token.name),
   ]);
 
   const paprikaIntel: Partial<TokenIntel> = paprika ? paprikaIntelFromToken(paprika) : {};
@@ -72,7 +75,7 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
   if (token.fdv) intel = { ...intel, fdv: token.fdv };
 
   const ta = await resolveTokenTechnical(token);
-  intel = { ...intel, technical: technicalToIntel(ta) };
+  intel = { ...intel, technical: technicalToIntel(ta), social: tokenSocialFromIntel(social) };
 
   const turnoverRatio =
     token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
@@ -80,5 +83,5 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
     (token.txns24h?.buys ?? intel.buy24h ?? 1) /
     Math.max(token.txns24h?.sells ?? intel.sell24h ?? 1, 1);
 
-  return { intel, news, turnoverRatio, buySellRatio };
+  return { intel, news, social, turnoverRatio, buySellRatio };
 }

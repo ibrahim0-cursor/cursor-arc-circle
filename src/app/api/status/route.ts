@@ -4,14 +4,20 @@ import { getCircleStatus } from "@/lib/circle";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { probeSupabaseTables } from "@/lib/supabase-health";
 import { hasBirdeyeKey, birdeyeFetchJson } from "@/lib/birdeye-client";
+import { probeLunarCrush, hasLunarCrushKey } from "@/lib/lunarcrush";
+import { probeNeynar, hasNeynarKey } from "@/lib/neynar";
+import { probeReddit, hasRedditCredentials } from "@/lib/reddit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const [arc, circle, supabaseHealth] = await Promise.all([
+  const [arc, circle, supabaseHealth, lunarcrushProbe, neynarProbe, redditProbe] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
     probeSupabaseTables(),
+    probeLunarCrush(),
+    probeNeynar(),
+    probeReddit(),
   ]);
   const demoPortfolio = supabaseHealth.demoPortfolio;
 
@@ -46,6 +52,15 @@ export async function GET() {
     groq: Boolean(process.env.GROQ_API_KEY?.trim()),
     dexpaprika: true,
     cryptoNews: true,
+    lunarcrush: hasLunarCrushKey(),
+    lunarcrushProbe,
+    neynar: hasNeynarKey(),
+    neynarProbe: {
+      ...neynarProbe,
+      searchEnabled: process.env.NEYNAR_USE_SEARCH?.trim().toLowerCase() === "true",
+    },
+    reddit: hasRedditCredentials(),
+    redditProbe,
     mode:
       process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
         ? "ai"

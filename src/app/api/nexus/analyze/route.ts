@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       intel: intelWithTa,
       technical: ta,
       news: bundle.news,
+      social: bundle.social,
     });
 
     const shouldSave = body.save === true || (body.deep === true && body.save !== false);
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
         intel: decision.intel,
         research,
         news: bundle.news.slice(0, 4),
+        social: bundle.social,
         security,
         saved: true,
         mode: body.deep ? "deep" : "quick",
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
       token,
       intel: intelWithTa,
       news: bundle.news.slice(0, 4),
+      social: bundle.social,
       agent,
       research,
       security,

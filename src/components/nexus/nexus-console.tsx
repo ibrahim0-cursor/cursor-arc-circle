@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MeshBackground } from "@/components/layout/mesh-background";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
+import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
 import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
 import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
@@ -24,6 +25,7 @@ import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { NexusAbSwap } from "@/components/nexus/nexus-ab-swap";
 import { filterTradableTokens } from "@/lib/token-filters";
 import type { NexusResearchReport } from "@/lib/nexus-research";
+import type { TokenSocialIntel } from "@/lib/social-intel";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
 import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -122,6 +124,7 @@ export function NexusConsole() {
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
   const [heroCompact, setHeroCompact] = useState(true);
   const [deepResearch, setDeepResearch] = useState<NexusResearchReport | null>(null);
+  const [socialIntel, setSocialIntel] = useState<TokenSocialIntel | null>(null);
   const isMobile = useIsMobile();
 
   const loadSaved = useCallback(async () => {
@@ -174,6 +177,7 @@ export function NexusConsole() {
     (token: TrendingMarketToken, openChart = true) => {
       setSelectedToken(token);
       setDeepResearch(null);
+      setSocialIntel(null);
       if (openChart) openChartView();
     },
     [openChartView],
@@ -393,6 +397,7 @@ export function NexusConsole() {
 
       const agent = data.agent ?? data;
       if (data.research) setDeepResearch(data.research as NexusResearchReport);
+      if (data.social) setSocialIntel(data.social as TokenSocialIntel);
       setSelectedToken((prev) =>
         prev
           ? {
@@ -507,6 +512,7 @@ export function NexusConsole() {
                 setActiveTab("saved");
                 setSelectedSavedId(decision.id);
                 setDeepResearch(null);
+                setSocialIntel(null);
                 handleTokenSelect(
                   {
                     symbol: decision.symbol,
@@ -584,6 +590,7 @@ export function NexusConsole() {
       {deepResearch && (
         <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
       )}
+      {socialIntel && <NexusSocialIntelPanel social={socialIntel} />}
       {displayDecision && !deepResearch && <NexusTokenDetail decision={displayDecision} />}
     </div>
   );

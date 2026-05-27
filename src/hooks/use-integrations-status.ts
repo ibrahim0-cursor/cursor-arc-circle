@@ -7,6 +7,12 @@ export type IntegrationsStatus = {
   birdeyeProbe: { ok: boolean; error?: string };
   openai: boolean;
   mode: string;
+  lunarcrush?: boolean;
+  lunarcrushProbe?: { ok: boolean; configured?: boolean; paidRequired?: boolean; error?: string };
+  neynar?: boolean;
+  neynarProbe?: { ok: boolean; configured?: boolean; error?: string; hubVersion?: string };
+  reddit?: boolean;
+  redditProbe?: { ok: boolean; configured?: boolean; error?: string };
 };
 
 export function useIntegrationsStatus() {
