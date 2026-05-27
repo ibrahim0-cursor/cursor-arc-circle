@@ -6,7 +6,7 @@ import { Globe2, Loader2, Radar, Sparkles, Target, TrendingDown, TrendingUp } fr
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { MeshBackground } from "@/components/layout/mesh-background";
+import { ArcBackground } from "@/components/layout/arc-background";
 import { formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
 import type { CommunityPulse } from "@/lib/community-pulse";
@@ -92,8 +92,8 @@ export function PrismConsole() {
   const latest = predictions[0];
 
   return (
-    <div className="relative min-h-screen text-white" data-prism-page>
-      <MeshBackground variant="prism" />
+    <div className="relative min-h-screen text-white" data-prism-page data-arc-theme="prism">
+      <ArcBackground theme="prism" />
       <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10 sm:pb-12">
         <div className="mb-4 sm:mb-8">
           <Badge variant="prism">PRISM</Badge>

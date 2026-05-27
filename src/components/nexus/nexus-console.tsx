@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { MeshBackground } from "@/components/layout/mesh-background";
+import { ArcBackground } from "@/components/layout/arc-background";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
@@ -247,18 +247,43 @@ export function NexusConsole() {
     });
   }, []);
 
+  async function payOptionalArcFee(action: string, payload: string): Promise<string | undefined> {
+    try {
+      await ensureArcNetwork();
+      const fee = await payArcFee(action, payload);
+      setLastArcFeeTx(fee.txHash);
+      return fee.txHash;
+    } catch (err) {
+      const msg = (err instanceof Error ? err.message : "").toLowerCase();
+      if (
+        msg.includes("reject") ||
+        msg.includes("denied") ||
+        msg.includes("cancel") ||
+        msg.includes("insufficient") ||
+        msg.includes("failed on-chain")
+      ) {
+        toast({
+          type: "info",
+          title: "Arc fee skipped",
+          message: "Scan continues without on-chain fee — use Arc testnet for full settlement.",
+          durationMs: 10_000,
+        });
+        return undefined;
+      }
+      throw err;
+    }
+  }
+
   async function runMemoryScan() {
     setScanning(true);
     try {
       if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
-      await ensureArcNetwork();
-      const fee = await payArcFee("SCAN", `memory-${Date.now()}`);
-      setLastArcFeeTx(fee.txHash);
+      const arcFeeTxHash = await payOptionalArcFee("SCAN", `memory-${Date.now()}`);
 
       const res = await fetch("/api/nexus/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "memory", walletChainId, arcFeeTxHash: fee.txHash }),
+        body: JSON.stringify({ mode: "memory", walletChainId, arcFeeTxHash }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
@@ -301,9 +326,7 @@ export function NexusConsole() {
     const timer = window.setTimeout(() => controller.abort(), 110_000);
     try {
       if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
-      await ensureArcNetwork();
-      const fee = await payArcFee("ALPHA", `alpha-${Date.now()}`);
-      setLastArcFeeTx(fee.txHash);
+      const arcFeeTxHash = await payOptionalArcFee("ALPHA", `alpha-${Date.now()}`);
 
       const res = await fetch("/api/nexus/scan", {
         method: "POST",
@@ -311,7 +334,7 @@ export function NexusConsole() {
         body: JSON.stringify({
           mode: "alpha",
           walletChainId,
-          arcFeeTxHash: fee.txHash,
+          arcFeeTxHash,
           chainId: selectedToken?.chainId,
           tokenAddress: selectedToken?.tokenAddress,
         }),
@@ -660,8 +683,8 @@ export function NexusConsole() {
 
   return (
     <NexusAgentWalletProvider>
-    <div className="relative min-h-screen text-white" data-nexus-page data-nexus-easy-mode>
-      <MeshBackground variant="nexus" />
+    <div className="relative min-h-screen text-white" data-nexus-page data-nexus-easy-mode data-arc-theme="nexus">
+      <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
         <div className="mb-3 hidden overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-4 sm:mb-8 sm:block sm:p-8">

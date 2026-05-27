@@ -32,6 +32,8 @@ export type IntegrationsStatus = {
   stocktwitsProbe?: { ok: boolean; configured?: boolean; error?: string };
   rapidApiTwitter?: boolean;
   rapidTwitterProbe?: { ok: boolean; configured?: boolean; error?: string };
+  socialData?: boolean;
+  socialDataProbe?: { ok: boolean; configured?: boolean; error?: string };
 };
 
 export function useIntegrationsStatus() {

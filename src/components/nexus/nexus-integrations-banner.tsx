@@ -115,7 +115,7 @@ export function NexusIntegrationsBanner() {
             {" · "}
             ST {status.stocktwitsProbe?.ok ? "ok" : status.stocktwits ? "…" : "off"}
             {" · "}
-            X {status.rapidTwitterProbe?.ok ? "ok" : status.rapidApiTwitter ? "…" : "off"}
+            X {status.socialDataProbe?.ok ? "SD ok" : status.socialData ? "SD …" : status.rapidTwitterProbe?.ok ? "ok" : "off"}
             {" · "}
             GitHub {status.github ? "on" : "off"}. Reddit when approved.
           </>

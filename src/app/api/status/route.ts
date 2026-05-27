@@ -16,6 +16,7 @@ import { hasTelegramBotToken, probeTelegram } from "@/lib/telegram-bot";
 import { probeDiscord, hasDiscordBotToken, hasDiscordOAuthClient } from "@/lib/discord-bot";
 import { hasStocktwitsCredentials, probeStocktwits } from "@/lib/stocktwits";
 import { hasRapidApiTwitter, probeRapidApiTwitter } from "@/lib/rapidapi-twitter";
+import { hasSocialDataKey, probeSocialData } from "@/lib/social-data-api";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export async function GET() {
     discordProbe,
     stocktwitsProbe,
     rapidTwitterProbe,
+    socialDataProbe,
   ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
@@ -63,6 +65,7 @@ export async function GET() {
     probeDiscord(),
     hasStocktwitsCredentials() ? probeStocktwits() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
     hasRapidApiTwitter() ? probeRapidApiTwitter() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
+    hasSocialDataKey() ? probeSocialData() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
   ]);
   const demoPortfolio = supabaseHealth.demoPortfolio;
 
@@ -130,6 +133,8 @@ export async function GET() {
     stocktwitsProbe,
     rapidApiTwitter: hasRapidApiTwitter(),
     rapidTwitterProbe,
+    socialData: hasSocialDataKey(),
+    socialDataProbe,
     alphaLayers:
       "narrative|telegram|discord|stocktwits|rapidapi-x|reddit|github|on-chain",
     mode:

@@ -17,15 +17,15 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050508]/70 backdrop-blur-2xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--arc-border)] bg-[var(--arc-bg)]/92">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
         <Link href="/" className="group flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-[0_0_30px_rgba(34,211,238,0.15)]">
-            <Sparkles className="h-5 w-5 text-cyan-300" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--arc-radius-md)] border border-emerald-500/20 bg-emerald-500/8">
+            <Sparkles className="h-5 w-5 text-emerald-400/90" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-[0.24em] text-white/90">ARC CIRCLE</p>
-            <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Agent Intelligence Suite</p>
+            <p className="text-sm font-semibold tracking-[0.22em] text-white/92">ARC CIRCLE</p>
+            <p className="arc-caption text-[10px]">Intelligence OS</p>
           </div>
         </Link>
 

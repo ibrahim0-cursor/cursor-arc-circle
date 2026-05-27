@@ -1,0 +1,134 @@
+/* ARC CIRCLE — proprietary intelligence OS design system */
+
+:root {
+  --arc-bg: #060608;
+  --arc-bg-elevated: #0c0d10;
+  --arc-bg-panel: #101114;
+  --arc-border: rgba(255, 255, 255, 0.07);
+  --arc-border-strong: rgba(255, 255, 255, 0.12);
+  --arc-text: #f2f4f8;
+  --arc-text-muted: rgba(242, 244, 248, 0.58);
+  --arc-text-dim: rgba(242, 244, 248, 0.38);
+
+  /* NEXUS — financial intelligence terminal */
+  --nexus-accent: #10b981;
+  --nexus-accent-dim: rgba(16, 185, 129, 0.15);
+  --nexus-cyan: #22d3ee;
+  --nexus-teal: #0d9488;
+  --nexus-surface: #080a0c;
+
+  /* PRISM — geopolitical command */
+  --prism-navy: #0a0e1a;
+  --prism-amber: #d97706;
+  --prism-amber-dim: rgba(217, 119, 6, 0.12);
+  --prism-radar: #b45309;
+  --prism-red-muted: rgba(185, 28, 28, 0.35);
+
+  --arc-radius-sm: 10px;
+  --arc-radius-md: 14px;
+  --arc-radius-lg: 18px;
+  --arc-motion: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-arc-theme="home"] {
+  --arc-accent: var(--nexus-cyan);
+  --arc-accent-secondary: #6366f1;
+  --arc-surface: var(--arc-bg);
+}
+
+[data-arc-theme="nexus"] {
+  --arc-accent: var(--nexus-accent);
+  --arc-accent-secondary: var(--nexus-cyan);
+  --arc-surface: var(--nexus-surface);
+}
+
+[data-arc-theme="prism"] {
+  --arc-accent: var(--prism-amber);
+  --arc-accent-secondary: #7c3aed;
+  --arc-surface: var(--prism-navy);
+}
+
+/* Matte panels — minimal glass */
+.arc-panel {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid var(--arc-border);
+  border-radius: var(--arc-radius-lg);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.arc-panel-nexus {
+  border-color: rgba(16, 185, 129, 0.18);
+  background: linear-gradient(165deg, rgba(16, 185, 129, 0.06) 0%, rgba(8, 10, 12, 0.95) 55%);
+}
+
+.arc-panel-prism {
+  border-color: rgba(217, 119, 6, 0.2);
+  background: linear-gradient(165deg, rgba(217, 119, 6, 0.05) 0%, rgba(10, 14, 26, 0.96) 50%);
+}
+
+.arc-caption {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--arc-text-dim);
+}
+
+.arc-pulse-line {
+  animation: arc-pulse-scan 2.8s ease-in-out infinite;
+}
+
+@keyframes arc-pulse-scan {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes arc-flow {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.arc-scan-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 60%
+  );
+  animation: arc-flow 4s linear infinite;
+  pointer-events: none;
+}
+
+.arc-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent);
+}
+
+.arc-hover-lift {
+  transition:
+    transform var(--arc-motion),
+    border-color var(--arc-motion),
+    box-shadow var(--arc-motion);
+}
+
+.arc-hover-lift:hover {
+  transform: translateY(-1px);
+  border-color: var(--arc-border-strong);
+}

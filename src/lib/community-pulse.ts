@@ -8,7 +8,8 @@ import { fetchTokenSocialIntel, type TokenSocialIntel } from "./social-intel";
 import { fetchTelegramBuzz } from "./telegram-bot";
 import { fetchDiscordBuzz } from "./discord-bot";
 import { fetchStocktwitsBuzz } from "./stocktwits";
-import { fetchRapidApiTwitterBuzz } from "./rapidapi-twitter";
+import { fetchRapidApiTwitterBuzz, hasRapidApiTwitter } from "./rapidapi-twitter";
+import { hasSocialDataKey, searchSocialDataTweets } from "./social-data-api";
 
 export type CommunityPulseItem = {
   kind: "news" | "meme" | "reddit" | "telegram" | "discord" | "stocktwits" | "twitter";
@@ -57,6 +58,14 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
   const key = topic.replace(/^\$/, "").trim() || "crypto";
   const memeQuery = key.length <= 6 ? `${key} meme` : `${key.split(/\s+/)[0]} meme crypto`;
 
+  const twitterPromise = hasSocialDataKey()
+    ? searchSocialDataTweets(key, 5)
+    : hasRapidApiTwitter()
+      ? fetchRapidApiTwitterBuzz(key, 4).then((rows) =>
+          rows.map((r) => ({ id: r.link ?? r.title, text: r.title, author: r.author, url: r.link })),
+        )
+      : Promise.resolve([]);
+
   const [news, meme, social, telegram, discord, stocktwits, twitter] = await Promise.all([
     fetchCryptoNewsHeadlines(key, 6),
     fetchCryptoNewsHeadlines(memeQuery, 5),
@@ -64,7 +73,7 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
     fetchTelegramBuzz(key, name),
     fetchDiscordBuzz(key),
     fetchStocktwitsBuzz(key),
-    fetchRapidApiTwitterBuzz(key, 4),
+    twitterPromise,
   ]);
 
   const items = dedupeItems([
@@ -98,9 +107,9 @@ export async function fetchCommunityPulse(topic: string, name?: string): Promise
     })),
     ...twitter.map((tw) => ({
       kind: "twitter" as const,
-      title: tw.title,
-      source: tw.author ? `X @${tw.author}` : "X (RapidAPI)",
-      link: tw.link,
+      title: tw.text,
+      source: tw.author ? `X @${tw.author}` : hasSocialDataKey() ? "X (Social Data)" : "X",
+      link: tw.url,
     })),
   ]).slice(0, 16);
 
@@ -157,11 +166,19 @@ export async function fetchMacroCommunityPulse(eventLabel: string, query: string
     ? await fetchTokenSocialIntel(sym)
     : null;
 
+  const twitterMacro = hasSocialDataKey()
+    ? searchSocialDataTweets(sym, 4)
+    : hasRapidApiTwitter()
+      ? fetchRapidApiTwitterBuzz(sym, 3).then((rows) =>
+          rows.map((r) => ({ id: r.link ?? r.title, text: r.title, author: r.author, url: r.link })),
+        )
+      : Promise.resolve([]);
+
   const [telegram, discord, stocktwits, twitter] = await Promise.all([
     fetchTelegramBuzz(sym),
     fetchDiscordBuzz(sym),
     fetchStocktwitsBuzz(sym),
-    fetchRapidApiTwitterBuzz(sym, 3),
+    twitterMacro,
   ]);
 
   const items = dedupeItems([
@@ -196,9 +213,9 @@ export async function fetchMacroCommunityPulse(eventLabel: string, query: string
     })),
     ...twitter.map((tw) => ({
       kind: "twitter" as const,
-      title: tw.title,
-      source: "X",
-      link: tw.link,
+      title: tw.text,
+      source: tw.author ? `X @${tw.author}` : "X",
+      link: tw.url,
     })),
   ]).slice(0, 16);
 
