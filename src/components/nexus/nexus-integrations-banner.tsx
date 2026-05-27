@@ -20,6 +20,9 @@ export function NexusIntegrationsBanner() {
   const birdeyeOk = status.birdeye && status.birdeyeProbe.ok;
   const birdeyeKeyMissing = !status.birdeye;
   const birdeyeKeyBad = status.birdeye && !status.birdeyeProbe.ok;
+  const birdeyeQuota =
+    birdeyeKeyBad &&
+    /quota|compute units|usage limit|rate limit/i.test(status.birdeyeProbe.error ?? "");
 
   if (birdeyeOk) {
     return (
@@ -39,7 +42,7 @@ export function NexusIntegrationsBanner() {
   return (
     <div
       className={`rounded-xl border px-3 py-3 ${
-        birdeyeKeyMissing
+        birdeyeKeyMissing || birdeyeQuota
           ? "border-amber-400/35 bg-amber-500/[0.1]"
           : "border-rose-400/30 bg-rose-500/[0.08]"
       }`}
@@ -47,7 +50,7 @@ export function NexusIntegrationsBanner() {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex gap-2">
           <AlertCircle
-            className={`mt-0.5 h-5 w-5 shrink-0 ${birdeyeKeyMissing ? "text-amber-300" : "text-rose-300"}`}
+            className={`mt-0.5 h-5 w-5 shrink-0 ${birdeyeKeyMissing || birdeyeQuota ? "text-amber-300" : "text-rose-300"}`}
           />
           <div className="space-y-1 text-sm">
             {birdeyeKeyMissing ? (
@@ -69,11 +72,20 @@ export function NexusIntegrationsBanner() {
                   </a>
                 </p>
               </>
+            ) : birdeyeQuota ? (
+              <>
+                <p className="font-semibold text-amber-50">Whale data temporarily limited</p>
+                <p className="leading-relaxed text-amber-100/85">
+                  {status.birdeyeProbe.error ??
+                    "Birdeye quota reached — scans still run on live market and signal data."}
+                </p>
+              </>
             ) : (
               <>
-                <p className="font-semibold text-rose-50">Birdeye key present but API call failed</p>
+                <p className="font-semibold text-rose-50">Market data key needs attention</p>
                 <p className="leading-relaxed text-rose-100/85">
-                  {status.birdeyeProbe.error ?? "Check key validity or rate limits."}
+                  {status.birdeyeProbe.error ??
+                    "Update BIRDEYE_API_KEY in Vercel → Environment Variables, then redeploy."}
                 </p>
               </>
             )}

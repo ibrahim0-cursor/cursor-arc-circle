@@ -92,16 +92,33 @@ export async function probeBirdeyeHealth(): Promise<{ ok: boolean; error?: strin
     "arbitrum",
   );
   const hasOverview = Boolean(probe.data?.data?.symbol);
+  const err = probe.error ?? "";
+  const quotaHit =
+    probe.rateLimited ||
+    /compute units|usage limit|rate limit/i.test(err) ||
+    probe.status === 429;
+  const unauthorized =
+    probe.status === 401 || /unauthorized|invalid api key|forbidden/i.test(err);
+
   const result =
     probe.ok && hasOverview
       ? { ok: true }
-      : {
-          ok: false,
-          error:
-            probe.rateLimited || probe.error?.toLowerCase().includes("compute units")
-              ? "Compute units limit — scans use Dex/GMGN until quota resets"
-              : probe.error ?? (probe.ok ? "empty response" : `HTTP ${probe.status}`),
-        };
+      : quotaHit
+        ? {
+            ok: false,
+            error:
+              "API quota reached — Alpha Scan still runs on market + signal data until Birdeye resets.",
+          }
+        : unauthorized
+          ? {
+              ok: false,
+              error:
+                "Invalid or expired API key — update BIRDEYE_API_KEY in Vercel and redeploy.",
+            }
+          : {
+              ok: false,
+              error: err || (probe.ok ? "empty response" : `HTTP ${probe.status}`),
+            };
   probeCache = { at: Date.now(), result };
   return result;
 }
