@@ -10,7 +10,8 @@
     "lint": "eslint",
     "health": "node scripts/health-check.mjs",
     "health:local": "node scripts/health-check.mjs http://localhost:3000",
-    "finish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/complete-pending.ps1"
+    "finish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/complete-pending.ps1",
+    "setup:portfolio": "node scripts/apply-demo-portfolios.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
@@ -39,6 +40,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "pg": "^8.21.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
