@@ -23,10 +23,18 @@ async function main() {
         : data.demoPortfolio?.error ?? "not verified"
     }`,
   );
+  if (data.supabaseTables?.length) {
+    const missing = data.supabaseTables.filter((t) => !t.ok).map((t) => t.table);
+    console.log(
+      `Tables:     ${
+        data.supabaseAllTablesOk ? "all ok" : `missing: ${missing.join(", ")}`
+      }`,
+    );
+  }
   console.log(`Birdeye:    ${data.birdeyeProbe?.ok ? "ok" : data.birdeyeProbe?.error ?? "n/a"}`);
   console.log(`AI mode:    ${data.mode} (${data.aiProvider})`);
 
-  if (!data.demoPortfolio?.tableOk && data.supabase) {
+  if ((!data.demoPortfolio?.tableOk || data.supabaseAllTablesOk === false) && data.supabase) {
     console.log("\n→ Run supabase/schema.sql in your Supabase SQL Editor, then redeploy.\n");
     process.exitCode = 1;
   }

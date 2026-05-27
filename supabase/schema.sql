@@ -18,6 +18,10 @@ create index if not exists prism_predictions_created_at_idx on prism_predictions
 alter table nexus_decisions enable row level security;
 alter table prism_predictions enable row level security;
 
+drop policy if exists "Allow public read nexus" on nexus_decisions;
+drop policy if exists "Allow public insert nexus" on nexus_decisions;
+drop policy if exists "Allow public read prism" on prism_predictions;
+drop policy if exists "Allow public insert prism" on prism_predictions;
 create policy "Allow public read nexus" on nexus_decisions for select using (true);
 create policy "Allow public insert nexus" on nexus_decisions for insert with check (true);
 create policy "Allow public read prism" on prism_predictions for select using (true);
@@ -35,6 +39,9 @@ create index if not exists demo_portfolios_updated_idx on demo_portfolios (updat
 
 alter table demo_portfolios enable row level security;
 
+drop policy if exists "Allow public read demo_portfolios" on demo_portfolios;
+drop policy if exists "Allow public insert demo_portfolios" on demo_portfolios;
+drop policy if exists "Allow public update demo_portfolios" on demo_portfolios;
 create policy "Allow public read demo_portfolios" on demo_portfolios for select using (true);
 create policy "Allow public insert demo_portfolios" on demo_portfolios for insert with check (true);
 create policy "Allow public update demo_portfolios" on demo_portfolios for update using (true) with check (true);
@@ -47,6 +54,9 @@ create table if not exists agent_vault_ledgers (
 );
 
 alter table agent_vault_ledgers enable row level security;
+drop policy if exists "Allow public read agent_vault_ledgers" on agent_vault_ledgers;
+drop policy if exists "Allow public insert agent_vault_ledgers" on agent_vault_ledgers;
+drop policy if exists "Allow public update agent_vault_ledgers" on agent_vault_ledgers;
 create policy "Allow public read agent_vault_ledgers" on agent_vault_ledgers for select using (true);
 create policy "Allow public insert agent_vault_ledgers" on agent_vault_ledgers for insert with check (true);
 create policy "Allow public update agent_vault_ledgers" on agent_vault_ledgers for update using (true) with check (true);
@@ -59,6 +69,9 @@ create table if not exists agent_vault_meta (
 );
 
 alter table agent_vault_meta enable row level security;
+drop policy if exists "Allow public read agent_vault_meta" on agent_vault_meta;
+drop policy if exists "Allow public insert agent_vault_meta" on agent_vault_meta;
+drop policy if exists "Allow public update agent_vault_meta" on agent_vault_meta;
 create policy "Allow public read agent_vault_meta" on agent_vault_meta for select using (true);
 create policy "Allow public insert agent_vault_meta" on agent_vault_meta for insert with check (true);
 create policy "Allow public update agent_vault_meta" on agent_vault_meta for update using (true) with check (true);

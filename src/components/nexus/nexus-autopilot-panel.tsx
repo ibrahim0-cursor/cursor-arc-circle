@@ -216,6 +216,7 @@ export function NexusAutopilotPanel({
             chainId: t.chainId,
             tokenAddress: t.tokenAddress,
             deep: false,
+            save: true,
           }),
         });
         const analyzeJson = await analyzeRes.json();
@@ -434,6 +435,21 @@ export function NexusAutopilotPanel({
       ) : (
         <>
           <NexusExecutionPanel compact />
+
+          {!hasDeposit && (
+            <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-100">
+              <strong className="text-amber-50">Deposit required.</strong> Send at least ~$
+              {requiredUsdc.toFixed(2)} USDC on Arc Testnet to the agent vault (Execution tab), then Sync
+              deposits. Balance now: ${agentUsdc.toFixed(2)}.
+            </div>
+          )}
+
+          {lastReasoning && (
+            <p className="rounded-xl border border-cyan-400/20 bg-cyan-500/5 px-3 py-2 text-xs leading-relaxed text-cyan-100/90">
+              <Bot className="mr-1 inline h-3.5 w-3.5" />
+              {lastReasoning}
+            </p>
+          )}
 
           <p className="nexus-caption flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />

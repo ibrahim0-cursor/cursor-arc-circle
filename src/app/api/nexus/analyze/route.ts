@@ -3,7 +3,7 @@ import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { analyzeTokenSignal, buildDecision } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
 import { scoreTokenSecurity } from "@/lib/token-security";
-import { computeTechnicalAnalysis, normalizePriceChanges } from "@/lib/technical-analysis";
+import { resolveTokenTechnical, technicalToIntel } from "@/lib/market-ta";
 import { buildResearchReport } from "@/lib/nexus-research";
 import { addNexusDecision } from "@/lib/storage";
 
@@ -30,26 +30,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token not found on DexScreener" }, { status: 404 });
     }
 
-    const ta = computeTechnicalAnalysis(
-      token.priceUsd,
-      normalizePriceChanges(token.priceChange, token.change24h),
-      token.volume24h,
-      token.liquidityUsd,
-    );
-
     const bundle = await buildDeepTokenIntel(token);
-    const agent = await analyzeTokenSignal(token, bundle.intel, body.deep ?? false);
-    const security = scoreTokenSecurity(token, bundle.intel);
+    const intelWithTa = bundle.intel;
+    const { source: taSource, ...ta } = await resolveTokenTechnical(token);
+    const agent = await analyzeTokenSignal(token, intelWithTa, body.deep ?? false);
+    const security = scoreTokenSecurity(token, intelWithTa);
     const research = buildResearchReport({
       token,
       agent,
-      intel: bundle.intel,
+      intel: intelWithTa,
       technical: ta,
       news: bundle.news,
     });
 
-    if (body.deep && body.save !== false) {
+    const shouldSave = body.save === true || (body.deep === true && body.save !== false);
+    if (shouldSave) {
       const decision = await buildDecision(token, body.arcFeeTxHash);
+      decision.intel = intelWithTa;
+      decision.technical = intelWithTa.technical ?? ta;
       await addNexusDecision(decision);
       return NextResponse.json({
         token,
@@ -60,13 +58,16 @@ export async function POST(request: Request) {
         news: bundle.news.slice(0, 4),
         security,
         saved: true,
-        message: `Deep research ready — thesis, risks, and catalysts (signal ${decision.action} is reference only)`,
+        mode: body.deep ? "deep" : "quick",
+        message: body.deep
+          ? `Deep research ready — thesis, risks, and catalysts (signal ${decision.action} is reference only)`
+          : `Agent signal ${decision.action} (${decision.confidence}%) saved to history`,
       });
     }
 
     return NextResponse.json({
       token,
-      intel: bundle.intel,
+      intel: intelWithTa,
       news: bundle.news.slice(0, 4),
       agent,
       research,

@@ -182,6 +182,10 @@ export function PrismConsole() {
                         <Badge variant="prism">{prediction.probability}%</Badge>
                       </div>
                       <p className="mt-2 line-clamp-2 text-sm text-white/60">{prediction.summary}</p>
+                      <p className="mt-1.5 line-clamp-2 text-xs text-violet-200/75">{prediction.reasoning}</p>
+                      <p className="mt-1 text-[10px] text-white/45">
+                        Confidence {prediction.confidence}% · Kelly {(prediction.kellyFraction * 100).toFixed(1)}%
+                      </p>
                     </motion.div>
                   ))
                 )}

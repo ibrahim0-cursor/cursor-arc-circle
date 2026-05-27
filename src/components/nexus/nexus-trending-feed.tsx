@@ -273,10 +273,17 @@ export function NexusTrendingFeed({
         )}
 
         {agent && (
-          <p className="mt-1.5 line-clamp-1 text-[11px] text-white/50 max-lg:text-xs">
+          <p className="mt-1.5 line-clamp-2 text-[11px] text-white/50 max-lg:text-xs">
             <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
-            <span className="lg:hidden">{agent.confidence}% · {agent.action}</span>
-            <span className="hidden lg:inline">{agent.confidence}% · {agent.whyAction}</span>
+            <span className="font-medium text-cyan-200/90">{agent.confidence}% {agent.action}</span>
+            {" · "}
+            {agent.whyAction || agent.reasoning}
+          </p>
+        )}
+        {token.intel?.technical && (
+          <p className="mt-1 text-[10px] text-violet-200/70">
+            RSI {token.intel.technical.rsi.toFixed(0)} · {token.intel.technical.trend.replace("_", " ")} · TA{" "}
+            {token.intel.technical.score}/100
           </p>
         )}
 
