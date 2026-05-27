@@ -10,10 +10,12 @@ export function NexusTAPanel({
   technical,
   priceUsd,
   defaultOpen = false,
+  showCollapseHint = false,
 }: {
   technical?: TechnicalSnapshot | TechnicalAnalysis | null;
   priceUsd?: number;
   defaultOpen?: boolean;
+  showCollapseHint?: boolean;
 }) {
   if (!technical) return null;
 
@@ -30,7 +32,14 @@ export function NexusTAPanel({
   const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100${src ? ` · ${src}` : ""}`;
 
   return (
-    <NexusCollapsible label="Technical analysis" hint={hint} variant="technical" icon={BarChart3} defaultOpen={defaultOpen}>
+    <NexusCollapsible
+      label="Technical analysis"
+      hint={hint}
+      variant="technical"
+      icon={BarChart3}
+      defaultOpen={defaultOpen}
+      showCollapseHint={showCollapseHint}
+    >
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2.5">
           <Stat

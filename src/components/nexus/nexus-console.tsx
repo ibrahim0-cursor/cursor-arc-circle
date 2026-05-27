@@ -38,6 +38,8 @@ import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-b
 import { NexusMobileTokenActions } from "@/components/nexus/nexus-mobile-token-actions";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
+import { NexusCenterTokenHeader } from "@/components/nexus/nexus-center-token-header";
+import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { mergeFeedTokensStable } from "@/lib/token-security";
@@ -171,6 +173,21 @@ export function NexusConsole() {
       document.getElementById("nexus-chart-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [scrollToMobileContent]);
+
+  const openTradePanel = useCallback(
+    (tab: "buy" | "sell" | "agent") => {
+      setTradeTab(tab);
+      if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+        setMobilePanel("trade");
+        scrollToMobileContent();
+        return;
+      }
+      requestAnimationFrame(() => {
+        document.getElementById("nexus-trade-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    },
+    [scrollToMobileContent],
+  );
 
   const handleTokenSelect = useCallback(
     (token: TrendingMarketToken, openChart = true) => {
@@ -626,52 +643,90 @@ export function NexusConsole() {
       <p className="text-sm text-white/55">Select a token from the feed to view chart &amp; analysis.</p>
     </div>
   ) : (
-    <div className="space-y-3 max-lg:pb-4">
-      <NexusTokenStrip
-        tokens={feedTokens}
-        selected={selectedToken}
-        onSelect={(t) => handleTokenSelect(t)}
-        mobileLimit={STABLE_FEED_LIMIT}
-      />
-      <NexusMobileTokenActions
-        token={selectedToken}
-        onTradeTab={(tab) => {
-          setTradeTab(tab);
-          setMobilePanel("trade");
-          scrollToMobileContent();
-        }}
-      />
-      <NexusTokenMetrics token={selectedToken} />
-      <NexusTokenChart
-        chainId={selectedToken.chainId}
-        pairAddress={selectedToken.pairAddress}
-        tokenAddress={selectedToken.tokenAddress}
-        symbol={selectedToken.symbol}
-      />
-      <NexusTAPanel
-        technical={displayDecision?.technical ?? selectedToken.intel?.technical}
-        priceUsd={selectedToken.priceUsd}
-        defaultOpen={!isMobile}
-      />
-      <NexusTokenDetectPanel
-        chainId={selectedToken.chainId}
-        tokenAddress={selectedToken.tokenAddress}
-        symbol={selectedToken.symbol}
-        txns24h={selectedToken.txns24h}
-        volume24h={selectedToken.volume24h}
-        agentAction={displayDecision?.action}
-        onIntelUpdate={handleBirdeyeIntel}
-      />
-      {deepResearch && (
-        <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
-      )}
-      {communityPulse && communityPulse.items.length > 0 && (
-        <ArcPanel theme="nexus" title={`Community · ${communityPulse.topic}`} icon={Radio}>
-          <CommunityPulsePanel pulse={communityPulse} compact />
-        </ArcPanel>
-      )}
-      {socialIntel && <NexusSocialIntelPanel social={socialIntel} />}
-      {displayDecision && !deepResearch && <NexusTokenDetail decision={displayDecision} />}
+    <div className="nexus-center-layout flex min-h-0 flex-1 flex-col max-lg:space-y-3 max-lg:pb-4 lg:overflow-hidden">
+      <div className="nexus-center-toolbar shrink-0 space-y-2.5 lg:space-y-3 lg:border-b lg:border-white/[0.06] lg:pb-3">
+        <NexusCenterTokenHeader
+          token={selectedToken}
+          decision={displayDecision}
+          actions={
+            <>
+              <NexusTokenChatButton token={selectedToken} onOpenTrade={openTradePanel} />
+              <button
+                type="button"
+                onClick={() => openTradePanel("buy")}
+                className="arc-glass-interactive hidden min-h-[40px] rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 text-xs font-bold text-emerald-100 lg:inline-flex lg:items-center"
+              >
+                Buy →
+              </button>
+              <button
+                type="button"
+                onClick={() => openTradePanel("sell")}
+                className="arc-glass-interactive hidden min-h-[40px] rounded-xl border border-rose-400/35 bg-rose-500/15 px-3 text-xs font-bold text-rose-100 lg:inline-flex lg:items-center"
+              >
+                Sell →
+              </button>
+            </>
+          }
+        />
+        <NexusTokenStrip
+          tokens={feedTokens}
+          selected={selectedToken}
+          onSelect={(t) => handleTokenSelect(t)}
+          mobileLimit={STABLE_FEED_LIMIT}
+          compact
+        />
+        <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />
+        <NexusTokenMetrics token={selectedToken} compact />
+      </div>
+
+      <div className="nexus-center-chart shrink-0 py-1 lg:py-2">
+        <NexusTokenChart
+          chainId={selectedToken.chainId}
+          pairAddress={selectedToken.pairAddress}
+          tokenAddress={selectedToken.tokenAddress}
+          symbol={selectedToken.symbol}
+        />
+      </div>
+
+      <div className="nexus-center-intel min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pt-1">
+        <p className="arc-caption hidden px-1 text-white/40 lg:block">Intel &amp; analysis — expand any section below</p>
+        <NexusTAPanel
+          technical={displayDecision?.technical ?? selectedToken.intel?.technical}
+          priceUsd={selectedToken.priceUsd}
+          defaultOpen={false}
+          showCollapseHint
+        />
+        <NexusTokenDetectPanel
+          chainId={selectedToken.chainId}
+          tokenAddress={selectedToken.tokenAddress}
+          symbol={selectedToken.symbol}
+          txns24h={selectedToken.txns24h}
+          volume24h={selectedToken.volume24h}
+          agentAction={displayDecision?.action}
+          onIntelUpdate={handleBirdeyeIntel}
+        />
+        {deepResearch && (
+          <NexusDeepResearchPanel report={deepResearch} onClose={() => setDeepResearch(null)} />
+        )}
+        {communityPulse && communityPulse.items.length > 0 && (
+          <ArcPanel theme="nexus" title={`Community · ${communityPulse.topic}`} icon={Radio}>
+            <CommunityPulsePanel pulse={communityPulse} compact />
+          </ArcPanel>
+        )}
+        {socialIntel && <NexusSocialIntelPanel social={socialIntel} />}
+        {displayDecision && !deepResearch && (
+          <NexusCollapsible
+            label="Agent decision"
+            hint={`${displayDecision.action} · ${displayDecision.confidence}% confidence`}
+            variant="reasoning"
+            icon={Sparkles}
+            defaultOpen={false}
+            showCollapseHint
+          >
+            <NexusTokenDetail decision={displayDecision} />
+          </NexusCollapsible>
+        )}
+      </div>
     </div>
   );
 
@@ -810,14 +865,21 @@ export function NexusConsole() {
           </div>
           <div
             id="nexus-chart-panel"
-            className="nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col scroll-mt-24 lg:sticky lg:top-20"
+            className="nexus-center-panel nexus-column-panel arc-panel arc-panel-nexus flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col scroll-mt-24 lg:sticky lg:top-20"
           >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="arc-panel-body nexus-feed-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
+            <div className="shrink-0 border-b border-white/[0.06] px-4 py-2.5">
+              <p className="arc-caption text-violet-300/80">Token intelligence</p>
+              <p className="text-sm font-semibold text-white">Chart · metrics · analysis</p>
+            </div>
+            <div className="arc-panel-body flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 lg:px-4">
               {chartPanel}
             </div>
           </div>
-          <div className="flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-20">
+          <div
+            id="nexus-trade-panel"
+            className="flex min-h-0 max-h-[calc(100vh-7rem)] min-w-0 flex-col overflow-hidden lg:sticky lg:top-20"
+          >
             {tradePanel}
           </div>
         </div>

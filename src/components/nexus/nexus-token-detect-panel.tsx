@@ -192,6 +192,7 @@ export function NexusTokenDetectPanel({
       variant="intel"
       icon={Radar}
       defaultOpen={false}
+      showCollapseHint
     >
       <div className="space-y-3">
         <motion.div

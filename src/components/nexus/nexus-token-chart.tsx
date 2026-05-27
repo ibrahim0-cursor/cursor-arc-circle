@@ -101,12 +101,12 @@ export function NexusTokenChart({
             Live
           </span>
         }
-        className="overflow-hidden [&_.arc-panel-body]:!p-0"
+        className="nexus-chart-panel overflow-hidden [&_.arc-panel-body]:!p-0"
       >
         <iframe
           title={`${symbol ?? "Token"} chart`}
           src={dexChartEmbedUrl(chainId, resolvedPair)}
-          className="h-[min(52dvh,360px)] w-full border-0 sm:h-[300px] lg:h-[320px]"
+          className="nexus-chart-iframe h-[min(42dvh,320px)] w-full border-0 sm:h-[280px] lg:h-[min(38vh,400px)] lg:min-h-[340px] xl:min-h-[380px]"
           allow="clipboard-write"
         />
       </ArcPanel>

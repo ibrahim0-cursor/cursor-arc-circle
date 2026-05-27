@@ -10,23 +10,31 @@ export function NexusTokenStrip({
   selected,
   onSelect,
   mobileLimit = 40,
+  compact = false,
 }: {
   tokens: TrendingMarketToken[];
   selected: TrendingMarketToken | null;
   onSelect: (t: TrendingMarketToken) => void;
   mobileLimit?: number;
+  /** Slim strip for desktop center column */
+  compact?: boolean;
 }) {
   if (tokens.length === 0) return null;
 
   const list = tokens.slice(0, mobileLimit);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-2.5 max-lg:sticky max-lg:top-[7.5rem] max-lg:z-20 max-lg:bg-[#050508]/95 max-lg:backdrop-blur-md">
-      <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">
+    <div
+      className={cn(
+        "nexus-token-strip-shell",
+        compact ? "p-2" : "p-2.5 max-lg:sticky max-lg:top-[7.5rem] max-lg:z-20 max-lg:bg-[#050508]/95 max-lg:backdrop-blur-md",
+      )}
+    >
+      <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-white/45">
         Switch token · {list.length}
         {tokens.length > list.length ? ` of ${tokens.length}` : ""} live
       </p>
-      <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:thin] [scrollbar-color:rgba(168,85,247,0.35)_transparent]">
         {list.map((t) => {
           const active =
             selected?.tokenAddress.toLowerCase() === t.tokenAddress.toLowerCase() &&
@@ -37,18 +45,19 @@ export function NexusTokenStrip({
               type="button"
               onClick={() => onSelect(t)}
               className={cn(
-                "nexus-token-chip flex min-w-[92px] shrink-0 snap-start flex-col px-3 py-2.5 text-left active:scale-95",
+                "nexus-token-chip flex shrink-0 snap-start text-left active:scale-95",
+                compact ? "min-w-[72px] flex-row items-center gap-2 px-2 py-1.5" : "min-w-[92px] flex-col px-3 py-2.5",
                 active && "nexus-token-chip-active",
               )}
             >
               {t.icon ? (
-                <div className="nexus-token-avatar-frame mb-1.5 h-7 w-7">
+                <div className={cn("nexus-token-avatar-frame shrink-0", compact ? "h-6 w-6" : "mb-1.5 h-7 w-7")}>
                   <img src={t.icon} alt="" className="h-full w-full object-cover" />
                 </div>
               ) : null}
-              <span className="text-sm font-bold text-white">{t.symbol}</span>
-              <span className="text-[10px] text-white/55">{formatUsd(t.priceUsd)}</span>
-              {t.agent && (
+              <span className={compact ? "text-xs font-bold text-white" : "text-sm font-bold text-white"}>{t.symbol}</span>
+              {!compact && <span className="text-[10px] text-white/55">{formatUsd(t.priceUsd)}</span>}
+              {t.agent && !compact && (
                 <span
                   className={`mt-1 text-[9px] font-bold uppercase ${
                     t.agent.action === "BUY"
@@ -60,6 +69,17 @@ export function NexusTokenStrip({
                 >
                   {t.agent.action}
                 </span>
+              )}
+              {t.agent && compact && (
+                <span
+                  className={cn(
+                    "ml-auto h-1.5 w-1.5 shrink-0 rounded-full",
+                    t.agent.action === "BUY" && "bg-emerald-400",
+                    t.agent.action === "SELL" && "bg-rose-400",
+                    t.agent.action === "HOLD" && "bg-amber-300",
+                  )}
+                  title={t.agent.action}
+                />
               )}
             </button>
           );
