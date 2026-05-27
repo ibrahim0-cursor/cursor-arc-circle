@@ -18,6 +18,7 @@ import {
 } from "./technical-analysis";
 import type { AgentSignal, TokenIntel, TokenWhale } from "./storage";
 import type { NexusResearchReport } from "./nexus-research";
+import { buildTokenAgentNarrative } from "./nexus-token-narrative";
 
 export type HolderTableRow = {
   rank: number;
@@ -83,6 +84,9 @@ export type LiveReasoningPayload = {
   factors: LiveReasoningFactor[];
   taHeadline: string;
   sources: string[];
+  coachLines?: string[];
+  gmgnNotes?: string[];
+  tier?: "feed" | "alpha";
 };
 
 export type TokenDossierPayload = {
@@ -429,6 +433,11 @@ export function buildLiveReasoning(
   agent?: AgentSignal,
   research?: NexusResearchReport,
   dossier?: Pick<TokenResearchDossier, "technical" | "pattern" | "socialNews" | "dataNotes">,
+  tier: "feed" | "alpha" = "feed",
+  narrativeExtras?: {
+    smartMoneyRows?: number;
+    holderRows?: number;
+  },
 ): LiveReasoningPayload {
   const scam = assessTokenScam(token, intel);
   const action = agent?.action ?? "HOLD";
@@ -460,16 +469,32 @@ export function buildLiveReasoning(
   sources.push("DexScreener", "Agent stack");
   if (dossier?.dataNotes?.some((n) => n.includes("6551") || n.includes("OpenNews"))) sources.push("6551 news");
 
+  const custom = buildTokenAgentNarrative(
+    token,
+    intel,
+    {
+      action,
+      confidence,
+      riskScore,
+    },
+    tier,
+    {
+      smartMoneyRows: narrativeExtras?.smartMoneyRows,
+      holderRows: narrativeExtras?.holderRows,
+      patternLabel: pattern.label,
+      researchThesis: tier === "alpha" ? research?.thesis : undefined,
+    },
+  );
+
   const narrativeParts = [
     scam.isScam ? `Avoid — ${scam.label}. ${scam.flags[0] ?? ""}` : null,
-    agent?.whyAction,
-    agent?.reasoning && agent.reasoning !== agent?.whyAction ? agent.reasoning : null,
-    research?.thesis?.slice(0, 400),
+    custom.narrative,
+    tier === "alpha" && agent?.reasoning && agent.reasoning !== agent.whyAction ? agent.reasoning.slice(0, 300) : null,
   ].filter(Boolean);
 
   let narrative = narrativeParts.join(" ").trim();
   if (!narrative) {
-    narrative = `${token.symbol}: ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h · $${Math.round(token.liquidityUsd).toLocaleString()} liquidity — expand signal breakdown below for flow, TA, and risk.`;
+    narrative = custom.narrative;
   }
   const factors =
     agent?.reasoningFactors?.length && agent.reasoningFactors.length > 0
@@ -493,12 +518,16 @@ export function buildLiveReasoning(
     factors,
     taHeadline,
     sources,
+    coachLines: custom.coachLines,
+    gmgnNotes: custom.gmgnNotes,
+    tier,
   };
 }
 
 export async function buildTokenDossierPayload(
   token: TrendingToken,
   opts?: {
+    tier?: "feed" | "alpha";
     intel?: TokenIntel;
     agent?: AgentSignal;
     community?: CommunityPulse | null;
@@ -507,6 +536,8 @@ export async function buildTokenDossierPayload(
     detection?: Awaited<ReturnType<typeof fetchMergedTokenDetection>>;
   },
 ): Promise<TokenDossierPayload> {
+  const tier = opts?.tier ?? "feed";
+  const useGmgn = tier === "alpha" && hasGmgnApiKey();
   const intel = opts?.intel ?? token.intel ?? {};
   const dataNotes: string[] = [];
 
@@ -522,15 +553,17 @@ export async function buildTokenDossierPayload(
     detectionPromise,
     resolveMultiTimeframeTa(token),
     (async () => {
+      if (!useGmgn) return [];
       const chain = dexChainIdToGmgn(token.chainId);
-      if (!hasGmgnApiKey() || !chain) return [];
+      if (!chain) return [];
       const res = await gmgnTopHolders(chain, token.tokenAddress, 12);
       if (!res.ok) return [];
       return parseGmgnHolderRows(res.data, "gmgn");
     })(),
     (async () => {
+      if (!useGmgn) return [];
       const chain = dexChainIdToGmgn(token.chainId);
-      if (!hasGmgnApiKey() || !chain) return [];
+      if (!chain) return [];
       const res = await gmgnSmartMoneyHolders(chain, token.tokenAddress, 12);
       if (!res.ok) return [];
       return parseGmgnHolderRows(res.data, "gmgn");
@@ -692,7 +725,10 @@ export async function buildTokenDossierPayload(
     dataNotes,
   };
 
-  const liveReasoning = buildLiveReasoning(token, intel, opts?.agent, opts?.research, dossier);
+  const liveReasoning = buildLiveReasoning(token, intel, opts?.agent, opts?.research, dossier, tier, {
+    smartMoneyRows: topTraders.length,
+    holderRows: topHolders.length,
+  });
   dossier.atAGlance = liveReasoning.narrative.slice(0, 280);
 
   return {

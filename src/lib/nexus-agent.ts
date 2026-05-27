@@ -799,7 +799,7 @@ export async function runAlphaScan(
         sourceTags,
       });
       const { buildLiveReasoning } = await import("./nexus-research-dossier");
-      const liveReason = buildLiveReasoning(token, intel, signal);
+      const liveReason = buildLiveReasoning(token, intel, signal, undefined, undefined, "alpha");
       const researchGlance = liveReason.narrative.slice(0, 200);
       const apeRow = lookupApeWisdom(token.symbol, apeMap);
       let legacyScore =
@@ -1045,6 +1045,15 @@ export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
       const security = scoreTokenSecurity(token, intel);
       let signal = heuristicDecision(token, intel, macro);
       signal = finalizeFeedSignal(token, intel, signal, security);
+      if (rank < 6) {
+        const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
+        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed");
+        signal = {
+          ...signal,
+          whyAction: narrativeToWhyAction(bundle, 170),
+          reasoning: bundle.narrative.slice(0, 400),
+        };
+      }
       return { token: { ...token, intel }, intel, signal, security };
     }),
   );

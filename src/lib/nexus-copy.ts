@@ -88,6 +88,9 @@ export function publicSentimentSummary(label: string, score: number): string {
 export const FEED_INTEL_LABEL = "Live feed";
 export const ALPHA_INTEL_LABEL = "Alpha deep intel";
 
+export const REASONING_HEADLINE =
+  "Read before buy / sell / hold — Chat is optional for Q&A.";
+
 export const FEED_ROW_HINT =
   "Dex-verified price & flow · light agent pass (not a paid deep scan)";
 

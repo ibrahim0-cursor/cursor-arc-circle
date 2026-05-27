@@ -120,7 +120,7 @@ export function NexusTokenChart({
           src={dexChartEmbedUrl(chainId, resolvedPair)}
           className={
             compact
-              ? "nexus-chart-iframe nexus-chart-iframe-compact h-[min(38dvh,240px)] w-full border-0 sm:h-[260px] lg:h-[280px] lg:max-h-[300px]"
+              ? "nexus-chart-iframe nexus-chart-iframe-compact h-[180px] w-full border-0 sm:h-[200px] lg:h-[210px] lg:max-h-[220px]"
               : "nexus-chart-iframe h-[min(42dvh,320px)] w-full border-0 sm:h-[280px] lg:h-[min(32vh,300px)] lg:max-h-[300px]"
           }
           allow="clipboard-write"

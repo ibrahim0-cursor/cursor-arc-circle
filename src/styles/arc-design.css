@@ -1611,6 +1611,11 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   scroll-margin-top: 0.5rem;
 }
 
+.nexus-center-scroll {
+  scroll-padding-bottom: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
 html[data-arc-theme="nexus"] .nexus-center-layout {
   display: flex;
   flex-direction: column;

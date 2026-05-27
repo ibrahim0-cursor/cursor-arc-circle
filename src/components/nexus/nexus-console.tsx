@@ -408,14 +408,13 @@ export function NexusConsole() {
       <p className="text-sm text-white/55">Select a token from the feed to view chart &amp; analysis.</p>
     </div>
   ) : (
-    <div className="nexus-center-layout flex min-h-0 flex-1 flex-col max-lg:space-y-3 max-lg:pb-4 lg:overflow-hidden">
+    <div className="nexus-center-layout flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-4">
       <div className="nexus-center-toolbar shrink-0 space-y-2 lg:space-y-2.5 lg:border-b lg:border-white/[0.06] lg:pb-2">
         <NexusCenterTokenHeader
           token={selectedToken}
           decision={displayDecision}
           actions={
             <>
-              <NexusTokenChatButton token={selectedToken} onOpenTrade={openTradePanel} />
               <button
                 type="button"
                 onClick={() => openTradePanel("buy")}
@@ -430,6 +429,11 @@ export function NexusConsole() {
               >
                 Sell →
               </button>
+              <NexusTokenChatButton
+                token={selectedToken}
+                onOpenTrade={openTradePanel}
+                className="!border-white/20 !bg-white/5 !text-white/70"
+              />
             </>
           }
         />
@@ -443,17 +447,17 @@ export function NexusConsole() {
         <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />
       </div>
 
-      <div id="nexus-chart-panel" className="nexus-center-chart nexus-center-chart-priority shrink-0">
-        <NexusTokenChart
-          compact
-          chainId={selectedToken.chainId}
-          pairAddress={selectedToken.pairAddress}
-          tokenAddress={selectedToken.tokenAddress}
-          symbol={selectedToken.symbol}
-        />
-      </div>
+      <div className="nexus-center-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 pr-1">
+        <div id="nexus-chart-panel" className="nexus-center-chart shrink-0">
+          <NexusTokenChart
+            compact
+            chainId={selectedToken.chainId}
+            pairAddress={selectedToken.pairAddress}
+            tokenAddress={selectedToken.tokenAddress}
+            symbol={selectedToken.symbol}
+          />
+        </div>
 
-      <div className="nexus-center-intel-below-chart shrink-0 space-y-2 px-0.5">
         <NexusAgentReasoningStrip
           token={selectedToken}
           payload={tokenDossier.payload}
@@ -473,16 +477,15 @@ export function NexusConsole() {
           loading={tokenDossier.loading}
           reasoningInStrip
         />
-        <NexusResearchDossierLive
-          token={selectedToken}
-          payload={tokenDossier.payload}
-          loading={tokenDossier.loading}
-          error={tokenDossier.error}
-          holdersOnly
-        />
-      </div>
-
-      <div className="nexus-center-intel min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pt-1">
+        {intelTier === "alpha" && (
+          <NexusResearchDossierLive
+            token={selectedToken}
+            payload={tokenDossier.payload}
+            loading={tokenDossier.loading}
+            error={tokenDossier.error}
+            holdersOnly
+          />
+        )}
         <NexusResearchDossierDeep dossier={tokenDossier.payload?.dossier} loading={tokenDossier.loading} />
         <NexusTokenDetectPanel
           chainId={selectedToken.chainId}

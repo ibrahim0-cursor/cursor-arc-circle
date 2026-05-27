@@ -45,9 +45,13 @@ export async function GET(request: Request) {
       volume: token.volume24h ?? volume,
     };
 
-    const scanKind = tier === "alpha" ? "alpha" : "analyze";
+    const scanKind = tier === "alpha" ? "alpha" : "feed";
     const [bundle, detection] = await Promise.all([
-      buildDeepTokenIntel(token, { scanKind, tokenIndex: 0, skipGmgnEnrich: false }),
+      buildDeepTokenIntel(token, {
+        scanKind,
+        tokenIndex: 0,
+        skipGmgnEnrich: tier !== "alpha",
+      }),
       fetchMergedTokenDetection(token.tokenAddress, token.chainId, dexStats),
     ]);
 
@@ -62,6 +66,7 @@ export async function GET(request: Request) {
     });
 
     const payload = await buildTokenDossierPayload(token, {
+      tier,
       intel: bundle.intel,
       agent,
       community: bundle.community,
