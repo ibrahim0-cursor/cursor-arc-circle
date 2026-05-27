@@ -5,6 +5,7 @@ import { fetchDexPaprikaToken, paprikaIntelFromToken } from "./dexpaprika";
 import { fetchMergedTokenDetection } from "./token-detection";
 import { fetchCryptoNewsHeadlines, type CryptoNewsItem } from "./crypto-news";
 import type { TokenIntel } from "./storage";
+import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 
 export type DeepAnalysisBundle = {
   intel: TokenIntel;
@@ -59,6 +60,9 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
 
   if (token.marketCap) intel = { ...intel, marketCap: token.marketCap };
   if (token.fdv) intel = { ...intel, fdv: token.fdv };
+
+  const ta = await resolveTokenTechnical(token);
+  intel = { ...intel, technical: technicalToIntel(ta) };
 
   const turnoverRatio =
     token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;

@@ -21,7 +21,13 @@ export function NexusTAPanel({
   const support = "support" in ta ? ta.support : undefined;
   const resistance = "resistance" in ta ? ta.resistance : undefined;
 
-  const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100`;
+  const src =
+    "taSource" in technical && technical.taSource
+      ? technical.taSource === "birdeye_ohlcv"
+        ? "Birdeye OHLCV"
+        : "DexScreener"
+      : null;
+  const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100${src ? ` · ${src}` : ""}`;
 
   return (
     <NexusCollapsible label="Technical analysis" hint={hint} variant="technical" icon={BarChart3} defaultOpen={defaultOpen}>

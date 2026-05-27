@@ -9,14 +9,37 @@ import { anchorDecisionPayload } from "./arc";
 import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
 import { assessTokenScam, applyScamAndSecurity } from "./scam-detection";
 import { fetchTokenByAddress } from "./dexscreener";
+import { getMacroRegime, type MacroRegime } from "./macro-regime";
+import { hasBirdeyeKey } from "./birdeye-client";
+import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 
 
 function buildReasoningFactors(
   token: TrendingToken,
   intel: TokenIntel,
   action: NexusDecision["action"],
+  macro?: MacroRegime | null,
 ): ReasoningFactor[] {
   const factors: ReasoningFactor[] = [];
+
+  if (macro) {
+    const macroImpact =
+      macro.label === "risk-on"
+        ? action === "BUY"
+          ? "bullish"
+          : "neutral"
+        : macro.label === "risk-off"
+          ? action === "BUY"
+            ? "bearish"
+            : "neutral"
+          : "neutral";
+    factors.push({
+      label: "Macro regime (PRISM)",
+      detail: macro.detail,
+      impact: macroImpact,
+      weight: macro.label === "risk-off" ? 18 : macro.label === "risk-on" ? 12 : 8,
+    });
+  }
 
   const momentumImpact =
     token.change24h > 5 ? "bullish" : token.change24h < -5 ? "bearish" : "neutral";
@@ -93,8 +116,9 @@ function buildReasoningFactors(
 
   if (intel.technical) {
     const ta = intel.technical;
+    const taLabel = ta.taSource === "birdeye_ohlcv" ? "Birdeye TA" : "TA";
     factors.push({
-      label: `RSI (${ta.rsi.toFixed(0)})`,
+      label: `${taLabel} · RSI (${ta.rsi.toFixed(0)})`,
       detail: `${ta.rsiSignal} · ${ta.rsi > 70 ? "overbought zone" : ta.rsi < 30 ? "oversold bounce setup" : "neutral momentum"}`,
       impact: ta.rsiSignal === "oversold" ? "bullish" : ta.rsiSignal === "overbought" ? "bearish" : "neutral",
       weight: 16,
@@ -192,6 +216,7 @@ function buildWhyAction(
 function heuristicDecision(
   token: TrendingToken,
   intel: TokenIntel,
+  macro?: MacroRegime | null,
 ): Pick<
   NexusDecision,
   | "action"
@@ -201,7 +226,7 @@ function heuristicDecision(
   | "whyAction"
   | "reasoningFactors"
 > {
-  const draftFactors = buildReasoningFactors(token, intel, "HOLD");
+  const draftFactors = buildReasoningFactors(token, intel, "HOLD", macro);
   const { edge } = scoreFactorEdge(draftFactors);
   const ta = intel.technical;
   const taScore = ta?.score ?? 50;
@@ -228,7 +253,7 @@ function heuristicDecision(
     action = token.change24h > 0 ? "BUY" : "SELL";
   }
 
-  const finalFactors = buildReasoningFactors(token, intel, action);
+  const finalFactors = buildReasoningFactors(token, intel, action, macro);
   const { edge: finalEdge } = scoreFactorEdge(finalFactors);
 
   const confidence = Math.round(
@@ -405,7 +430,8 @@ async function analyzeTokenForMemoryScan(token: TrendingToken) {
     security.label = scam.label;
     security.flags = [...new Set([...security.flags, ...scam.flags])].slice(0, 8);
   }
-  let signal = heuristicDecision(fresh, intel);
+  const macro = await getMacroRegime();
+  let signal = heuristicDecision(fresh, intel, macro);
   signal = applyScamAndSecurity(fresh, intel, signal, security, scam);
   return { token: { ...fresh, intel }, intel, signal, security, scam };
 }
@@ -610,22 +636,41 @@ function finalizeFeedSignal(
   return applyScamAndSecurity(token, intel, signal, security, scam);
 }
 
+async function intelForFeedRank(token: TrendingToken, rank: number): Promise<TokenIntel> {
+  const base = token.intel ?? buildLocalTokenIntel(token);
+  if (rank >= 12 || !hasBirdeyeKey()) return base;
+  const ta = await resolveTokenTechnical(token);
+  return { ...base, technical: technicalToIntel(ta) };
+}
+
 /** Fast path: heuristic + security only (no Groq batch) — loads in under 15s on Vercel */
 export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
-  return tokens.map((token) => {
-    const intel = token.intel ?? buildLocalTokenIntel(token);
+  const macro = await getMacroRegime();
+  const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const rankOf = new Map(
+    sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
+  );
+  return Promise.all(
+    tokens.map(async (token) => {
+    const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
+    const intel = await intelForFeedRank(token, rank);
     const security = scoreTokenSecurity(token, intel);
-    let signal = heuristicDecision(token, intel);
+    let signal = heuristicDecision(token, intel, macro);
     signal = finalizeFeedSignal(token, intel, signal, security);
     return { token: { ...token, intel }, intel, signal, security };
-  });
+  }),
+  );
 }
 
 /** Batch analyze trending tokens — unique scoring + AI on top-volume slice */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
+  const macro = await getMacroRegime();
   const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const rankOf = new Map(
+    sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
+  );
   const cycle = Math.floor(Date.now() / 45_000);
   const aiCap = getAiClient() ? 10 : 0;
   const aiMap = new Map<string, AgentSignal>();
@@ -646,9 +691,10 @@ export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
 
   return Promise.all(
     tokens.map(async (token) => {
-      const intel = token.intel ?? buildLocalTokenIntel(token);
+      const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
+      const intel = await intelForFeedRank(token, rank);
       const key = token.tokenAddress.toLowerCase();
-      let signal = aiMap.get(key) ?? heuristicDecision(token, intel);
+      let signal = aiMap.get(key) ?? heuristicDecision(token, intel, macro);
       const security = scoreTokenSecurity(token, intel);
       signal = finalizeFeedSignal(token, intel, signal, security);
       return { token: { ...token, intel }, intel, signal, security };

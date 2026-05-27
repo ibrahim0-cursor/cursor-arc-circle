@@ -284,6 +284,7 @@ export function NexusTrendingFeed({
           <p className="mt-1 text-[10px] text-violet-200/70">
             RSI {token.intel.technical.rsi.toFixed(0)} · {token.intel.technical.trend.replace("_", " ")} · TA{" "}
             {token.intel.technical.score}/100
+            {token.intel.technical.taSource === "birdeye_ohlcv" ? " · live candles" : ""}
           </p>
         )}
 

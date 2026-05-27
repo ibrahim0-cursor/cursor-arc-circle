@@ -61,6 +61,8 @@ export type TechnicalSnapshot = {
   trend: string;
   trendLine: string;
   score: number;
+  /** birdeye_ohlcv = real candles; dexscreener = Dex % fallback */
+  taSource?: string;
 };
 
 export type NexusDecision = {

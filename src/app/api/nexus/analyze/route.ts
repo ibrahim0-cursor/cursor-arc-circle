@@ -3,7 +3,6 @@ import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { analyzeTokenSignal, buildDecision } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
 import { scoreTokenSecurity } from "@/lib/token-security";
-import { resolveTokenTechnical, technicalToIntel } from "@/lib/market-ta";
 import { buildResearchReport } from "@/lib/nexus-research";
 import { addNexusDecision } from "@/lib/storage";
 
@@ -32,7 +31,7 @@ export async function POST(request: Request) {
 
     const bundle = await buildDeepTokenIntel(token);
     const intelWithTa = bundle.intel;
-    const { source: taSource, ...ta } = await resolveTokenTechnical(token);
+    const ta = intelWithTa.technical;
     const agent = await analyzeTokenSignal(token, intelWithTa, body.deep ?? false);
     const security = scoreTokenSecurity(token, intelWithTa);
     const research = buildResearchReport({
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
     if (shouldSave) {
       const decision = await buildDecision(token, body.arcFeeTxHash);
       decision.intel = intelWithTa;
-      decision.technical = intelWithTa.technical ?? ta;
+      decision.technical = ta;
       await addNexusDecision(decision);
       return NextResponse.json({
         token,
