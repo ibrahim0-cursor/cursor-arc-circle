@@ -10,7 +10,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "arc-signal-panel border-[var(--arc-border)] bg-[var(--arc-bg-panel)]",
+        "arc-glass-card border-[var(--arc-border)]",
         className,
       )}
     >

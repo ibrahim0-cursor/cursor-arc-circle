@@ -8,8 +8,8 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/prism", label: "PRISM" },
   { href: "/nexus", label: "NEXUS" },
+  { href: "/prism", label: "PRISM" },
   { href: "https://faucet.circle.com/", label: "Faucet", external: true },
 ];
 
@@ -17,13 +17,13 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--arc-border)] bg-[var(--arc-bg)]/94 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
-        <Link href="/" className="group flex items-center gap-3">
-          <ArcLogoMark className="h-10 w-10" />
-          <div>
-            <p className="text-sm font-semibold tracking-[0.22em] text-white/92">ARC CIRCLE</p>
-            <p className="arc-caption text-[10px]">Intelligence OS</p>
+    <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
+      <div className="arc-nav-glass mx-auto flex h-14 max-w-5xl items-center justify-between rounded-2xl px-4 sm:h-[60px] sm:px-5">
+        <Link href="/" className="group flex items-center gap-2.5" data-cursor-hover>
+          <ArcLogoMark className="h-9 w-9" />
+          <div className="hidden sm:block">
+            <p className="text-sm font-semibold tracking-[0.14em] text-white/92">ARC CIRCLE</p>
+            <p className="arc-caption text-[9px] text-violet-300/60">Intelligence OS</p>
           </div>
         </Link>
 
@@ -35,7 +35,8 @@ export function Navbar() {
                 href={link.href}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-xl px-4 py-2 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                className="rounded-full px-4 py-2 text-sm text-white/55 transition-colors hover:bg-white/5 hover:text-white"
+                data-cursor-hover
               >
                 {link.label}
               </a>
@@ -44,11 +45,12 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-xl px-4 py-2 text-sm transition-colors",
+                  "rounded-full px-4 py-2 text-sm transition-all",
                   pathname === link.href
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:bg-white/5 hover:text-white",
+                    ? "arc-nav-pill-active font-medium"
+                    : "text-white/55 hover:bg-white/5 hover:text-white",
                 )}
+                data-cursor-hover
               >
                 {link.label}
               </Link>
@@ -57,14 +59,12 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span className="hidden rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-200 lg:inline-flex">
-            Arc Live
-          </span>
           <Link
-            href="https://github.com/ibrahim0-cursor/cursor-arc-circle"
-            className="hidden rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80 transition hover:bg-white/10 sm:inline-block"
+            href="/nexus"
+            className="arc-btn-pill hidden rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90 sm:inline-block"
+            data-cursor-hover
           >
-            GitHub
+            Get started
           </Link>
           <MobileNav />
         </div>

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 type Variant = "home" | "nexus" | "prism" | "neutral";
 
 const ring: Record<Variant, string> = {
-  home: "border-cyan-400/40 text-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.2)]",
+  home: "border-violet-400/45 text-violet-200 shadow-[0_0_24px_rgba(168,85,247,0.28)]",
   nexus: "border-emerald-400/45 text-emerald-300 shadow-[0_0_22px_rgba(16,185,129,0.22)]",
   prism: "border-amber-400/45 text-amber-300 shadow-[0_0_22px_rgba(245,158,11,0.2)]",
   neutral: "border-white/20 text-white/80 shadow-[0_0_16px_rgba(255,255,255,0.06)]",
