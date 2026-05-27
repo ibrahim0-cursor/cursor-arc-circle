@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowDownUp, Brain, Database, LineChart, Radio, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  ArrowDownUp,
+  Brain,
+  Database,
+  LineChart,
+  Radio,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatPct, formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -11,17 +20,21 @@ export function NexusMobileContextBar({
   selectedToken,
   activePanel,
   onPanelChange,
-  onScan,
+  onMemoryScan,
+  onAlphaScan,
   onResearch,
   scanning,
+  alphaScanning,
   researching,
 }: {
   selectedToken: TrendingMarketToken | null;
   activePanel: NexusMobilePanel;
   onPanelChange: (p: NexusMobilePanel) => void;
-  onScan: () => void;
+  onMemoryScan: () => void;
+  onAlphaScan: () => void;
   onResearch: () => void;
   scanning?: boolean;
+  alphaScanning?: boolean;
   researching?: boolean;
 }) {
   const panels: { id: NexusMobilePanel; label: string; icon: typeof LineChart }[] = [
@@ -102,22 +115,32 @@ export function NexusMobileContextBar({
         ))}
         <button
           type="button"
-          onClick={onScan}
-          disabled={scanning}
-          className="flex min-h-[48px] min-w-[52px] flex-col items-center justify-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.04] text-[10px] font-bold text-white/60"
+          onClick={onMemoryScan}
+          disabled={scanning || alphaScanning}
+          className="flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.04] text-[9px] font-bold text-white/60"
           aria-label="Memory scan"
         >
-          <Database className={cn("h-5 w-5", scanning && "animate-pulse text-cyan-300")} />
-          Scan
+          <Database className={cn("h-4 w-4", scanning && "animate-pulse text-cyan-300")} />
+          Mem
+        </button>
+        <button
+          type="button"
+          onClick={onAlphaScan}
+          disabled={scanning || alphaScanning}
+          className="flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border border-violet-400/25 bg-violet-500/10 text-[9px] font-bold text-violet-100"
+          aria-label="Alpha scan"
+        >
+          <Sparkles className={cn("h-4 w-4", alphaScanning && "animate-pulse")} />
+          Alpha
         </button>
         <button
           type="button"
           onClick={onResearch}
           disabled={researching || !selectedToken}
-          className="flex min-h-[48px] min-w-[52px] flex-col items-center justify-center gap-0.5 rounded-xl border border-violet-400/25 bg-violet-500/10 text-[10px] font-bold text-violet-100 disabled:opacity-40"
+          className="flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border border-violet-400/25 bg-violet-500/10 text-[9px] font-bold text-violet-100 disabled:opacity-40"
           aria-label="Deep research"
         >
-          <Brain className={cn("h-5 w-5", researching && "animate-pulse")} />
+          <Brain className={cn("h-4 w-4", researching && "animate-pulse")} />
           AI
         </button>
       </div>

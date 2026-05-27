@@ -101,25 +101,47 @@ export function scoreTokenSecurity(
   return { score, grade, label, honeypotRisk, flags };
 }
 
+function feedKey(t: { chainId: string; tokenAddress: string }) {
+  return `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
+}
+
+/** First load: top tokens by volume. Later refreshes: same roster, updated quotes/signals. */
+export function mergeFeedTokensStable<T extends { chainId: string; tokenAddress: string }>(
+  existing: T[],
+  incoming: T[],
+  max = 30,
+): T[] {
+  const map = new Map(incoming.map((t) => [feedKey(t), t]));
+
+  if (existing.length === 0) {
+    return [...incoming]
+      .sort((a, b) => {
+        const volA = "volume24h" in a ? Number((a as { volume24h?: number }).volume24h ?? 0) : 0;
+        const volB = "volume24h" in b ? Number((b as { volume24h?: number }).volume24h ?? 0) : 0;
+        return volB - volA;
+      })
+      .slice(0, max);
+  }
+
+  const refreshed = existing.slice(0, max).map((t) => {
+    const fresh = map.get(feedKey(t));
+    return fresh ? ({ ...t, ...fresh } as T) : t;
+  });
+
+  if (refreshed.length >= max) return refreshed;
+
+  for (const t of incoming) {
+    if (refreshed.length >= max) break;
+    if (!refreshed.some((r) => feedKey(r) === feedKey(t))) refreshed.push(t);
+  }
+  return refreshed;
+}
+
+/** @deprecated use mergeFeedTokensStable for live feed */
 export function mergeFeedTokens<T extends { chainId: string; tokenAddress: string }>(
   existing: T[],
   incoming: T[],
   max = 120,
 ): T[] {
-  const map = new Map<string, T>();
-  for (const t of existing) {
-    map.set(`${t.chainId}:${t.tokenAddress.toLowerCase()}`, t);
-  }
-  for (const t of incoming) {
-    const key = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
-    const prev = map.get(key);
-    map.set(key, prev ? { ...prev, ...t } : t);
-  }
-  return Array.from(map.values())
-    .sort((a, b) => {
-      const volA = "volume24h" in a ? Number((a as { volume24h?: number }).volume24h ?? 0) : 0;
-      const volB = "volume24h" in b ? Number((b as { volume24h?: number }).volume24h ?? 0) : 0;
-      return volB - volA;
-    })
-    .slice(0, max);
+  return mergeFeedTokensStable(existing, incoming, max);
 }

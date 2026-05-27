@@ -18,6 +18,9 @@ import { MeshBackground } from "@/components/layout/mesh-background";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
+import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
+import type { AlphaOpportunity } from "@/lib/nexus-agent";
+import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { NexusAbSwap } from "@/components/nexus/nexus-ab-swap";
 import { filterTradableTokens } from "@/lib/token-filters";
 import type { NexusResearchReport } from "@/lib/nexus-research";
@@ -39,7 +42,7 @@ import { useIsMobile } from "@/hooks/use-is-mobile";
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
-import { mergeFeedTokens } from "@/lib/token-security";
+import { mergeFeedTokensStable } from "@/lib/token-security";
 import type { NexusDecision } from "@/lib/storage";
 
 const AGENT_MEMORY_KEY = "nexus-agent-memory";
@@ -47,7 +50,7 @@ const SAVED_SCANS_KEY = AGENT_MEMORY_KEY;
 
 function persistSavedScans(decisions: NexusDecision[]) {
   try {
-    localStorage.setItem(SAVED_SCANS_KEY, JSON.stringify(decisions.slice(0, 50)));
+    localStorage.setItem(SAVED_SCANS_KEY, JSON.stringify(decisions.slice(0, 20)));
   } catch {
     /* ignore */
   }
@@ -106,7 +109,9 @@ export function NexusConsole() {
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [activeTab, setActiveTab] = useState<"live" | "saved">("live");
+  const [alphaScanning, setAlphaScanning] = useState(false);
+  const [alphaOpportunities, setAlphaOpportunities] = useState<AlphaOpportunity[]>([]);
+  const [activeTab, setActiveTab] = useState<"live" | "saved" | "alpha">("live");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
   const [tradeTab, setTradeTab] = useState<"buy" | "sell" | "agent">("buy");
   const [actionBanner, setActionBanner] = useState<{
@@ -184,7 +189,7 @@ export function NexusConsole() {
 
   const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
     const tradable = filterTradableTokens(tokens);
-    setFeedTokens((prev) => mergeFeedTokens(prev, tradable, 120));
+    setFeedTokens((prev) => mergeFeedTokensStable(prev, tradable, STABLE_FEED_LIMIT));
     setSelectedToken((prev) => {
       if (!prev) return tradable[0] ?? null;
       const match = tradable.find(
@@ -234,18 +239,18 @@ export function NexusConsole() {
     });
   }, []);
 
-  async function runScan() {
+  async function runMemoryScan() {
     setScanning(true);
     try {
       if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
       await ensureArcNetwork();
-      const fee = await payArcFee("SCAN", `scan-${Date.now()}`);
+      const fee = await payArcFee("SCAN", `memory-${Date.now()}`);
       setLastArcFeeTx(fee.txHash);
 
       const res = await fetch("/api/nexus/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletChainId, arcFeeTxHash: fee.txHash }),
+        body: JSON.stringify({ mode: "memory", walletChainId, arcFeeTxHash: fee.txHash }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
@@ -254,7 +259,7 @@ export function NexusConsole() {
       if (decisions.length === 0 && !data.error) {
         throw new Error("Scan returned 0 tokens — try again in a few seconds");
       }
-      const merged = decisions.length ? decisions : readSavedScansCache();
+      const merged = [...decisions, ...readSavedScansCache()].slice(0, 20);
       setSavedDecisions(merged);
       persistSavedScans(merged);
       if (merged[0]) setSelectedSavedId(merged[0].id);
@@ -265,12 +270,12 @@ export function NexusConsole() {
       setActionBanner({
         type: "success",
         title: "Memory scan complete",
-        message: `${count} tokens scanned (DexScreener + Birdeye + scam check). Rugs flagged SELL — open Memory.`,
+        message: `${count} tokens archived with full intel — open Memory tab.`,
       });
       toast({
         type: "success",
         title: "Memory scan complete",
-        message: `${count} tokens saved — Memory tab`,
+        message: `${count} tokens saved (max 20)`,
       });
       await loadSaved();
     } catch (err) {
@@ -279,6 +284,80 @@ export function NexusConsole() {
     } finally {
       setScanning(false);
     }
+  }
+
+  async function runAlphaScan() {
+    setAlphaScanning(true);
+    try {
+      if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
+      await ensureArcNetwork();
+      const fee = await payArcFee("ALPHA", `alpha-${Date.now()}`);
+      setLastArcFeeTx(fee.txHash);
+
+      const res = await fetch("/api/nexus/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "alpha",
+          walletChainId,
+          arcFeeTxHash: fee.txHash,
+          chainId: selectedToken?.chainId,
+          tokenAddress: selectedToken?.tokenAddress,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Alpha scan failed");
+
+      const rows = (data.opportunities ?? []) as AlphaOpportunity[];
+      if (rows.length === 0) throw new Error("Alpha scan returned 0 tokens");
+
+      setAlphaOpportunities(rows);
+      setActiveTab("alpha");
+      setMobilePanel("feed");
+      scrollToMobileContent();
+      const topBuy = rows.find((r) => r.action === "BUY");
+      setActionBanner({
+        type: "success",
+        title: "Alpha scan complete",
+        message: `${rows.length} opportunities ranked${topBuy ? ` · top: ${topBuy.symbol} BUY` : ""}`,
+      });
+      toast({
+        type: "success",
+        title: "Alpha scan complete",
+        message: `${rows.length} tokens — news, meme, on-chain, AI`,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Alpha scan failed";
+      toast({ type: "error", title: "Alpha scan failed", message: msg });
+    } finally {
+      setAlphaScanning(false);
+    }
+  }
+
+  function selectAlphaRow(row: AlphaOpportunity) {
+    handleTokenSelect(
+      {
+        symbol: row.symbol,
+        name: row.name,
+        tokenAddress: row.tokenAddress,
+        chainId: row.chainId,
+        pairAddress: "",
+        priceUsd: row.priceUsd,
+        change24h: row.change24h,
+        volume24h: row.volume24h,
+        liquidityUsd: row.liquidityUsd,
+        url: "",
+        agent: {
+          action: row.action,
+          confidence: row.confidence,
+          riskScore: Math.max(0, 100 - row.opportunityScore),
+          reasoning: row.reasoning,
+          whyAction: row.whyAction,
+          reasoningFactors: [],
+        },
+      },
+      true,
+    );
   }
 
   async function runDeepAnalyze() {
@@ -386,6 +465,16 @@ export function NexusConsole() {
             <Database className="h-4 w-4" />
             Memory ({savedDecisions.length})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("alpha")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
+              activeTab === "alpha" ? "bg-violet-400/15 text-violet-100" : "text-white/50"
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            Alpha ({alphaOpportunities.length})
+          </button>
         </div>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:max-h-[min(85vh,920px)] lg:min-h-0">
@@ -401,6 +490,14 @@ export function NexusConsole() {
               scrollToMobileContent();
             }}
           />
+        ) : activeTab === "alpha" ? (
+          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+            <NexusAlphaList
+              opportunities={alphaOpportunities}
+              selectedAddress={selectedToken?.tokenAddress}
+              onSelect={selectAlphaRow}
+            />
+          </div>
         ) : (
           <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
             <NexusMemoryList
@@ -542,9 +639,9 @@ export function NexusConsole() {
               <Button
                 variant="outline"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
-                title="Arc fee · archives ~20 tokens with whale/holder snapshot + journal"
-                onClick={runScan}
-                disabled={scanning || arcFeePending}
+                title="Archive 20 tokens with full intel to Memory tab"
+                onClick={() => void runMemoryScan()}
+                disabled={scanning || alphaScanning || arcFeePending}
               >
                 {scanning || arcFeePending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -552,6 +649,20 @@ export function NexusConsole() {
                   <Database className="h-4 w-4" />
                 )}
                 Memory Scan
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-[44px] w-full gap-2 border-violet-400/35 sm:w-auto"
+                title="Rank 30 opportunities — news, meme headlines, Birdeye, AI"
+                onClick={() => void runAlphaScan()}
+                disabled={scanning || alphaScanning || arcFeePending}
+              >
+                {alphaScanning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Alpha Scan
               </Button>
               <Button
                 variant="nexus"
@@ -575,7 +686,7 @@ export function NexusConsole() {
 
           <div className="mt-4 hidden gap-3 sm:mt-6 sm:grid sm:grid-cols-3">
             {[
-              { icon: Zap, label: "20 tokens · 45s refresh", sub: "DexScreener live like the real feed" },
+              { icon: Zap, label: "30 stable tokens · 45s", sub: "Same roster — prices & signals refresh" },
               { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
               { icon: Sparkles, label: "Wallet score", sub: "Grade every wallet A–F" },
             ].map((item) => (
@@ -597,9 +708,11 @@ export function NexusConsole() {
             setMobilePanel(p);
             scrollToMobileContent();
           }}
-          onScan={() => void runScan()}
+          onMemoryScan={() => void runMemoryScan()}
+          onAlphaScan={() => void runAlphaScan()}
           onResearch={() => void runDeepAnalyze()}
           scanning={scanning}
+          alphaScanning={alphaScanning}
           researching={loading}
         />
 

@@ -21,7 +21,8 @@ import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
-import { mergeFeedTokens } from "@/lib/token-security";
+import { mergeFeedTokensStable } from "@/lib/token-security";
+import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { cn } from "@/lib/utils";
 import type { TokenIntel } from "@/lib/storage";
 import type { AgentSignal } from "@/lib/storage";
@@ -50,7 +51,7 @@ export type TrendingMarketToken = {
 };
 
 const REFRESH_MS = 45_000;
-const MAX_FEED = 120;
+const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 10;
 
 export function NexusTrendingFeed({
@@ -101,7 +102,7 @@ export function NexusTrendingFeed({
     setSecondsLeft(REFRESH_MS / 1000);
     setError(null);
     setTokens((prev) => {
-      const merged = mergeFeedTokens(prev, list, MAX_FEED);
+      const merged = mergeFeedTokensStable(prev, list, MAX_FEED);
       onRefreshRef.current?.(merged);
       return merged;
     });
@@ -115,7 +116,7 @@ export function NexusTrendingFeed({
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const q = quick ? "&quick=1" : "";
-    const lim = quick ? 40 : 55;
+    const lim = STABLE_FEED_LIMIT;
     try {
       const res = await fetch(`/api/nexus/feed?limit=${lim}${q}&t=${Date.now()}`, {
         cache: "no-store",
@@ -314,7 +315,7 @@ export function NexusTrendingFeed({
     return (
       <div className="flex items-center justify-center gap-2 py-16 text-white/50">
         <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
-        NEXUS scanning 100+ tokens…
+        Loading {STABLE_FEED_LIMIT} market tokens…
       </div>
     );
   }
@@ -339,7 +340,7 @@ export function NexusTrendingFeed({
           <h3 className="text-xs font-medium text-white/80 sm:text-sm">
             <span className="lg:hidden">{tokens.length} tokens · {secondsLeft}s</span>
             <span className="hidden lg:inline">
-              {tokens.length} tokens (max {MAX_FEED}) · cycle #{feedCycle} · {secondsLeft}s
+              {tokens.length} tokens (stable roster · max {MAX_FEED}) · refresh in {secondsLeft}s
             </span>
           </h3>
           {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />}

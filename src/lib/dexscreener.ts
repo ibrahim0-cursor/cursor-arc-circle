@@ -161,18 +161,27 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
   return arr;
 }
 
-/** Trending tokens for demo trading — live DexScreener, rotated queries each ~45s */
-export async function fetchTrendingMarketTokens(limit = 100) {
+/** Stable live feed — same query set every refresh (no shuffle); top N by volume */
+export async function fetchStableMarketFeed(limit = 30) {
+  return fetchTrendingMarketTokens(limit, { stable: true });
+}
+
+/** Trending tokens — `stable: true` keeps deterministic top tokens for the live feed */
+export async function fetchTrendingMarketTokens(
+  limit = 100,
+  opts?: { stable?: boolean },
+) {
   const tokens: TrendingToken[] = [];
   const seen = new Set<string>();
-  const cycle = Math.floor(Date.now() / 45_000);
+  const stable = opts?.stable === true;
+  const cycle = stable ? 0 : Math.floor(Date.now() / 45_000);
   const querySets = [
-    ["trending", "volume", "hot"],
+    ["trending", "volume", "hot", "meme", "ai"],
     ["new", "launch", "surge"],
     ["meme", "ai", "defi"],
     ["usdc", "swap", "pair"],
   ];
-  const queries = querySets[cycle % querySets.length];
+  const queries = stable ? querySets[0] : querySets[cycle % querySets.length];
 
   function addToken(token: TrendingToken | null) {
     if (!token || token.priceUsd <= 0) return;
@@ -227,10 +236,10 @@ export async function fetchTrendingMarketTokens(limit = 100) {
     }
   }
 
-  const sorted = shuffleWithSeed(
-    tokens.sort((a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd),
-    cycle,
-  ).slice(0, limit);
+  const ranked = tokens.sort(
+    (a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd,
+  );
+  const sorted = stable ? ranked.slice(0, limit) : shuffleWithSeed(ranked, cycle).slice(0, limit);
 
   return sorted.map((token) => ({
     ...token,

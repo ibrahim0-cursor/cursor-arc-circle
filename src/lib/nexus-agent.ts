@@ -433,7 +433,7 @@ async function analyzeTokenForMemoryScan(token: TrendingToken) {
   const macro = await getMacroRegime();
   let signal = heuristicDecision(fresh, intel, macro);
   signal = applyScamAndSecurity(fresh, intel, signal, security, scam);
-  return { token: { ...fresh, intel }, intel, signal, security, scam };
+  return { token: { ...fresh, intel }, intel, signal, security, scam, news: bundle.news };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -453,10 +453,48 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTxHash?: string) {
+export type AlphaOpportunity = {
+  rank: number;
+  symbol: string;
+  name: string;
+  tokenAddress: string;
+  chainId: string;
+  priceUsd: number;
+  change24h: number;
+  action: AgentSignal["action"];
+  confidence: number;
+  opportunityScore: number;
+  reasoning: string;
+  whyAction: string;
+  newsHeadlines: string[];
+  liquidityUsd: number;
+  volume24h: number;
+};
+
+function scoreOpportunity(
+  token: TrendingToken,
+  signal: AgentSignal,
+  intel: TokenIntel,
+): number {
+  let score = signal.confidence;
+  if (signal.action === "BUY") score += 22;
+  else if (signal.action === "HOLD") score += 4;
+  else score -= 18;
+  if (intel.technical?.score) score += intel.technical.score * 0.15;
+  if (token.liquidityUsd > 150_000) score += 12;
+  else if (token.liquidityUsd > 50_000) score += 6;
+  if (token.change24h > 5 && token.change24h < 80) score += 8;
+  if ((token.txns24h?.buys ?? 0) > (token.txns24h?.sells ?? 1)) score += 6;
+  score -= Math.min(40, signal.riskScore * 0.35);
+  return Math.round(Math.min(100, Math.max(0, score)));
+}
+
+/** Memory scan — deep intel archive (20 tokens) for Agent Memory tab */
+export async function runNexusScan(limit = 20, preferredChain?: string, arcFeeTxHash?: string) {
   const { filterTradableTokens } = await import("./token-filters");
-  const raw = await fetchTrendingMarketTokens(Math.min(limit * 3, 60));
-  const tokens = filterTradableTokens(raw).slice(0, Math.min(limit, 15));
+  const { fetchStableMarketFeed } = await import("./dexscreener");
+  const raw = await fetchStableMarketFeed(Math.min(limit * 2, 40));
+  const tokens = filterTradableTokens(raw).slice(0, Math.min(limit, 20));
   if (tokens.length === 0) {
     throw new Error("No tradable tokens found (stablecoins excluded). Check DexScreener connection.");
   }
@@ -507,7 +545,71 @@ export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTx
     tokens,
     decisions,
     count: decisions.length,
-    criteria: "arc-settlement|dexscreener|birdeye|scam-check|ta|no-stablecoins",
+    scanMode: "memory" as const,
+    criteria: "memory-20|dexscreener|birdeye|news|meme-news|scam-check|ta|macro",
+  };
+}
+
+/** Alpha scan — rank up to 30 opportunities (news + meme headlines + on-chain + AI) */
+export async function runAlphaScan(
+  limit = 30,
+  opts?: { preferredChain?: string; focusToken?: TrendingToken },
+) {
+  const { filterTradableTokens } = await import("./token-filters");
+  const { fetchStableMarketFeed, fetchTokenByAddress } = await import("./dexscreener");
+
+  let tokens: TrendingToken[] = filterTradableTokens(
+    await fetchStableMarketFeed(Math.min(limit * 2, 45)),
+  ).slice(0, limit);
+
+  if (opts?.focusToken) {
+    const focus = opts.focusToken;
+    const key = `${focus.chainId}:${focus.tokenAddress.toLowerCase()}`;
+    const loaded = await fetchTokenByAddress(focus.chainId, focus.tokenAddress);
+    const fresh: TrendingToken = {
+      ...focus,
+      ...loaded,
+      intel: focus.intel ?? loaded?.intel ?? buildLocalTokenIntel(loaded ?? focus),
+    };
+    tokens = [fresh, ...tokens.filter((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}` !== key)].slice(
+      0,
+      limit,
+    );
+  }
+
+  if (tokens.length === 0) {
+    throw new Error("No tradable tokens for alpha scan. Check DexScreener connection.");
+  }
+
+  const analyzed = await mapWithConcurrency(tokens, analyzeTokenForMemoryScan, 3);
+
+  const opportunities: AlphaOpportunity[] = analyzed
+    .map(({ token, intel, signal, news }) => ({
+      rank: 0,
+      symbol: token.symbol,
+      name: token.name,
+      tokenAddress: token.tokenAddress,
+      chainId: token.chainId,
+      priceUsd: token.priceUsd,
+      change24h: token.change24h,
+      action: signal.action,
+      confidence: signal.confidence,
+      opportunityScore: scoreOpportunity(token, signal, intel),
+      reasoning: signal.reasoning,
+      whyAction: signal.whyAction,
+      newsHeadlines: news.slice(0, 3).map((n) => n.title),
+      liquidityUsd: token.liquidityUsd,
+      volume24h: token.volume24h,
+    }))
+    .sort((a, b) => b.opportunityScore - a.opportunityScore)
+    .map((row, i) => ({ ...row, rank: i + 1 }));
+
+  return {
+    opportunities,
+    count: opportunities.length,
+    scanMode: "alpha" as const,
+    criteria: "alpha-30|news|meme-news|birdeye|dexscreener|ta|macro|scam-filter",
+    topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }
 

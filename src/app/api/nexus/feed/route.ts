@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { fetchTrendingMarketTokens, fetchTokenByAddress } from "@/lib/dexscreener";
+import { fetchStableMarketFeed, fetchTokenByAddress } from "@/lib/dexscreener";
+import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { filterTradableTokens } from "@/lib/token-filters";
 import { analyzeTrendingFeed, analyzeTrendingFeedQuick } from "@/lib/nexus-agent";
 import { trendingToDemoToken } from "@/lib/demo-trading";
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 async function enrichMissingPairs(
-  tokens: Awaited<ReturnType<typeof fetchTrendingMarketTokens>>,
+  tokens: Awaited<ReturnType<typeof fetchStableMarketFeed>>,
   cap: number,
 ) {
   const missing = tokens
@@ -64,11 +65,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const quick = searchParams.get("quick") === "1";
-    const limit = quick
-      ? Math.min(Number(searchParams.get("limit") ?? 40), 45)
-      : Math.min(Number(searchParams.get("limit") ?? 50), 60);
+    const limit = Math.min(
+      Number(searchParams.get("limit") ?? STABLE_FEED_LIMIT),
+      STABLE_FEED_LIMIT,
+    );
 
-    let tokens = filterTradableTokens(await fetchTrendingMarketTokens(limit));
+    let tokens = filterTradableTokens(await fetchStableMarketFeed(limit));
     tokens = await enrichMissingPairs(tokens, quick ? 8 : 16);
 
     if (quick) {

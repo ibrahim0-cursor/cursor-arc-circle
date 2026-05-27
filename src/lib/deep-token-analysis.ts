@@ -24,7 +24,17 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
       sells: token.txns24h?.sells ?? 0,
       volume: token.volume24h,
     }),
-    fetchCryptoNewsHeadlines(token.symbol, 6),
+    Promise.all([
+      fetchCryptoNewsHeadlines(token.symbol, 4),
+      fetchCryptoNewsHeadlines(`${token.symbol} meme`, 3),
+    ]).then(([a, b]) => {
+      const seen = new Set<string>();
+      return [...a, ...b].filter((n) => {
+        if (seen.has(n.link)) return false;
+        seen.add(n.link);
+        return true;
+      }).slice(0, 6);
+    }),
   ]);
 
   const paprikaIntel: Partial<TokenIntel> = paprika ? paprikaIntelFromToken(paprika) : {};
