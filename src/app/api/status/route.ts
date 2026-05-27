@@ -37,15 +37,21 @@ export async function GET() {
 
   let birdeyeProbe: { ok: boolean; error?: string } = { ok: false, error: "no key" };
   if (hasBirdeyeKey()) {
-    const probe = await birdeyeFetchJson<{ data?: { items?: unknown[] } }>(
-      "/defi/v2/tokens/top_traders?address=0x912ce59144191c1204e64559fe8253a0e49e6548&time_frame=24h&sort_by=volume&sort_type=desc&offset=0&limit=1",
+    const probe = await birdeyeFetchJson<{ data?: { symbol?: string } }>(
+      "/defi/token_overview?address=0x912ce59144191c1204e64559fe8253a0e49e6548",
       "arbitrum",
     );
-    const hasItems = (probe.data?.data?.items?.length ?? 0) > 0;
+    const hasOverview = Boolean(probe.data?.data?.symbol);
     birdeyeProbe =
-      probe.ok && hasItems
+      probe.ok && hasOverview
         ? { ok: true }
-        : { ok: false, error: probe.error ?? (probe.ok ? "empty response" : `HTTP ${probe.status}`) };
+        : {
+            ok: false,
+            error:
+              probe.error?.toLowerCase().includes("compute units")
+                ? "Compute units limit — wait or upgrade Birdeye plan; agent still uses DexScreener"
+                : probe.error ?? (probe.ok ? "empty response" : `HTTP ${probe.status}`),
+          };
   }
 
   return NextResponse.json({
