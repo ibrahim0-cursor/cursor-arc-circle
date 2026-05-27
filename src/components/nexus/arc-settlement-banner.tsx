@@ -13,7 +13,8 @@ export function ArcSettlementBanner({
   arcBlockNumber?: number;
 }) {
   return (
-    <div className="rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-400/10 to-blue-500/5 p-4">
+    <div className="arc-panel arc-panel-nexus p-4">
+      <div className="arc-panel-stripe arc-panel-stripe-nexus -mx-4 -mt-4 mb-3 w-[calc(100%+2rem)]" />
       <div className="flex items-start gap-3">
         <Shield className="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" />
         <div className="space-y-1 text-sm">

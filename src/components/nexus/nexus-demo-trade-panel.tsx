@@ -265,10 +265,11 @@ export function NexusTradeHub({
 
   return (
     <NexusAgentWalletProvider>
-      <div className="overflow-hidden rounded-2xl border border-cyan-300/25 bg-white/[0.04] shadow-[0_0_32px_-8px_rgba(103,232,249,0.4)] backdrop-blur-xl">
-        <div className="border-b border-cyan-300/15 px-4 py-3">
+      <div className="arc-panel arc-panel-nexus overflow-hidden">
+        <div className="arc-panel-stripe arc-panel-stripe-nexus" />
+        <div className="border-b border-white/[0.08] px-4 py-3">
           <div className="mb-3 flex items-center gap-2">
-            <ArrowDownUp className="h-5 w-5 text-cyan-200" />
+            <ArrowDownUp className="h-5 w-5 text-emerald-300" />
             <span className="text-base font-semibold text-cyan-50">Arc Trade · Agent</span>
             {agentLive && (
               <span className="ml-auto rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">

@@ -317,14 +317,14 @@
 .arc-glass-card {
   position: relative;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(0, 0, 0, 0.35) 100%);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 35%, rgba(8, 6, 18, 0.82) 100%);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 24px 48px -20px rgba(0, 0, 0, 0.65),
-    0 0 40px -12px var(--arc-violet-glow);
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 28px 56px -22px rgba(0, 0, 0, 0.75),
+    0 0 48px -10px var(--arc-violet-glow);
 }
 
 .arc-glass-card-hero {
@@ -533,64 +533,99 @@ html[data-arc-theme="prism"] .arc-input-glass:focus {
   z-index: 10;
 }
 
-/* Laser pointer cursor — smooth dual lag */
-html.arc-custom-cursor-active,
-html.arc-custom-cursor-active * {
-  cursor: none !important;
+/* ——— Page skins (very visible per route) ——— */
+html[data-arc-theme="home"] body {
+  background-color: #06040c;
+  background-image:
+    radial-gradient(ellipse 110% 70% at 50% -15%, rgba(139, 92, 246, 0.38), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 100% 40%, rgba(99, 102, 241, 0.18), transparent),
+    radial-gradient(ellipse 40% 35% at 0% 70%, rgba(168, 85, 247, 0.12), transparent);
+  background-attachment: fixed;
 }
 
-.arc-cursor-aura,
-.arc-cursor-core {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 99999;
-  pointer-events: none;
-  will-change: transform;
+html[data-arc-theme="nexus"] body {
+  background-color: #020806;
+  background-image:
+    radial-gradient(ellipse 100% 65% at 50% -10%, rgba(18, 232, 168, 0.28), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 90% 60%, rgba(56, 189, 248, 0.14), transparent),
+    linear-gradient(180deg, rgba(18, 232, 168, 0.04) 0%, transparent 40%);
+  background-attachment: fixed;
 }
 
-.arc-cursor-aura {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  opacity: 0.55;
-  filter: blur(6px);
-  transition: opacity 0.2s ease;
+html[data-arc-theme="prism"] body {
+  background-color: #0a0604;
+  background-image:
+    radial-gradient(ellipse 100% 65% at 50% -8%, rgba(245, 158, 11, 0.32), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 10% 80%, rgba(234, 88, 12, 0.16), transparent),
+    radial-gradient(ellipse 40% 30% at 100% 30%, rgba(251, 191, 36, 0.1), transparent);
+  background-attachment: fixed;
 }
 
-[data-cursor-theme="home"] .arc-cursor-aura {
-  background: radial-gradient(circle, rgba(192, 132, 252, 0.9), rgba(139, 92, 246, 0.2) 70%);
+/* Fancy SVG arrow pointer (real mouse shape) */
+html.arc-fancy-pointer,
+html.arc-fancy-pointer * {
+  cursor: var(--arc-cursor-normal, auto) !important;
 }
 
-[data-cursor-theme="nexus"] .arc-cursor-aura {
-  background: radial-gradient(circle, rgba(18, 232, 168, 0.85), rgba(56, 189, 248, 0.15) 70%);
+html.arc-fancy-pointer a,
+html.arc-fancy-pointer button,
+html.arc-fancy-pointer [role="button"],
+html.arc-fancy-pointer label,
+html.arc-fancy-pointer input[type="submit"],
+html.arc-fancy-pointer select {
+  cursor: var(--arc-cursor-pointer, pointer) !important;
 }
 
-[data-cursor-theme="prism"] .arc-cursor-aura {
-  background: radial-gradient(circle, rgba(251, 146, 60, 0.9), rgba(245, 158, 11, 0.15) 70%);
+/* Unified glass panel + top stripe */
+.arc-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.55) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.8);
 }
 
-.arc-cursor-core {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  transform: rotate(45deg);
-  background: white;
-  box-shadow:
-    0 0 10px rgba(255, 255, 255, 0.95),
-    0 0 22px var(--arc-cursor-glow, rgba(168, 85, 247, 0.65));
+.arc-panel-stripe {
+  height: 3px;
+  width: 100%;
 }
 
-[data-cursor-theme="home"] .arc-cursor-core {
-  --arc-cursor-glow: rgba(168, 85, 247, 0.7);
+.arc-panel-stripe-home {
+  background: linear-gradient(90deg, #a855f7, #e879f9, #6366f1);
 }
 
-[data-cursor-theme="nexus"] .arc-cursor-core {
-  --arc-cursor-glow: rgba(18, 232, 168, 0.75);
+.arc-panel-stripe-nexus {
+  background: linear-gradient(90deg, #12e8a8, #38bdf8, #12e8a8);
 }
 
-[data-cursor-theme="prism"] .arc-cursor-core {
-  --arc-cursor-glow: rgba(251, 146, 60, 0.75);
+.arc-panel-stripe-prism {
+  background: linear-gradient(90deg, #f59e0b, #fcd34d, #ea580c);
+}
+
+.arc-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 0.5rem;
+}
+
+.arc-panel-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: white;
+}
+
+.arc-panel-body {
+  padding: 0 1rem 1rem;
+}
+
+.arc-icon-badge {
+  border-radius: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

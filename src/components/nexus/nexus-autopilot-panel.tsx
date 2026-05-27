@@ -796,7 +796,8 @@ export function NexusAutopilotPanel({
   if (embedded) return wrapped;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-500/10 to-cyan-500/5">
+    <div className="arc-panel arc-panel-nexus overflow-hidden">
+      <div className="arc-panel-stripe arc-panel-stripe-nexus" />
       <div className="flex items-center justify-between border-b border-violet-400/20 px-4 py-3">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-violet-200" />

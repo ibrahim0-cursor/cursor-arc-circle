@@ -96,7 +96,9 @@ export function PrismConsole() {
     <div className="relative min-h-screen text-white" data-prism-page data-arc-theme="prism">
       <ArcBackground theme="prism" />
       <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10 sm:pb-12">
-        <div className="arc-glass-card arc-glass-card-prism mb-4 p-5 sm:mb-8 sm:p-8">
+        <div className="arc-panel arc-panel-prism mb-4 sm:mb-8">
+          <div className="arc-panel-stripe arc-panel-stripe-prism" />
+          <div className="p-5 sm:p-8">
           <div className="flex flex-wrap items-start gap-4">
             <ArcIconFrame icon={Radar} variant="prism" size="lg" active />
             <div className="min-w-0 flex-1">
@@ -121,6 +123,7 @@ export function PrismConsole() {
                 Generate Forecast
               </Button>
             </div>
+          </div>
           </div>
         </div>
 

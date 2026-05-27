@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcGlassPreview } from "@/components/landing/arc-glass-preview";
 import { ArcLivePulseCard } from "@/components/landing/arc-live-pulse-card";
@@ -80,10 +81,11 @@ export function ArcEcosystemHero() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 + i * 0.08 }}
-            className="arc-glass-card flex gap-4 p-5"
+            className="arc-panel flex gap-4 overflow-hidden p-5"
             data-cursor-hover
           >
-            <ArcIconFrame icon={m.icon} variant="home" size="md" />
+            <div className="arc-panel-stripe arc-panel-stripe-home absolute inset-x-0 top-0" />
+            <ArcIconBadge icon={m.icon} theme="home" size="md" className="relative z-10" />
             <div className="text-left">
               <p className="arc-caption">{m.label}</p>
               <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white">{m.value}</p>

@@ -2,6 +2,7 @@
 
 import { Code2, Loader2, Newspaper, ScanLine, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -71,7 +72,7 @@ export function NexusAlphaList({
   if (scanning) {
     return (
       <div className="arc-glass-card arc-glass-card-nexus space-y-4 p-8 text-center">
-        <ArcIconFrame icon={ScanLine} variant="nexus" size="lg" active className="mx-auto" />
+        <ArcIconBadge icon={ScanLine} theme="nexus" size="lg" className="mx-auto" />
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-300" />
         <h3 className="text-base font-semibold text-white">Alpha scan running…</h3>
         <p className="mx-auto max-w-md text-sm text-white/60">
@@ -105,10 +106,9 @@ export function NexusAlphaList({
 
   if (opportunities.length === 0) {
     return (
-      <div className="space-y-3 rounded-2xl border border-dashed border-violet-400/25 bg-gradient-to-br from-violet-500/10 via-transparent to-cyan-500/5 p-8 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/30 bg-violet-500/15">
-          <Sparkles className="h-7 w-7 text-violet-300" />
-        </div>
+      <div className="arc-panel arc-panel-nexus space-y-3 p-8 text-center">
+        <div className="arc-panel-stripe arc-panel-stripe-nexus -mx-8 -mt-8 mb-4 w-[calc(100%+4rem)]" />
+        <ArcIconBadge icon={Sparkles} theme="nexus" size="lg" className="mx-auto" />
         <h3 className="text-base font-semibold text-white">Alpha Scan — early opportunity detection</h3>
         <p className="mx-auto max-w-md text-sm text-white/60">
           Six intelligence layers: narrative acceleration, smart money, momentum, risk breakdown, AI

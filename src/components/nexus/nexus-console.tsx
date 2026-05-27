@@ -689,7 +689,9 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
-        <div className="arc-glass-card arc-glass-card-nexus mb-3 hidden p-4 sm:mb-8 sm:block sm:p-8">
+        <div className="arc-panel arc-panel-nexus mb-3 hidden sm:mb-8 sm:block">
+          <div className="arc-panel-stripe arc-panel-stripe-nexus" />
+          <div className="p-4 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
             <div className="max-w-2xl flex-1">
               <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -774,6 +776,7 @@ export function NexusConsole() {
                 </div>
               </div>
             ))}
+          </div>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useAccount, useBalance, useChainId } from "wagmi";
 import { ExternalLink, Wallet } from "lucide-react";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { WalletConnectButton } from "@/components/nexus/wallet-connect-button";
 import { NexusWalletScoreButton } from "@/components/nexus/nexus-wallet-score";
 import { ARC_TESTNET_ID, arcExplorerAddress } from "@/lib/arc-chain";
@@ -31,13 +32,12 @@ export function NexusWalletBar({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/10 to-violet-500/5 p-4">
+    <div className="arc-panel arc-panel-nexus p-4">
+      <div className="arc-panel-stripe arc-panel-stripe-nexus -mx-4 -mt-4 mb-4 w-[calc(100%+2rem)]" />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/15">
-              <Wallet className="h-5 w-5 text-cyan-200" />
-            </div>
+            <ArcIconBadge icon={Wallet} theme="nexus" size="sm" />
             <div>
               <p className="text-sm font-semibold text-white">Arc Wallet</p>
               <p className="text-xs text-white/55">
