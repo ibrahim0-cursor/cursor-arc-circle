@@ -60,6 +60,7 @@ export function NexusTrendingFeed({
   onTokensRefresh,
   onOpenTrade,
   showAgent = true,
+  compactDesktop = false,
   className,
 }: {
   selectedAddress?: string;
@@ -67,6 +68,8 @@ export function NexusTrendingFeed({
   onTokensRefresh?: (tokens: TrendingMarketToken[]) => void;
   onOpenTrade?: (tab: "buy" | "sell" | "agent") => void;
   showAgent?: boolean;
+  /** Narrow left column: denser rows, less vertical scroll */
+  compactDesktop?: boolean;
   className?: string;
 }) {
   const [tokens, setTokens] = useState<TrendingMarketToken[]>([]);
@@ -195,24 +198,45 @@ export function NexusTrendingFeed({
         key={`${token.chainId}:${token.tokenAddress}`}
         type="button"
         onClick={() => handleUserSelect(token)}
-        className={`w-full rounded-2xl border p-3 text-left transition active:scale-[0.99] max-lg:min-h-[72px] ${
+        className={cn(
+          "w-full rounded-2xl border text-left transition active:scale-[0.99] max-lg:min-h-[72px]",
+          compactDesktop ? "p-2 lg:rounded-xl" : "p-3",
           selected
             ? "border-cyan-400/50 bg-cyan-400/[0.08] ring-1 ring-cyan-400/30"
-            : "border-white/10 bg-black/20 hover:border-white/20"
-        }`}
+            : "border-white/10 bg-black/20 hover:border-white/20",
+        )}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {token.icon ? (
-              <img src={token.icon} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-white/10 max-lg:h-11 max-lg:w-11" />
+              <img
+                src={token.icon}
+                alt=""
+                className={cn(
+                  "shrink-0 rounded-lg border border-white/10",
+                  compactDesktop ? "h-8 w-8 lg:h-7 lg:w-7" : "h-12 w-12 max-lg:h-11 max-lg:w-11",
+                )}
+              />
             ) : (
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-xs font-bold text-cyan-200">
+              <div
+                className={cn(
+                  "flex shrink-0 items-center justify-center rounded-lg bg-cyan-400/10 text-[10px] font-bold text-cyan-200",
+                  compactDesktop ? "h-8 w-8" : "h-10 w-10",
+                )}
+              >
                 {token.symbol.slice(0, 2)}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-base font-semibold max-lg:text-[15px]">{token.symbol}</span>
+              <div className="flex flex-wrap items-center gap-1">
+                <span
+                  className={cn(
+                    "font-semibold",
+                    compactDesktop ? "text-sm lg:text-[13px]" : "text-base max-lg:text-[15px]",
+                  )}
+                >
+                  {token.symbol}
+                </span>
                 <NexusTokenChatButton
                   token={token}
                   onOpenTrade={onOpenTrade}
@@ -248,11 +272,11 @@ export function NexusTrendingFeed({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-white/45">{token.name}</p>
+              {!compactDesktop && <p className="text-xs text-white/45">{token.name}</p>}
             </div>
           </div>
-          <div className="text-right">
-            <p className="font-medium">{formatUsd(token.priceUsd)}</p>
+          <div className="shrink-0 text-right">
+            <p className={cn("font-medium", compactDesktop && "text-xs")}>{formatUsd(token.priceUsd)}</p>
             <p
               className={`flex items-center justify-end gap-1 text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}
             >
@@ -274,14 +298,23 @@ export function NexusTrendingFeed({
         )}
 
         {agent && (
-          <p className="mt-1.5 line-clamp-2 text-[11px] text-white/50 max-lg:text-xs">
+          <p
+            className={cn(
+              "mt-1 text-[11px] text-white/50 max-lg:text-xs",
+              compactDesktop ? "line-clamp-1 lg:mt-0.5 lg:text-[10px]" : "mt-1.5 line-clamp-2",
+            )}
+          >
             <Bot className="mr-1 inline h-3 w-3 text-cyan-300/70" />
             <span className="font-medium text-cyan-200/90">{agent.confidence}% {agent.action}</span>
-            {" · "}
-            {agent.whyAction || agent.reasoning}
+            {!compactDesktop && (
+              <>
+                {" · "}
+                {agent.whyAction || agent.reasoning}
+              </>
+            )}
           </p>
         )}
-        {token.intel?.technical && (
+        {token.intel?.technical && !compactDesktop && (
           <p className="mt-1 text-[10px] text-violet-200/70">
             RSI {token.intel.technical.rsi.toFixed(0)} · {token.intel.technical.trend.replace("_", " ")} · TA{" "}
             {token.intel.technical.score}/100
@@ -289,7 +322,14 @@ export function NexusTrendingFeed({
           </p>
         )}
 
-        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] max-lg:text-xs lg:grid-cols-4 lg:gap-1 lg:text-[10px]">
+        <div
+          className={cn(
+            "mt-2 gap-2 text-[11px] max-lg:text-xs",
+            compactDesktop
+              ? "flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] lg:mt-1 lg:text-[9px]"
+              : "grid grid-cols-2 lg:grid-cols-4 lg:gap-1 lg:text-[10px]",
+          )}
+        >
           <span className="flex items-center gap-1 text-white/55">
             <Waves className="h-3 w-3 text-cyan-300/70" />
             Vol {formatCompact(token.volume24h)}
@@ -371,10 +411,10 @@ export function NexusTrendingFeed({
 
       <div
         className={cn(
-          "nexus-feed-scroll min-h-0 space-y-1.5 overscroll-contain pr-1",
-          feedExpanded
-            ? "flex-1 overflow-y-auto pb-2 lg:max-h-[min(72vh,760px)]"
-            : "overflow-hidden pb-1",
+          "nexus-feed-scroll min-h-0 flex-1 space-y-1.5 overscroll-contain pr-1",
+          compactDesktop || feedExpanded
+            ? "overflow-y-auto pb-2"
+            : "overflow-hidden pb-1 max-lg:overflow-hidden",
         )}
       >
         {visibleTokens.map((token) => renderTokenRow(token))}

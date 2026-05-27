@@ -448,7 +448,7 @@ export function NexusConsole() {
   }
 
   const feedPanel = (
-    <Card className="border-white/10 max-lg:border-0 max-lg:bg-transparent">
+    <Card className="border-white/10 max-lg:border-0 max-lg:bg-transparent lg:flex lg:h-full lg:min-h-0 lg:flex-col">
       <CardHeader className="max-lg:px-0 max-lg:pb-2 max-lg:pt-0">
         <div className="flex items-center gap-2">
           <button
@@ -486,7 +486,7 @@ export function NexusConsole() {
           </button>
         </div>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:max-h-[min(85vh,920px)] lg:min-h-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-3 max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] max-lg:p-0 lg:min-h-0 lg:p-2">
         {activeTab === "live" ? (
           <NexusTrendingFeed
             className="h-full min-h-0"
@@ -605,19 +605,21 @@ export function NexusConsole() {
   );
 
   const tradePanel = (
-    <div className="space-y-3 max-lg:pb-4">
-      <NexusTokenStrip
-        tokens={feedTokens}
-        selected={selectedToken}
-        onSelect={(t) => handleTokenSelect(t)}
-        mobileLimit={30}
-      />
-      {selectedToken && (
-        <NexusMobileTokenActions
-          token={selectedToken}
-          onTradeTab={(tab) => setTradeTab(tab)}
+    <div className="space-y-3 max-lg:pb-4 lg:space-y-2">
+      <div className="lg:hidden">
+        <NexusTokenStrip
+          tokens={feedTokens}
+          selected={selectedToken}
+          onSelect={(t) => handleTokenSelect(t)}
+          mobileLimit={30}
         />
-      )}
+        {selectedToken && (
+          <NexusMobileTokenActions
+            token={selectedToken}
+            onTradeTab={(tab) => setTradeTab(tab)}
+          />
+        )}
+      </div>
       <NexusTradeHub
         token={selectedToken}
         activeTab={tradeTab}
@@ -634,7 +636,7 @@ export function NexusConsole() {
     <div className="relative min-h-screen text-white" data-nexus-page data-nexus-easy-mode>
       <MeshBackground variant="nexus" />
 
-      <div className="relative mx-auto max-w-[1400px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8">
+      <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
         <div className="mb-3 hidden overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-4 sm:mb-8 sm:block sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
             <div className="max-w-2xl flex-1">
@@ -772,10 +774,17 @@ export function NexusConsole() {
           {mobilePanel === "trade" && tradePanel}
         </div>
 
-        <div className="hidden items-start gap-4 lg:grid lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-          {feedPanel}
-          <div id="nexus-chart-panel" className="scroll-mt-24 space-y-3">
+        <div
+          className="hidden items-start gap-4 lg:grid lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(300px,360px)] lg:gap-5 xl:grid-cols-[minmax(280px,320px)_minmax(0,1fr)_minmax(320px,380px)] xl:gap-6"
+          data-nexus-layout="desktop"
+        >
+          <div className="flex min-h-0 max-h-[calc(100vh-7rem)] flex-col overflow-hidden lg:sticky lg:top-20">
+            {feedPanel}
+          </div>
+          <div id="nexus-chart-panel" className="min-w-0 scroll-mt-24 space-y-3">
             {chartPanel}
+          </div>
+          <div className="min-w-0 max-h-[calc(100vh-7rem)] space-y-3 overflow-y-auto lg:sticky lg:top-20 lg:overscroll-contain">
             {tradePanel}
           </div>
         </div>

@@ -45,7 +45,7 @@ export function NexusAlphaList({
               key={`${row.chainId}:${row.tokenAddress}`}
               type="button"
               onClick={() => onSelect(row)}
-              className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
+              className={`w-full rounded-xl border px-3 py-2.5 text-left transition lg:px-2.5 lg:py-2 ${
                 selected
                   ? "border-violet-400/45 bg-violet-400/10 ring-1 ring-violet-400/25"
                   : "border-white/10 bg-black/25 hover:border-white/20"
@@ -72,7 +72,7 @@ export function NexusAlphaList({
                       Opp {row.opportunityScore}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-white/50 line-clamp-2">{row.whyAction}</p>
+                  <p className="mt-0.5 text-[11px] text-white/50 line-clamp-2 lg:line-clamp-1">{row.whyAction}</p>
                 </div>
                 <div className="shrink-0 text-right text-xs">
                   <p>{formatUsd(row.priceUsd)}</p>
