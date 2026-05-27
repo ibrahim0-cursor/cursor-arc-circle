@@ -624,9 +624,18 @@ export async function runAlphaScan(
 ) {
   const { filterTradableTokens } = await import("./token-filters");
   const { fetchStableMarketFeed, fetchTokenByAddress } = await import("./dexscreener");
+  const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
+
+  const [dexFeed, geckoFeed] = await Promise.all([
+    fetchStableMarketFeed(Math.min(limit * 2, 45)),
+    fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 12),
+  ]);
+  const geckoHot = new Set(
+    geckoFeed.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`),
+  );
 
   let tokens: TrendingToken[] = filterTradableTokens(
-    await fetchStableMarketFeed(Math.min(limit * 2, 45)),
+    mergeTrendingWithGecko(dexFeed, geckoFeed, Math.min(limit * 2, 50)),
   ).slice(0, limit);
 
   if (opts?.focusToken) {
@@ -663,7 +672,9 @@ export async function runAlphaScan(
       change24h: token.change24h,
       action: signal.action,
       confidence: signal.confidence,
-      opportunityScore: scoreOpportunity(token, signal, intel, social),
+      opportunityScore:
+        scoreOpportunity(token, signal, intel, social, news.length) +
+        (geckoHot.has(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ? 5 : 0),
       reasoning: signal.reasoning,
       whyAction: signal.whyAction,
       newsHeadlines: news.slice(0, 3).map((n) => n.title),
@@ -686,7 +697,8 @@ export async function runAlphaScan(
     opportunities,
     count: opportunities.length,
     scanMode: "alpha" as const,
-    criteria: "alpha-30|community|news|meme|reddit|birdeye|dexscreener|ta|macro|scam-filter",
+    criteria:
+      "alpha-30|geckoterminal|community|news|meme|reddit|moralis|birdeye|dexscreener|ta|macro|scam-filter",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

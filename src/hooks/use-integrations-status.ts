@@ -14,6 +14,12 @@ export type IntegrationsStatus = {
   reddit?: boolean;
   redditProbe?: { ok: boolean; configured?: boolean; error?: string };
   socialStack?: "free" | "premium";
+  geckoterminal?: boolean;
+  geckoProbe?: { ok: boolean; error?: string };
+  moralis?: boolean;
+  moralisProbe?: { ok: boolean; error?: string };
+  etherscan?: boolean;
+  etherscanProbe?: { ok: boolean; error?: string };
 };
 
 export function useIntegrationsStatus() {

@@ -8,12 +8,25 @@ import { probeLunarCrush, hasLunarCrushKey } from "@/lib/lunarcrush";
 import { probeNeynar, hasNeynarKey } from "@/lib/neynar";
 import { probeReddit, hasRedditCredentials } from "@/lib/reddit";
 import { usePremiumSocialApis } from "@/lib/social-config";
+import { probeGeckoTerminal } from "@/lib/geckoterminal";
+import { hasMoralisKey, probeMoralis } from "@/lib/moralis";
+import { hasEtherscanKey, probeEtherscan } from "@/lib/etherscan";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const premiumSocial = usePremiumSocialApis();
-  const [arc, circle, supabaseHealth, lunarcrushProbe, neynarProbe, redditProbe] = await Promise.all([
+  const [
+    arc,
+    circle,
+    supabaseHealth,
+    lunarcrushProbe,
+    neynarProbe,
+    redditProbe,
+    geckoProbe,
+    moralisProbe,
+    etherscanProbe,
+  ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
     probeSupabaseTables(),
@@ -32,6 +45,9 @@ export async function GET() {
       error: "free mode",
     }),
     probeReddit(),
+    probeGeckoTerminal(),
+    hasMoralisKey() ? probeMoralis() : Promise.resolve({ ok: false, error: "not configured" }),
+    hasEtherscanKey() ? probeEtherscan() : Promise.resolve({ ok: false, error: "not configured" }),
   ]);
   const demoPortfolio = supabaseHealth.demoPortfolio;
 
@@ -82,6 +98,12 @@ export async function GET() {
     reddit: hasRedditCredentials(),
     redditProbe,
     socialStack: premiumSocial ? "premium" : "free",
+    geckoterminal: true,
+    geckoProbe,
+    moralis: hasMoralisKey(),
+    moralisProbe,
+    etherscan: hasEtherscanKey(),
+    etherscanProbe,
     mode:
       process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
         ? "ai"

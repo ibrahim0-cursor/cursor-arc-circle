@@ -5,4 +5,4 @@ export function usePremiumSocialApis(): boolean {
 }
 
 export const FREE_SOCIAL_STACK_LABEL =
-  "Free stack: DexScreener · crypto news · Birdeye · TA · Groq · Reddit (when approved)";
+  "Free stack: DexScreener · GeckoTerminal · crypto news · Birdeye · TA · Groq · Reddit (when approved)";

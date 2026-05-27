@@ -5,6 +5,7 @@ import { fetchDexPaprikaToken, paprikaIntelFromToken } from "./dexpaprika";
 import { fetchMergedTokenDetection } from "./token-detection";
 import type { CryptoNewsItem } from "./crypto-news";
 import { fetchCommunityPulse, type CommunityPulse } from "./community-pulse";
+import { fetchMoralisTokenMeta, hasMoralisKey } from "./moralis";
 import type { TokenIntel } from "./storage";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import { tokenSocialFromIntel, type TokenSocialIntel } from "./social-intel";
@@ -18,7 +19,8 @@ export type DeepAnalysisBundle = {
   buySellRatio: number;
 };
 
-export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAnalysisBundle> {
+export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<DeepAnalysisBundle> {
+  let token = inputToken;
   const local = buildLocalTokenIntel(token);
 
   const [paprika, detection, community] = await Promise.all([
@@ -84,6 +86,11 @@ export async function buildDeepTokenIntel(token: TrendingToken): Promise<DeepAna
 
   if (token.marketCap) intel = { ...intel, marketCap: token.marketCap };
   if (token.fdv) intel = { ...intel, fdv: token.fdv };
+
+  if (hasMoralisKey() && !token.icon) {
+    const moralis = await fetchMoralisTokenMeta(token.chainId, token.tokenAddress);
+    if (moralis?.logo) token = { ...token, icon: moralis.logo, name: moralis.name ?? token.name };
+  }
 
   const ta = await resolveTokenTechnical(token);
   intel = { ...intel, technical: technicalToIntel(ta), social: tokenSocialFromIntel(social) };

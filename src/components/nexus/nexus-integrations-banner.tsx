@@ -108,7 +108,7 @@ export function NexusIntegrationsBanner() {
         ) : (
           <>
             <span className="font-medium text-emerald-200/90">Free intel mode</span>
-            {" — news, DexScreener, Birdeye, TA, Groq. Reddit when OAuth approved. No paid LunarCrush/Neynar."}
+            {" — GeckoTerminal, news, DexScreener, Birdeye, Moralis, TA, Groq. Reddit when approved."}
           </>
         )}
       </p>
