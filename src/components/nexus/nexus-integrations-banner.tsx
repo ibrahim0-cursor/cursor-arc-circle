@@ -94,37 +94,24 @@ export function NexusIntegrationsBanner() {
           OpenAI enabled for richer agent reasoning
         </p>
       )}
-      {(status.lunarcrush || status.neynar || status.reddit) && (
-        <div className="mt-2 space-y-1 text-xs text-white/55">
-          <p className="font-medium text-white/70">Social APIs</p>
-          <p>
-            LunarCrush:{" "}
-            {status.lunarcrushProbe?.ok
-              ? "connected"
-              : status.lunarcrushProbe?.paidRequired
-                ? "402 — subscription required"
-                : status.lunarcrush
-                  ? (status.lunarcrushProbe?.error ?? "probe failed")
-                  : "not configured"}
-          </p>
-          <p>
-            Neynar:{" "}
-            {status.neynarProbe?.ok
-              ? `Snapchain OK${status.neynarProbe.hubVersion ? ` (${status.neynarProbe.hubVersion})` : ""}`
-              : status.neynar
-                ? (status.neynarProbe?.error ?? "probe failed")
-                : "not configured"}
-          </p>
-          <p>
-            Reddit OAuth:{" "}
-            {status.redditProbe?.ok
-              ? "connected"
-              : status.reddit
-                ? (status.redditProbe?.error ?? "probe failed")
-                : "not configured (Devvit is separate — use reddit.com/prefs/apps)"}
-          </p>
-        </div>
-      )}
+      <p className="mt-2 text-xs text-white/55">
+        {status.socialStack === "premium" ? (
+          <>
+            <span className="font-medium text-white/70">Social APIs (premium)</span>
+            {" · "}
+            LC {status.lunarcrushProbe?.ok ? "ok" : status.lunarcrush ? "limited" : "off"}
+            {" · "}
+            Neynar {status.neynarProbe?.ok ? "ok" : status.neynar ? "limited" : "off"}
+            {" · "}
+            Reddit {status.redditProbe?.ok ? "ok" : status.reddit ? "pending" : "off"}
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-emerald-200/90">Free intel mode</span>
+            {" — news, DexScreener, Birdeye, TA, Groq. Reddit when OAuth approved. No paid LunarCrush/Neynar."}
+          </>
+        )}
+      </p>
     </div>
   );
 }

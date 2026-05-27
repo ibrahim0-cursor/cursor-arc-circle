@@ -13,6 +13,7 @@ export type IntegrationsStatus = {
   neynarProbe?: { ok: boolean; configured?: boolean; error?: string; hubVersion?: string };
   reddit?: boolean;
   redditProbe?: { ok: boolean; configured?: boolean; error?: string };
+  socialStack?: "free" | "premium";
 };
 
 export function useIntegrationsStatus() {

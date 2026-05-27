@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { getAiClient, getAiModel } from "./ai-client";
 import { fetchCryptoNewsHeadlines } from "./crypto-news";
+import { usePremiumSocialApis } from "./social-config";
 import { fetchTrendingMarketTokens, fetchSwappableTokens, type TrendingToken } from "./dexscreener";
 import { buildDeepTokenIntel } from "./deep-token-analysis";
 import { buildLocalTokenIntel } from "./token-intel-local";
@@ -515,6 +516,7 @@ function scoreOpportunity(
   signal: AgentSignal,
   intel: TokenIntel,
   social?: TokenSocialIntel,
+  newsCount = 0,
 ): number {
   let score = signal.confidence;
   if (signal.action === "BUY") score += 22;
@@ -525,7 +527,9 @@ function scoreOpportunity(
   else if (token.liquidityUsd > 50_000) score += 6;
   if (token.change24h > 5 && token.change24h < 80) score += 8;
   if ((token.txns24h?.buys ?? 0) > (token.txns24h?.sells ?? 1)) score += 6;
+  if (newsCount > 0) score += 6;
   if (social?.lunarcrush?.galaxyScore && social.lunarcrush.galaxyScore >= 60) score += 8;
+  if ((social?.reddit.length ?? 0) > 0) score += 5;
   if (social?.hasData) score += 4;
   score -= Math.min(40, signal.riskScore * 0.35);
   return Math.round(Math.min(100, Math.max(0, score)));
@@ -648,9 +652,11 @@ export async function runAlphaScan(
       socialBuzz: socialHeadline,
       galaxyScore: social.lunarcrush?.galaxyScore,
       socialDegraded:
-        social.status.lunarcrush === "402"
+        usePremiumSocialApis() && social.status.lunarcrush === "402"
           ? "Social: LunarCrush subscription required"
-          : social.degradedMessage,
+          : usePremiumSocialApis()
+            ? social.degradedMessage
+            : undefined,
       liquidityUsd: token.liquidityUsd,
       volume24h: token.volume24h,
     };

@@ -7,16 +7,30 @@ import { hasBirdeyeKey, birdeyeFetchJson } from "@/lib/birdeye-client";
 import { probeLunarCrush, hasLunarCrushKey } from "@/lib/lunarcrush";
 import { probeNeynar, hasNeynarKey } from "@/lib/neynar";
 import { probeReddit, hasRedditCredentials } from "@/lib/reddit";
+import { usePremiumSocialApis } from "@/lib/social-config";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const premiumSocial = usePremiumSocialApis();
   const [arc, circle, supabaseHealth, lunarcrushProbe, neynarProbe, redditProbe] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
     probeSupabaseTables(),
-    probeLunarCrush(),
-    probeNeynar(),
+    premiumSocial && hasLunarCrushKey()
+      ? probeLunarCrush()
+      : Promise.resolve({
+          ok: false,
+          configured: hasLunarCrushKey(),
+          skipped: true,
+          error: "free mode (set SOCIAL_USE_PREMIUM=true to probe)",
+        }),
+    premiumSocial && hasNeynarKey() ? probeNeynar() : Promise.resolve({
+      ok: false,
+      configured: hasNeynarKey(),
+      skipped: true,
+      error: "free mode",
+    }),
     probeReddit(),
   ]);
   const demoPortfolio = supabaseHealth.demoPortfolio;
@@ -61,6 +75,7 @@ export async function GET() {
     },
     reddit: hasRedditCredentials(),
     redditProbe,
+    socialStack: premiumSocial ? "premium" : "free",
     mode:
       process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
         ? "ai"

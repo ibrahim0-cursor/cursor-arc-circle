@@ -14,6 +14,7 @@ import {
   type NeynarCastSearchResult,
 } from "./neynar";
 import { hasRedditCredentials, searchSubredditPosts, type RedditPost } from "./reddit";
+import { usePremiumSocialApis } from "./social-config";
 import type { TokenSocialSnapshot } from "./storage";
 
 export type SocialProviderStatus = "ok" | "missing" | "402" | "empty" | "error";
@@ -59,7 +60,7 @@ export function tokenSocialFromIntel(social: TokenSocialIntel): TokenSocialSnaps
           ? "LunarCrush subscription required (402)"
           : undefined,
     };
-  } else if (social.status.lunarcrush === "402") {
+  } else if (usePremiumSocialApis() && social.status.lunarcrush === "402") {
     snapshot.lunarcrush = {
       degraded: true,
       reason: "LunarCrush subscription required (402)",
@@ -73,9 +74,7 @@ export function tokenSocialFromIntel(social: TokenSocialIntel): TokenSocialSnaps
       topCast: top.text,
       author: top.authorUsername,
     };
-  } else if (hasNeynarKey() && neynarSearchEnabled() && social.status.neynar === "empty") {
-    snapshot.farcaster = { castCount: 0 };
-  } else if (hasNeynarKey() && !neynarSearchEnabled()) {
+  } else if (usePremiumSocialApis() && hasNeynarKey() && !neynarSearchEnabled()) {
     snapshot.farcaster = {
       castCount: 0,
       degraded: true,
@@ -97,23 +96,26 @@ export function tokenSocialFromIntel(social: TokenSocialIntel): TokenSocialSnaps
 export async function fetchTokenSocialIntel(symbol: string, name?: string): Promise<TokenSocialIntel> {
   const sym = symbol.replace(/^\$/, "").trim();
   const query = name && name.length > 2 ? `${sym} OR ${name.split(/\s+/)[0]}` : sym;
+  const premium = usePremiumSocialApis();
+  const useLc = premium && hasLunarCrushKey();
+  const useNeynarSearch = premium && hasNeynarKey() && neynarSearchEnabled();
 
   const status: TokenSocialIntel["status"] = {
-    lunarcrush: hasLunarCrushKey() ? "empty" : "missing",
+    lunarcrush: useLc ? "empty" : "missing",
     reddit: hasRedditCredentials() ? "empty" : "missing",
-    neynar: hasNeynarKey() ? "empty" : "missing",
+    neynar: useNeynarSearch ? "empty" : "missing",
   };
 
   const emptyCoin: LunarCrushResult<LunarCrushCoinSnapshot> = { data: null };
   const emptyPosts: LunarCrushResult<LunarCrushTopicPost[]> = { data: [] };
 
   const [lunarResult, lunarPostsResult, redditPosts, farcasterResult] = await Promise.all([
-    hasLunarCrushKey() ? getCoinTopic(sym) : Promise.resolve(emptyCoin),
-    hasLunarCrushKey() ? getTopicPosts(sym, 3) : Promise.resolve(emptyPosts),
+    useLc ? getCoinTopic(sym) : Promise.resolve(emptyCoin),
+    useLc ? getTopicPosts(sym, 3) : Promise.resolve(emptyPosts),
     hasRedditCredentials()
       ? searchSubredditPosts(pickSubreddit(sym), query, 4)
       : Promise.resolve([]),
-    hasNeynarKey()
+    useNeynarSearch
       ? getCastsForKeyword(sym, 4)
       : Promise.resolve({ casts: [] } as NeynarCastSearchResult),
   ]);
@@ -122,7 +124,7 @@ export async function fetchTokenSocialIntel(symbol: string, name?: string): Prom
   const lunarPosts = lunarPostsResult.data ?? [];
   const farcasterCasts = farcasterResult.casts;
 
-  if (hasLunarCrushKey()) {
+  if (useLc) {
     const lc402 =
       lunarResult.reason?.includes("402") || lunarPostsResult.reason?.includes("402");
     if (lc402) status.lunarcrush = "402";
@@ -134,10 +136,9 @@ export async function fetchTokenSocialIntel(symbol: string, name?: string): Prom
     status.reddit = redditPosts.length > 0 ? "ok" : "empty";
   }
 
-  if (hasNeynarKey()) {
+  if (useNeynarSearch) {
     if (farcasterResult.paymentRequired) status.neynar = "402";
     else if (farcasterCasts.length > 0) status.neynar = "ok";
-    else if (!neynarSearchEnabled()) status.neynar = "empty";
     else status.neynar = "empty";
   }
 
@@ -147,28 +148,20 @@ export async function fetchTokenSocialIntel(symbol: string, name?: string): Prom
     redditPosts.length > 0 ||
     farcasterCasts.length > 0;
 
-  const missing = [
-    status.lunarcrush === "missing" ? "LunarCrush" : null,
-    status.reddit === "missing" ? "Reddit OAuth" : null,
-    status.neynar === "missing" ? "Neynar" : null,
-  ].filter(Boolean);
-
   const degradedParts: string[] = [];
-  if (status.lunarcrush === "402") {
-    degradedParts.push("Social: LunarCrush subscription required (402)");
-  }
-  if (farcasterResult.paymentRequired) {
-    degradedParts.push("Neynar cast search requires paid plan");
-  }
-  if (hasNeynarKey() && !neynarSearchEnabled()) {
-    degradedParts.push("Neynar cast search disabled (NEYNAR_USE_SEARCH=false)");
-  }
-  if (missing.length === 3) {
-    degradedParts.push("No social API keys configured");
-  } else if (missing.length > 0 && !hasData && status.lunarcrush !== "402") {
-    degradedParts.push(`Partial setup — add ${missing.join(", ")} keys`);
-  } else if (!hasData && missing.length === 0 && status.lunarcrush !== "402") {
-    degradedParts.push("Social APIs connected but no hits for this symbol");
+  if (premium) {
+    if (status.lunarcrush === "402") {
+      degradedParts.push("Social: LunarCrush subscription required (402)");
+    }
+    if (farcasterResult.paymentRequired) {
+      degradedParts.push("Neynar cast search requires paid plan");
+    }
+    if (hasNeynarKey() && !neynarSearchEnabled()) {
+      degradedParts.push("Neynar cast search disabled (NEYNAR_USE_SEARCH=false)");
+    }
+    if (!hasData && !hasRedditCredentials()) {
+      degradedParts.push("No social hits for this symbol");
+    }
   }
 
   return {
