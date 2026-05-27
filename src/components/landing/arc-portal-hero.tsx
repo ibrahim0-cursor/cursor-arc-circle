@@ -1,64 +1,89 @@
 "use client";
 
-import { Brain } from "lucide-react";
-import { ArcToken3d } from "@/components/landing/arc-token-3d";
+import { motion, useReducedMotion } from "framer-motion";
+import { Brain, Sparkles } from "lucide-react";
+import { ArcPortalTokenFlight } from "@/components/landing/arc-portal-token-flight";
 import type { CryptoId } from "@/components/landing/arc-crypto-icons";
 import { cn } from "@/lib/utils";
 
-const PORTAL_TOKENS: { id: CryptoId; angle: number; delay: number; duration: number }[] = [
-  { id: "btc", angle: -90, delay: 0, duration: 4.2 },
-  { id: "eth", angle: -18, delay: 0.85, duration: 4.2 },
-  { id: "sol", angle: 54, delay: 1.7, duration: 4.2 },
-  { id: "usdc", angle: 126, delay: 2.55, duration: 4.2 },
-  { id: "usdt", angle: 198, delay: 3.4, duration: 4.2 },
+const TOKENS: { id: CryptoId; angle: number; delay: number }[] = [
+  { id: "btc", angle: -90, delay: 0 },
+  { id: "eth", angle: -18, delay: 1.15 },
+  { id: "sol", angle: 54, delay: 2.3 },
+  { id: "usdc", angle: 126, delay: 3.45 },
+  { id: "usdt", angle: 198, delay: 4.6 },
 ];
 
-/**
- * AI portal — coins jump in, processed at core, jump back out (loop).
- * Real token icons · 3D coins · no dot-globe.
- */
+const PARTICLES = Array.from({ length: 14 }, (_, i) => ({
+  angle: (i / 14) * 360,
+  delay: i * 0.35,
+}));
+
+/** High-end AI portal — vortex depth, orchestrated token flights, no dot-globe */
 export function ArcPortalHero({ className = "" }: { className?: string }) {
+  const reduced = useReducedMotion();
+
   return (
     <div className={cn("arc-portal-hero", className)} aria-hidden>
-      <div className="arc-portal-ambient" />
+      <div className="arc-portal-stage">
+        <div className="arc-portal-glow-field" />
 
-      <div className="arc-portal-tunnel arc-portal-tunnel-3" />
-      <div className="arc-portal-tunnel arc-portal-tunnel-2" />
-      <div className="arc-portal-tunnel arc-portal-tunnel-1" />
-
-      <div className="arc-portal-void">
-        <div className="arc-portal-ai-flash" />
-        <div className="arc-portal-ai-core">
-          <div className="arc-portal-ai-ring" />
-          <Brain className="arc-portal-ai-icon" strokeWidth={1.4} />
-          <span className="arc-portal-ai-label">AI</span>
+        <div className="arc-portal-vortex">
+          <div className="arc-portal-vortex-ring arc-portal-vortex-ring-1" />
+          <div className="arc-portal-vortex-ring arc-portal-vortex-ring-2" />
+          <div className="arc-portal-vortex-ring arc-portal-vortex-ring-3" />
+          <div className="arc-portal-vortex-ring arc-portal-vortex-ring-4" />
+          <div className="arc-portal-vortex-spiral" />
         </div>
-      </div>
 
-      {PORTAL_TOKENS.map((t) => (
-        <div
-          key={t.id}
-          className="arc-portal-lane"
-          style={
-            {
-              "--lane-angle": `${t.angle}deg`,
-              "--jump-dur": `${t.duration}s`,
-              "--jump-delay": `${t.delay}s`,
-            } as React.CSSProperties
-          }
-        >
-          <ArcToken3d
-            id={t.id}
-            className="arc-portal-jumper"
-            style={
-              {
-                animationDuration: `${t.duration}s`,
-                animationDelay: `${t.delay}s`,
-              } as React.CSSProperties
-            }
+        {!reduced &&
+          PARTICLES.map((p) => (
+            <span
+              key={p.angle}
+              className="arc-portal-particle"
+              style={
+                {
+                  "--p-angle": `${p.angle}deg`,
+                  "--p-delay": `${p.delay}s`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+
+        <div className="arc-portal-horizon">
+          <motion.div
+            className="arc-portal-ai-burst"
+            animate={reduced ? undefined : { opacity: [0, 0, 0.9, 0, 0], scale: [0.8, 0.8, 1.25, 0.8, 0.8] }}
+            transition={{ duration: 5.8, repeat: Infinity, times: [0, 0.46, 0.5, 0.54, 1] }}
           />
+          <motion.div
+            className="arc-portal-core"
+            animate={
+              reduced
+                ? undefined
+                : {
+                    boxShadow: [
+                      "0 0 28px rgba(18, 232, 168, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.15)",
+                      "0 0 28px rgba(18, 232, 168, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.15)",
+                      "0 0 48px rgba(34, 211, 238, 0.55), 0 0 80px rgba(168, 85, 247, 0.45), inset 0 0 28px rgba(18, 232, 168, 0.35)",
+                      "0 0 28px rgba(18, 232, 168, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.15)",
+                    ],
+                  }
+            }
+            transition={{ duration: 5.8, repeat: Infinity, times: [0, 0.46, 0.52, 1] }}
+          >
+            <div className="arc-portal-core-scan" />
+            <div className="arc-portal-core-ring" />
+            <Sparkles className="arc-portal-core-spark" strokeWidth={1.25} />
+            <Brain className="arc-portal-core-icon" strokeWidth={1.35} />
+            <span className="arc-portal-core-label">AI CORE</span>
+          </motion.div>
         </div>
-      ))}
+
+        {TOKENS.map((t) => (
+          <ArcPortalTokenFlight key={t.id} id={t.id} angleDeg={t.angle} delay={t.delay} />
+        ))}
+      </div>
 
       <p className="arc-portal-live-tag">
         <span className="arc-live-dot" />
