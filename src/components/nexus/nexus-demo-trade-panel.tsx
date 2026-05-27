@@ -17,7 +17,7 @@ import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
-import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
@@ -270,43 +270,52 @@ export function NexusTradeHub({
       <div className="arc-panel arc-panel-nexus overflow-hidden">
         <div className="arc-panel-stripe arc-panel-stripe-nexus" />
         <div className="border-b border-white/[0.08] px-4 py-3">
-          <div className="nexus-trade-hub-header mb-3">
-            <ArcIcon3d icon={ArrowDownUp} theme="nexus" size="md" />
-            <div>
+          <div className="nexus-trade-hub-header mb-3 flex flex-wrap items-center gap-3">
+            <ArcIconFrame icon={ArrowDownUp} variant="nexus" size="md" active />
+            <div className="min-w-0 flex-1">
               <p className="arc-caption text-violet-300/85">Execution</p>
               <span className="text-base font-semibold text-white">Arc Trade · Agent</span>
             </div>
             {agentLive && (
-              <span className="ml-auto rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                 LIVE
               </span>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="nexus-trade-tabs grid grid-cols-3 gap-2">
             {(
               [
-                { id: "buy" as const, label: "Buy", icon: TrendingUp },
-                { id: "sell" as const, label: "Sell", icon: TrendingDown },
-                { id: "agent" as const, label: "Autopilot", icon: Bot },
+                { id: "buy" as const, label: "Buy", icon: TrendingUp, frame: "nexus" as const },
+                { id: "sell" as const, label: "Sell", icon: TrendingDown, frame: "prism" as const },
+                { id: "agent" as const, label: "Autopilot", icon: Bot, frame: "home" as const },
               ] as const
-            ).map(({ id, label, icon: Icon }) => (
+            ).map(({ id, label, icon: Icon, frame }) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => setTab(id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTab(id);
+                }}
                 className={cn(
-                  "arc-glass-interactive flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold transition active:scale-[0.98]",
+                  "nexus-trade-tab flex min-h-[52px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2 transition active:scale-[0.98]",
                   tradeTab === id
                     ? id === "agent"
-                      ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                      ? "border-violet-400/55 bg-violet-500/25 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
                       : id === "buy"
-                        ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100"
-                        : "border-rose-400/50 bg-rose-500/20 text-rose-100"
-                    : "border-[var(--arc-border)] text-white/65",
+                        ? "border-emerald-400/55 bg-emerald-500/25 shadow-[0_0_20px_rgba(18,232,168,0.2)]"
+                        : "border-rose-400/55 bg-rose-500/25 shadow-[0_0_20px_rgba(244,63,94,0.2)]"
+                    : "border-white/10 bg-black/30 text-white/55",
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <ArcIconFrame
+                  icon={Icon}
+                  variant={frame}
+                  size="sm"
+                  active={tradeTab === id}
+                  className="pointer-events-none scale-90"
+                />
+                <span className="text-[10px] font-bold">{label}</span>
               </button>
             ))}
           </div>

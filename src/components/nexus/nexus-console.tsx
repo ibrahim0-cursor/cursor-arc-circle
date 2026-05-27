@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { Database, LineChart, Loader2, Radio, Sparkles } from "lucide-react";
+import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { ArcPanel } from "@/components/ui/arc-panel";
@@ -508,7 +509,7 @@ export function NexusConsole() {
             activeTab === "live" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
           )}
         >
-          <Radio className="h-4 w-4" />
+          <ArcIconBadge icon={Radio} theme="nexus" size="sm" className="!h-7 !w-7" />
           Live Feed
         </button>
         <button
@@ -519,7 +520,7 @@ export function NexusConsole() {
             activeTab === "saved" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
           )}
         >
-          <Database className="h-4 w-4" />
+          <ArcIconBadge icon={Database} theme="nexus" size="sm" className="!h-7 !w-7" />
           Saved scans
           {memoryScanCount != null ? (
             <span className="rounded-md bg-emerald-500/20 px-1.5 text-[10px] font-bold text-emerald-200">
@@ -539,7 +540,7 @@ export function NexusConsole() {
               : "text-white/50",
           )}
         >
-          <Sparkles className="h-4 w-4" />
+          <ArcIconBadge icon={Sparkles} theme="home" size="sm" className="!h-7 !w-7" />
           Alpha ({alphaOpportunities.length})
         </button>
       </div>

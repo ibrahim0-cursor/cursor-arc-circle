@@ -339,6 +339,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  pointer-events: none;
   padding: 1px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 45%, rgba(168, 85, 247, 0.25));
   -webkit-mask:
@@ -1479,8 +1480,22 @@ html[data-arc-theme="nexus"] .arc-panel-stripe-nexus {
   cursor: default;
 }
 
-.nexus-scan-action-tile:hover .arc-icon-3d-plate {
-  transform: rotateX(4deg) rotateY(10deg) translateY(-3px) scale(1.05);
+.nexus-scan-btn {
+  cursor: pointer;
+}
+
+.nexus-scan-run {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.nexus-stat-chip {
+  pointer-events: none;
+  user-select: none;
+}
+
+.nexus-stats-row {
+  opacity: 0.92;
 }
 
 .nexus-collapsible-chevron {
