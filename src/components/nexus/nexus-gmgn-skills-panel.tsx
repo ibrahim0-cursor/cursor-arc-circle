@@ -67,22 +67,25 @@ export function NexusGmgnSkillsPanel({ defaultQuery = "" }: { defaultQuery?: str
     return () => clearTimeout(t);
   }, [query, search]);
 
-  async function enableAllDataAnalytics() {
+  async function enableGmgnOnServer(scope: "analytics" | "monitor" | "all") {
     setBootstrapping(true);
     setMessage(null);
     setError(null);
     try {
-      const res = await fetch("/api/nexus/gmgn/bootstrap", { method: "POST" });
+      const res = await fetch(`/api/nexus/gmgn/bootstrap?scope=${scope}`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Bootstrap failed");
       const ids = (data.skills as { id: string }[] | undefined)?.map((s) => s.id) ?? [];
       const next = [...new Set([...installed, ...ids])];
       setInstalled(next);
       saveInstalled(next);
+      const probesOk =
+        (scope !== "monitor" && data.analyticsProbe?.ok) ||
+        (scope !== "analytics" && data.monitorProbe?.ok);
       setMessage(
-        data.probe?.ok
-          ? "All 12 Data Analytics skills active on ARC (OpenAPI). Alpha Scan uses GMGN discovery."
-          : "Skills registered on ARC; some GMGN probes failed — check GMGN_API_KEY / rate limits.",
+        probesOk
+          ? data.message ?? `GMGN ${scope} skills active on ARC.`
+          : "Skills registered; some GMGN probes failed — check GMGN_API_KEY / rate limits.",
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Bootstrap failed");
@@ -162,18 +165,28 @@ export function NexusGmgnSkillsPanel({ defaultQuery = "" }: { defaultQuery?: str
           </div>
         )}
 
-        <button
-          type="button"
-          disabled={bootstrapping}
-          onClick={() => void enableAllDataAnalytics()}
-          className="arc-glass-interactive w-full rounded-xl border border-emerald-400/40 bg-emerald-500/15 py-2.5 text-sm font-bold text-emerald-100"
-        >
-          {bootstrapping ? (
-            <Loader2 className="mx-auto h-5 w-5 animate-spin" />
-          ) : (
-            "Enable all 12 Data Analytics on ARC (server)"
-          )}
-        </button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={bootstrapping}
+            onClick={() => void enableGmgnOnServer("all")}
+            className="arc-glass-interactive rounded-xl border border-emerald-400/40 bg-emerald-500/15 py-2.5 text-xs font-bold text-emerald-100 sm:text-sm"
+          >
+            {bootstrapping ? (
+              <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+            ) : (
+              "Enable Analytics + Monitor on ARC"
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={bootstrapping}
+            onClick={() => void enableGmgnOnServer("monitor")}
+            className="arc-glass-interactive rounded-xl border border-violet-400/40 bg-violet-500/15 py-2.5 text-xs font-bold text-violet-100 sm:text-sm"
+          >
+            Enable 6 Monitor skills
+          </button>
+        </div>
 
         <p className="text-xs leading-relaxed text-white/55">
           Curated directory from{" "}

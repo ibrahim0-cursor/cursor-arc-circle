@@ -675,10 +675,16 @@ export async function runAlphaScan(
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
 
   const { fetchGmgnDiscoveryTokens } = await import("./gmgn-discovery");
-  const [dexFeed, geckoFeed, gmgnDiscovery] = await Promise.all([
+  const { fetchGmgnMonitorTokens } = await import("./gmgn-monitor-feed");
+  const [dexFeed, geckoFeed, gmgnDiscovery, gmgnMonitor] = await Promise.all([
     fetchStableMarketFeed(Math.min(limit * 2, 30)),
     fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 8),
     fetchGmgnDiscoveryTokens("sol").catch(() => ({
+      tokens: [] as TrendingToken[],
+      sources: {},
+      errors: [] as string[],
+    })),
+    fetchGmgnMonitorTokens("sol").catch(() => ({
       tokens: [] as TrendingToken[],
       sources: {},
       errors: [] as string[],
@@ -689,9 +695,9 @@ export async function runAlphaScan(
   );
 
   const merged = mergeTrendingWithGecko(
-    [...gmgnDiscovery.tokens, ...dexFeed],
+    [...gmgnMonitor.tokens, ...gmgnDiscovery.tokens, ...dexFeed],
     geckoFeed,
-    Math.min(limit * 2, 40),
+    Math.min(limit * 2, 45),
   );
   let tokens: TrendingToken[] = filterTradableTokens(merged).slice(0, limit);
   if (tokens.length < Math.min(limit, 8) && gmgnDiscovery.tokens.length > 0) {
@@ -827,7 +833,7 @@ export async function runAlphaScan(
     count: opportunities.length,
     scanMode: "alpha" as const,
     criteria:
-      "alpha-20|gmgn-discovery|gmgn-security|apewisdom|reddit-public|hackernews|perception|geckoterminal|github|birdeye|ai-thesis",
+      "alpha-20|gmgn-discovery|gmgn-monitor|gmgn-security|apewisdom|reddit-public|hackernews|perception|geckoterminal|github|birdeye|ai-thesis",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

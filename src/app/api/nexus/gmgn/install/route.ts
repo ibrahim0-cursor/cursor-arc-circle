@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GMGN_SKILL_CLI, isGmgnAnalyticsSkill } from "@/lib/gmgn-analytics";
+import { GMGN_MONITOR_CLI, isGmgnMonitorSkill } from "@/lib/gmgn-monitor";
 import { fetchGmgnSkillsCatalog, getGmgnSkillById } from "@/lib/gmgn-skills";
 import { hasGmgnApiKey, hasGmgnPrivateKey } from "@/lib/gmgn-client";
 
@@ -49,10 +50,14 @@ export async function POST(request: Request) {
 
   const cli = isGmgnAnalyticsSkill(skill.id)
     ? GMGN_SKILL_CLI[skill.id]
-    : skill.cliCommand;
+    : isGmgnMonitorSkill(skill.id)
+      ? GMGN_MONITOR_CLI[skill.id]
+      : skill.cliCommand;
   const apiRoute = isGmgnAnalyticsSkill(skill.id)
     ? `/api/nexus/gmgn/analytics?skill=${skill.id}&chain=sol`
-    : undefined;
+    : isGmgnMonitorSkill(skill.id)
+      ? `/api/nexus/gmgn/monitor?skill=${skill.id}&chain=sol`
+      : undefined;
 
   return NextResponse.json({
     ok: true,
