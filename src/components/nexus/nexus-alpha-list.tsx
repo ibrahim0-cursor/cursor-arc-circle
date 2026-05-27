@@ -70,7 +70,7 @@ export function NexusAlphaList({
 }) {
   if (scanning) {
     return (
-      <div className="arc-signal-panel arc-border-trace space-y-4 p-8 text-center">
+      <div className="arc-glass-card arc-glass-card-nexus space-y-4 p-8 text-center">
         <ArcIconFrame icon={ScanLine} variant="nexus" size="lg" active className="mx-auto" />
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-300" />
         <h3 className="text-base font-semibold text-white">Alpha scan running…</h3>
@@ -126,7 +126,7 @@ export function NexusAlphaList({
           Previous scan issue: {scanError}
         </div>
       )}
-      <div className="arc-signal-panel arc-signal-panel-nexus px-3 py-2.5 text-xs text-emerald-100/90">
+      <div className="arc-glass-card arc-glass-card-nexus px-3 py-2.5 text-xs text-emerald-100/90">
         <p className="font-semibold">{opportunities.length} probabilistic opportunities (sorted by Alpha Score)</p>
         <p className="mt-1 text-white/55">
           Narrative acceleration is weighted highest. Tap a row for chart, trade panel, and full thesis.
@@ -141,10 +141,10 @@ export function NexusAlphaList({
               type="button"
               onClick={() => onSelect(row)}
               className={cn(
-                "arc-signal-panel group w-full px-3 py-3 text-left transition-all duration-200 lg:px-3 lg:py-2.5",
+                "arc-glass-card arc-glass-interactive group w-full px-3 py-3 text-left transition-all duration-200 lg:px-3 lg:py-2.5",
                 "hover:shadow-[0_0_24px_-8px_rgba(18,232,168,0.35)]",
                 selected
-                  ? "arc-signal-panel-nexus ring-1 ring-emerald-400/35"
+                  ? "arc-glass-card-nexus ring-1 ring-emerald-400/35"
                   : "hover:border-emerald-400/25",
               )}
             >

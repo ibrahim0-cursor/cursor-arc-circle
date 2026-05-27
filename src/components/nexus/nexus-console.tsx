@@ -689,7 +689,7 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
-        <div className="arc-signal-panel arc-signal-panel-nexus arc-border-trace mb-3 hidden p-4 sm:mb-8 sm:block sm:p-8">
+        <div className="arc-glass-card arc-glass-card-nexus mb-3 hidden p-4 sm:mb-8 sm:block sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
             <div className="max-w-2xl flex-1">
               <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -711,7 +711,7 @@ export function NexusConsole() {
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 variant="outline"
-                className="min-h-[44px] w-full gap-2 sm:w-auto"
+                className="arc-btn-pill arc-glass-interactive min-h-[44px] w-full gap-2 sm:w-auto"
                 title={`Archive ${MEMORY_SCAN_LIMIT} tokens with full intel to Memory tab`}
                 onClick={() => void runMemoryScan()}
                 disabled={scanning || alphaScanning || arcFeePending}
@@ -726,7 +726,7 @@ export function NexusConsole() {
               <Button
                 variant="outline"
                 className={cn(
-                  "min-h-[44px] w-full gap-2 border-emerald-400/35 sm:w-auto",
+                  "arc-btn-pill arc-glass-interactive min-h-[44px] w-full gap-2 border-emerald-400/35 sm:w-auto",
                   alphaScanning && "arc-ai-pulse",
                 )}
                 title={`Rank ${ALPHA_SCAN_LIMIT} opportunities — news, meme headlines, Birdeye, AI`}
@@ -742,7 +742,7 @@ export function NexusConsole() {
               </Button>
               <Button
                 variant="nexus"
-                className="min-h-[44px] w-full gap-2 sm:w-auto"
+                className="arc-btn-pill arc-glass-interactive min-h-[44px] w-full gap-2 sm:w-auto"
                 title="Thesis, risks, catalysts & levels for selected token (chart panel) — not the same as feed BUY/SELL"
                 onClick={runDeepAnalyze}
                 disabled={loading || arcFeePending || !selectedToken}
@@ -766,7 +766,7 @@ export function NexusConsole() {
               { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
               { icon: Sparkles, label: "Wallet score", sub: "Grade every wallet A–F" },
             ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <div key={item.label} className="arc-glass-card arc-glass-interactive flex items-center gap-3 px-4 py-3">
                 <item.icon className="h-5 w-5 text-cyan-300" />
                 <div>
                   <p className="text-sm font-medium">{item.label}</p>

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
-import { formatCompact, formatPct, truncateHash } from "@/lib/utils";
+import { cn, formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
 import type { CommunityPulse } from "@/lib/community-pulse";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
@@ -96,7 +96,7 @@ export function PrismConsole() {
     <div className="relative min-h-screen text-white" data-prism-page data-arc-theme="prism">
       <ArcBackground theme="prism" />
       <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10 sm:pb-12">
-        <div className="arc-signal-panel arc-signal-panel-prism arc-border-trace mb-4 p-5 sm:mb-8 sm:p-8">
+        <div className="arc-glass-card arc-glass-card-prism mb-4 p-5 sm:mb-8 sm:p-8">
           <div className="flex flex-wrap items-start gap-4">
             <ArcIconFrame icon={Radar} variant="prism" size="lg" active />
             <div className="min-w-0 flex-1">
@@ -111,7 +111,7 @@ export function PrismConsole() {
                 variant="prism"
                 onClick={analyze}
                 disabled={loading}
-                className={`arc-btn-signal mt-4 min-h-[52px] w-full gap-2 text-base sm:mt-6 sm:w-auto ${loading ? "arc-ai-pulse" : ""}`}
+                className={`arc-btn-pill arc-glass-interactive mt-4 min-h-[52px] w-full gap-2 text-base sm:mt-6 sm:w-auto ${loading ? "arc-ai-pulse" : ""}`}
               >
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -136,16 +136,16 @@ export function PrismConsole() {
                 compact
               />
             </div>
-            <p className="mt-2 text-center text-[10px] text-violet-200/70">CoinGecko · live</p>
+            <p className="mt-2 text-center text-[10px] text-amber-200/70">CoinGecko · live</p>
           </div>
         )}
 
         <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_1.1fr] lg:gap-6">
           <div id="prism-forecast" className="order-1 scroll-mt-28 space-y-4 sm:space-y-6 lg:order-2">
-            <Card className="overflow-hidden border-violet-400/25">
+            <Card className="arc-glass-card-prism overflow-hidden">
               <CardContent className="p-0">
-                <div className="bg-gradient-to-br from-violet-500/25 via-fuchsia-500/10 to-transparent p-5 sm:p-8">
-                  <p className="text-xs font-medium uppercase tracking-widest text-violet-200/80">Probability</p>
+                <div className="bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-transparent p-5 sm:p-8">
+                  <p className="text-xs font-medium uppercase tracking-widest text-amber-200/80">Probability</p>
                   <div className="mt-2 flex items-end gap-2">
                     <p className="text-5xl font-bold leading-none sm:text-7xl">{latest?.probability ?? "—"}</p>
                     {latest && <p className="pb-2 text-xl text-white/50">%</p>}
@@ -173,10 +173,10 @@ export function PrismConsole() {
               </CardContent>
             </Card>
 
-            <Card className="border-violet-400/20">
+            <Card className="arc-glass-card-prism">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <Globe2 className="h-5 w-5 text-violet-300" />
+                  <Globe2 className="h-5 w-5 text-amber-300" />
                   <h2 className="text-base font-semibold sm:text-lg">History</h2>
                 </div>
               </CardHeader>
@@ -190,14 +190,14 @@ export function PrismConsole() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.02 }}
-                      className="rounded-xl border border-white/10 bg-black/25 p-4"
+                      className="arc-glass-card arc-glass-interactive p-4"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-medium text-white">{prediction.event}</p>
                         <Badge variant="prism">{prediction.probability}%</Badge>
                       </div>
                       <p className="mt-2 line-clamp-2 text-sm text-white/60">{prediction.summary}</p>
-                      <p className="mt-1.5 line-clamp-2 text-xs text-violet-200/75">{prediction.reasoning}</p>
+                      <p className="mt-1.5 line-clamp-2 text-xs text-amber-200/75">{prediction.reasoning}</p>
                       <p className="mt-1 text-[10px] text-white/45">
                         Confidence {prediction.confidence}% · Kelly {(prediction.kellyFraction * 100).toFixed(1)}%
                       </p>
@@ -209,10 +209,10 @@ export function PrismConsole() {
           </div>
 
           <div className="order-2 space-y-4 lg:order-1">
-            <Card className="border-violet-400/20">
+            <Card className="arc-glass-card-prism">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-violet-300" />
+                  <Target className="h-5 w-5 text-amber-300" />
                   <h2 className="text-base font-semibold">Choose event</h2>
                 </div>
               </CardHeader>
@@ -222,11 +222,12 @@ export function PrismConsole() {
                     key={event.id}
                     type="button"
                     onClick={() => setSelected(event.id)}
-                    className={`w-full min-h-[56px] rounded-xl border px-4 py-3 text-left transition active:scale-[0.99] ${
+                    className={cn(
+                      "arc-glass-interactive w-full min-h-[56px] rounded-xl border px-4 py-3 text-left transition active:scale-[0.99]",
                       selected === event.id
-                        ? "border-violet-400/45 bg-violet-500/15"
-                        : "border-white/10 bg-white/[0.03]"
-                    }`}
+                        ? "border-amber-400/45 bg-amber-500/15 shadow-[0_0_24px_-8px_rgba(251,146,60,0.35)]"
+                        : "border-white/10 bg-white/[0.03]",
+                    )}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm font-medium text-white">{event.label}</span>
@@ -240,7 +241,7 @@ export function PrismConsole() {
                   value={customEvent}
                   onChange={(e) => setCustomEvent(e.target.value)}
                   placeholder="Or type your own event…"
-                  className="min-h-[80px] w-full rounded-xl border border-white/12 bg-black/25 px-4 py-3 text-base text-white outline-none placeholder:text-white/35 focus:border-violet-400/45"
+                  className="arc-input-glass min-h-[80px] w-full px-4 py-3 text-base text-white placeholder:text-white/35"
                 />
               </CardContent>
             </Card>
@@ -266,7 +267,7 @@ export function PrismConsole() {
                 )}
                 {!latestIntel && (
                   <p className="py-4 text-center text-sm text-white/55">
-                    Tap <strong className="text-violet-200">Generate Forecast</strong> for GDELT, news, and community pulse.
+                    Tap <strong className="text-amber-200">Generate Forecast</strong> for GDELT, news, and community pulse.
                   </p>
                 )}
               </CardContent>
@@ -279,7 +280,7 @@ export function PrismConsole() {
                 </CardHeader>
                 <CardContent className="max-h-[30vh] space-y-2 overflow-y-auto">
                   {predictions.slice(0, 5).map((p) => (
-                    <div key={p.id} className="rounded-xl border border-white/10 bg-black/25 p-3">
+                    <div key={p.id} className="arc-glass-card arc-glass-interactive p-3">
                       <div className="flex justify-between gap-2">
                         <p className="text-sm font-medium text-white line-clamp-2">{p.event}</p>
                         <Badge variant="prism">{p.probability}%</Badge>
@@ -338,7 +339,7 @@ function IntelRow({ source, title }: { source: string; title: string }) {
     bullish: "border-emerald-400/30 bg-emerald-500/10",
     bearish: "border-rose-400/30 bg-rose-500/10",
     risk: "border-amber-400/35 bg-amber-500/12",
-    neutral: "border-violet-400/20 bg-violet-500/8",
+    neutral: "border-amber-400/20 bg-amber-500/8",
   };
   const labels = { bullish: "Risk-on", bearish: "Risk-off", risk: "Headline risk", neutral: "Macro" };
   return (
@@ -356,7 +357,7 @@ function IntelRow({ source, title }: { source: string; title: string }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/30 px-2 py-2 text-center sm:px-3">
+    <div className="arc-glass-card arc-glass-interactive px-2 py-2 text-center sm:px-3">
       <p className="text-[9px] uppercase tracking-wider text-white/45">{label}</p>
       <p className="mt-0.5 text-xs font-semibold text-white sm:text-sm">{value}</p>
     </div>

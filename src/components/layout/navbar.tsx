@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArcLogoMark } from "@/components/layout/arc-logo-mark";
+import { arcThemeFromPath } from "@/components/layout/arc-theme-sync";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
 
@@ -15,6 +16,14 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const theme = arcThemeFromPath(pathname);
+
+  const ctaClass =
+    theme === "nexus"
+      ? "bg-[var(--nexus-accent)] text-[#021a12] hover:brightness-110"
+      : theme === "prism"
+        ? "bg-[var(--prism-amber)] text-[#1a0c00] hover:brightness-110"
+        : "bg-white text-black hover:bg-white/90";
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
@@ -23,7 +32,7 @@ export function Navbar() {
           <ArcLogoMark className="h-9 w-9" />
           <div className="hidden sm:block">
             <p className="text-sm font-semibold tracking-[0.14em] text-white/92">ARC CIRCLE</p>
-            <p className="arc-caption text-[9px] text-violet-300/60">Intelligence OS</p>
+            <p className="arc-caption text-[9px] text-white/45">Intelligence OS</p>
           </div>
         </Link>
 
@@ -60,8 +69,8 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Link
-            href="/nexus"
-            className="arc-btn-pill hidden rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90 sm:inline-block"
+            href={theme === "prism" ? "/prism" : "/nexus"}
+            className={cn("arc-btn-pill hidden rounded-full px-4 py-2 text-sm font-semibold transition sm:inline-block", ctaClass)}
             data-cursor-hover
           >
             Get started
