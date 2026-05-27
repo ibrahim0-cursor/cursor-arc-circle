@@ -108,7 +108,16 @@ export function NexusIntegrationsBanner() {
         ) : (
           <>
             <span className="font-medium text-emerald-200/90">Free intel mode</span>
-            {" — GeckoTerminal, news, DexScreener, Birdeye, Moralis, TA, Groq. Reddit when approved."}
+            {" — 6-layer Alpha (narrative, smart money, momentum, risk, AI thesis). "}
+            TG {status.telegramProbe?.ok ? "ok" : status.telegram ? "…" : "off"}
+            {" · "}
+            Discord {status.discordProbe?.ok ? "ok" : status.discordBot ? "…" : status.discordOAuth ? "OAuth only" : "off"}
+            {" · "}
+            ST {status.stocktwitsProbe?.ok ? "ok" : status.stocktwits ? "…" : "off"}
+            {" · "}
+            X {status.rapidTwitterProbe?.ok ? "ok" : status.rapidApiTwitter ? "…" : "off"}
+            {" · "}
+            GitHub {status.github ? "on" : "off"}. Reddit when approved.
           </>
         )}
       </p>

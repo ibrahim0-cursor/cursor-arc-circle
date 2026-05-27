@@ -7,15 +7,16 @@ import { ALPHA_SCAN_LIMIT, MEMORY_SCAN_LIMIT } from "@/lib/feed-config";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  const body = (await request.json().catch(() => ({}))) as {
+    walletChainId?: number;
+    chain?: string;
+    arcFeeTxHash?: string;
+    mode?: "memory" | "alpha";
+    chainId?: string;
+    tokenAddress?: string;
+  };
+
   try {
-    const body = (await request.json().catch(() => ({}))) as {
-      walletChainId?: number;
-      chain?: string;
-      arcFeeTxHash?: string;
-      mode?: "memory" | "alpha";
-      chainId?: string;
-      tokenAddress?: string;
-    };
     const preferredChain =
       body.chain ?? (body.walletChainId ? chainIdFromWallet(body.walletChainId) : undefined);
 
@@ -35,8 +36,16 @@ export async function POST(request: Request) {
     const result = await runNexusScan(MEMORY_SCAN_LIMIT, preferredChain, body.arcFeeTxHash);
     return NextResponse.json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Scan failed";
+    console.error("[nexus/scan]", message, error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Scan failed" },
+      {
+        error: message,
+        hint:
+          body.mode === "alpha"
+            ? "Alpha scan analyzes ~20 tokens with Birdeye, news, and AI — retry if APIs were slow."
+            : "Memory scan archives ~15 tokens — check DexScreener and wallet on Arc Testnet.",
+      },
       { status: 500 },
     );
   }

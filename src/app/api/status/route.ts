@@ -11,6 +11,11 @@ import { usePremiumSocialApis } from "@/lib/social-config";
 import { probeGeckoTerminal } from "@/lib/geckoterminal";
 import { hasMoralisKey, probeMoralis } from "@/lib/moralis";
 import { hasEtherscanKey, probeEtherscan } from "@/lib/etherscan";
+import { hasGithubToken, probeGithub } from "@/lib/github-dev";
+import { hasTelegramBotToken, probeTelegram } from "@/lib/telegram-bot";
+import { probeDiscord, hasDiscordBotToken, hasDiscordOAuthClient } from "@/lib/discord-bot";
+import { hasStocktwitsCredentials, probeStocktwits } from "@/lib/stocktwits";
+import { hasRapidApiTwitter, probeRapidApiTwitter } from "@/lib/rapidapi-twitter";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +31,11 @@ export async function GET() {
     geckoProbe,
     moralisProbe,
     etherscanProbe,
+    githubProbe,
+    telegramProbe,
+    discordProbe,
+    stocktwitsProbe,
+    rapidTwitterProbe,
   ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
@@ -48,6 +58,11 @@ export async function GET() {
     probeGeckoTerminal(),
     hasMoralisKey() ? probeMoralis() : Promise.resolve({ ok: false, error: "not configured" }),
     hasEtherscanKey() ? probeEtherscan() : Promise.resolve({ ok: false, error: "not configured" }),
+    probeGithub(),
+    hasTelegramBotToken() ? probeTelegram() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
+    probeDiscord(),
+    hasStocktwitsCredentials() ? probeStocktwits() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
+    hasRapidApiTwitter() ? probeRapidApiTwitter() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
   ]);
   const demoPortfolio = supabaseHealth.demoPortfolio;
 
@@ -104,6 +119,19 @@ export async function GET() {
     moralisProbe,
     etherscan: hasEtherscanKey(),
     etherscanProbe,
+    github: hasGithubToken(),
+    githubProbe,
+    telegram: hasTelegramBotToken(),
+    telegramProbe,
+    discordBot: hasDiscordBotToken(),
+    discordOAuth: hasDiscordOAuthClient(),
+    discordProbe,
+    stocktwits: hasStocktwitsCredentials(),
+    stocktwitsProbe,
+    rapidApiTwitter: hasRapidApiTwitter(),
+    rapidTwitterProbe,
+    alphaLayers:
+      "narrative|telegram|discord|stocktwits|rapidapi-x|reddit|github|on-chain",
     mode:
       process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
         ? "ai"

@@ -15,7 +15,27 @@ $keys = @(
   @{ n = "ALCHEMY_API_KEY"; s = $true },
   @{ n = "ZEROX_API_KEY"; s = $true },
   @{ n = "NEXT_PUBLIC_ARC_RPC_URL"; s = $false },
-  @{ n = "ARC_RPC_URL"; s = $false }
+  @{ n = "ARC_RPC_URL"; s = $false },
+  @{ n = "MORALIS_API_KEY"; s = $true },
+  @{ n = "GOLDRUSH_API_KEY"; s = $true },
+  @{ n = "COVALENT_API_KEY"; s = $true },
+  @{ n = "ETHERSCAN_API_KEY"; s = $true },
+  @{ n = "GITHUB_TOKEN"; s = $true },
+  @{ n = "TELEGRAM_BOT_TOKEN"; s = $true },
+  @{ n = "DISCORD_CLIENT_ID"; s = $false },
+  @{ n = "DISCORD_CLIENT_SECRET"; s = $true },
+  @{ n = "DISCORD_BOT_TOKEN"; s = $true },
+  @{ n = "DISCORD_GUILD_IDS"; s = $false },
+  @{ n = "STOCKTWITS_USERNAME"; s = $false },
+  @{ n = "STOCKTWITS_PASSWORD"; s = $true },
+  @{ n = "RAPIDAPI_KEY"; s = $true },
+  @{ n = "RAPIDAPI_TWITTER_HOST"; s = $false },
+  @{ n = "RAPIDAPI_TWITTER_SEARCH_PATH"; s = $false },
+  @{ n = "REDDIT_CLIENT_ID"; s = $false },
+  @{ n = "REDDIT_CLIENT_SECRET"; s = $true },
+  @{ n = "REDDIT_USER_AGENT"; s = $false },
+  @{ n = "LUNARCRUSH_API_KEY"; s = $true },
+  @{ n = "NEYNAR_API_KEY"; s = $true }
 )
 
 $map = @{}

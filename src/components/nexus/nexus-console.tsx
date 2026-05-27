@@ -23,7 +23,7 @@ import type { CommunityPulse } from "@/lib/community-pulse";
 import { NexusMemoryList } from "@/components/nexus/nexus-memory-list";
 import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
-import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
+import { STABLE_FEED_LIMIT, ALPHA_SCAN_LIMIT, MEMORY_SCAN_LIMIT } from "@/lib/feed-config";
 import { NexusAbSwap } from "@/components/nexus/nexus-ab-swap";
 import { filterTradableTokens } from "@/lib/token-filters";
 import type { NexusResearchReport } from "@/lib/nexus-research";
@@ -114,6 +114,7 @@ export function NexusConsole() {
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [alphaScanning, setAlphaScanning] = useState(false);
+  const [alphaScanError, setAlphaScanError] = useState<string | null>(null);
   const [alphaOpportunities, setAlphaOpportunities] = useState<AlphaOpportunity[]>([]);
   const [activeTab, setActiveTab] = useState<"live" | "saved" | "alpha">("live");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
@@ -121,7 +122,7 @@ export function NexusConsole() {
   const [actionBanner, setActionBanner] = useState<{
     title: string;
     message: string;
-    type: "success" | "info";
+    type: "success" | "info" | "error";
   } | null>(null);
   const [feedTokens, setFeedTokens] = useState<TrendingMarketToken[]>([]);
   const [heroCompact, setHeroCompact] = useState(true);
@@ -282,12 +283,12 @@ export function NexusConsole() {
       toast({
         type: "success",
         title: "Memory scan complete",
-        message: `${count} tokens saved (max 20)`,
+        message: `${count} tokens saved (max ${MEMORY_SCAN_LIMIT})`,
       });
       await loadSaved();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Scan failed";
-      toast({ type: "error", title: "Memory scan failed", message: msg });
+      toast({ type: "error", title: "Memory scan failed", message: msg, durationMs: 12_000 });
     } finally {
       setScanning(false);
     }
@@ -295,6 +296,9 @@ export function NexusConsole() {
 
   async function runAlphaScan() {
     setAlphaScanning(true);
+    setAlphaScanError(null);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 110_000);
     try {
       if (!isConnected) throw new Error("Connect wallet on Arc Testnet to scan");
       await ensureArcNetwork();
@@ -311,9 +315,13 @@ export function NexusConsole() {
           chainId: selectedToken?.chainId,
           tokenAddress: selectedToken?.tokenAddress,
         }),
+        signal: controller.signal,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Alpha scan failed");
+      if (!res.ok) {
+        const hint = typeof data.hint === "string" ? ` ${data.hint}` : "";
+        throw new Error(`${data.error ?? "Alpha scan failed"}${hint}`);
+      }
 
       const rows = (data.opportunities ?? []) as AlphaOpportunity[];
       if (rows.length === 0) throw new Error("Alpha scan returned 0 tokens");
@@ -331,12 +339,29 @@ export function NexusConsole() {
       toast({
         type: "success",
         title: "Alpha scan complete",
-        message: `${rows.length} tokens — news, meme, on-chain, AI`,
+        message: `${rows.length} tokens — 6-layer alpha + AI thesis`,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Alpha scan failed";
-      toast({ type: "error", title: "Alpha scan failed", message: msg });
+      const msg =
+        err instanceof Error && err.name === "AbortError"
+          ? "Alpha scan timed out (~110s). Server may still be busy — wait and retry."
+          : err instanceof Error
+            ? err.message
+            : "Alpha scan failed";
+      setAlphaScanError(msg);
+      setActionBanner({
+        type: "error",
+        title: "Alpha scan failed",
+        message: msg,
+      });
+      toast({
+        type: "error",
+        title: "Alpha scan failed",
+        message: msg,
+        durationMs: 15_000,
+      });
     } finally {
+      window.clearTimeout(timer);
       setAlphaScanning(false);
     }
   }
@@ -357,8 +382,8 @@ export function NexusConsole() {
         agent: {
           action: row.action,
           confidence: row.confidence,
-          riskScore: Math.max(0, 100 - row.opportunityScore),
-          reasoning: row.reasoning,
+          riskScore: row.riskScore,
+          reasoning: row.aiThesis || row.reasoning,
           whyAction: row.whyAction,
           reasoningFactors: [],
         },
@@ -505,6 +530,8 @@ export function NexusConsole() {
               opportunities={alphaOpportunities}
               selectedAddress={selectedToken?.tokenAddress}
               onSelect={selectAlphaRow}
+              scanning={alphaScanning}
+              scanError={alphaScanError}
             />
           </div>
         ) : (
@@ -560,7 +587,7 @@ export function NexusConsole() {
         tokens={feedTokens}
         selected={selectedToken}
         onSelect={(t) => handleTokenSelect(t)}
-        mobileLimit={30}
+        mobileLimit={STABLE_FEED_LIMIT}
       />
       <NexusMobileTokenActions
         token={selectedToken}
@@ -611,7 +638,7 @@ export function NexusConsole() {
           tokens={feedTokens}
           selected={selectedToken}
           onSelect={(t) => handleTokenSelect(t)}
-          mobileLimit={30}
+          mobileLimit={STABLE_FEED_LIMIT}
         />
         {selectedToken && (
           <NexusMobileTokenActions
@@ -657,7 +684,7 @@ export function NexusConsole() {
               <Button
                 variant="outline"
                 className="min-h-[44px] w-full gap-2 sm:w-auto"
-                title="Archive 20 tokens with full intel to Memory tab"
+                title={`Archive ${MEMORY_SCAN_LIMIT} tokens with full intel to Memory tab`}
                 onClick={() => void runMemoryScan()}
                 disabled={scanning || alphaScanning || arcFeePending}
               >
@@ -671,7 +698,7 @@ export function NexusConsole() {
               <Button
                 variant="outline"
                 className="min-h-[44px] w-full gap-2 border-violet-400/35 sm:w-auto"
-                title="Rank 30 opportunities — news, meme headlines, Birdeye, AI"
+                title={`Rank ${ALPHA_SCAN_LIMIT} opportunities — news, meme headlines, Birdeye, AI`}
                 onClick={() => void runAlphaScan()}
                 disabled={scanning || alphaScanning || arcFeePending}
               >
@@ -704,7 +731,7 @@ export function NexusConsole() {
 
           <div className="mt-4 hidden gap-3 sm:mt-6 sm:grid sm:grid-cols-3">
             {[
-              { icon: Zap, label: "30 stable tokens · 45s", sub: "Same roster — prices & signals refresh" },
+              { icon: Zap, label: `${STABLE_FEED_LIMIT} stable tokens · 45s`, sub: "Same roster — prices & signals refresh" },
               { icon: Bot, label: "TA + AI reasoning", sub: "RSI · MACD · trend · whale risk" },
               { icon: Sparkles, label: "Wallet score", sub: "Grade every wallet A–F" },
             ].map((item) => (
@@ -748,7 +775,9 @@ export function NexusConsole() {
             className={`mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border px-4 py-3 ${
               actionBanner.type === "success"
                 ? "border-emerald-400/35 bg-emerald-500/10"
-                : "border-cyan-400/35 bg-cyan-500/10"
+                : actionBanner.type === "error"
+                  ? "border-rose-400/35 bg-rose-500/10"
+                  : "border-cyan-400/35 bg-cyan-500/10"
             }`}
           >
             <div>

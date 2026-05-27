@@ -7,12 +7,20 @@ const kindStyles: Record<CommunityPulseItem["kind"], string> = {
   meme: "border-amber-400/30 bg-amber-500/10",
   news: "border-cyan-400/25 bg-cyan-500/8",
   reddit: "border-orange-400/30 bg-orange-500/10",
+  telegram: "border-sky-400/30 bg-sky-500/10",
+  discord: "border-indigo-400/30 bg-indigo-500/10",
+  stocktwits: "border-emerald-400/25 bg-emerald-500/8",
+  twitter: "border-fuchsia-400/30 bg-fuchsia-500/10",
 };
 
 const kindLabels: Record<CommunityPulseItem["kind"], string> = {
   meme: "Meme buzz",
   news: "News",
   reddit: "Reddit",
+  telegram: "Telegram",
+  discord: "Discord",
+  stocktwits: "Stocktwits",
+  twitter: "X",
 };
 
 export function CommunityPulsePanel({
@@ -27,7 +35,7 @@ export function CommunityPulsePanel({
   if (pulse.items.length === 0) {
     return (
       <p className="text-xs text-white/50">
-        No community headlines yet — try again after Reddit OAuth or refresh news.
+        No community headlines yet — add Telegram/Discord/Stocktwits keys or Reddit OAuth.
       </p>
     );
   }

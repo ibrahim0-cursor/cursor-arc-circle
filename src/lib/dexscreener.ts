@@ -162,7 +162,7 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
 }
 
 /** Stable live feed — same query set every refresh (no shuffle); top N by volume */
-export async function fetchStableMarketFeed(limit = 30) {
+export async function fetchStableMarketFeed(limit = 15) {
   return fetchTrendingMarketTokens(limit, { stable: true });
 }
 

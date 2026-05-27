@@ -496,7 +496,7 @@ async function analyzeTokenForMemoryScan(token: TrendingToken) {
 
 async function mapWithConcurrency<T, R>(
   items: T[],
-  fn: (item: T) => Promise<R>,
+  fn: (item: T, index: number) => Promise<R>,
   concurrency: number,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
@@ -504,11 +504,34 @@ async function mapWithConcurrency<T, R>(
   async function worker() {
     while (index < items.length) {
       const i = index++;
-      results[i] = await fn(items[i]);
+      results[i] = await fn(items[i], i);
     }
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
   return results;
+}
+
+async function mapWithConcurrencySafe<T, R>(
+  items: T[],
+  fn: (item: T, index: number) => Promise<R | null>,
+  concurrency: number,
+  label = "task",
+): Promise<R[]> {
+  const results: (R | null)[] = new Array(items.length);
+  let index = 0;
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      try {
+        results[i] = await fn(items[i], i);
+      } catch (error) {
+        console.warn(`[nexus] ${label} failed for item ${i}:`, error);
+        results[i] = null;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results.filter((r): r is R => r != null);
 }
 
 export type AlphaOpportunity = {
@@ -521,13 +544,25 @@ export type AlphaOpportunity = {
   change24h: number;
   action: AgentSignal["action"];
   confidence: number;
+  /** Legacy composite; see alphaScore for probabilistic model */
   opportunityScore: number;
+  alphaScore: number;
+  narrativeAcceleration: number;
+  narrativeSummary: string;
+  smartMoneySignal: string;
+  momentumHealth: string;
+  riskScore: number;
+  riskBreakdown: { rug: number; liquidity: number; concentration: number; hypeExhaustion: number };
+  aiThesis: string;
+  ecosystemTags: string[];
   reasoning: string;
   whyAction: string;
   newsHeadlines: string[];
   socialBuzz?: string;
   galaxyScore?: number;
   socialDegraded?: string;
+  githubDevSummary?: string;
+  icon?: string;
   liquidityUsd: number;
   volume24h: number;
 };
@@ -556,17 +591,22 @@ function scoreOpportunity(
   return Math.round(Math.min(100, Math.max(0, score)));
 }
 
-/** Memory scan — deep intel archive (20 tokens) for Agent Memory tab */
-export async function runNexusScan(limit = 20, preferredChain?: string, arcFeeTxHash?: string) {
+/** Memory scan — deep intel archive for Agent Memory tab */
+export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTxHash?: string) {
   const { filterTradableTokens } = await import("./token-filters");
   const { fetchStableMarketFeed } = await import("./dexscreener");
-  const raw = await fetchStableMarketFeed(Math.min(limit * 2, 40));
-  const tokens = filterTradableTokens(raw).slice(0, Math.min(limit, 20));
+  const raw = await fetchStableMarketFeed(Math.min(limit * 2, 30));
+  const tokens = filterTradableTokens(raw).slice(0, limit);
   if (tokens.length === 0) {
     throw new Error("No tradable tokens found (stablecoins excluded). Check DexScreener connection.");
   }
 
-  const analyzed = await mapWithConcurrency(tokens, analyzeTokenForMemoryScan, 4);
+  const analyzed = await mapWithConcurrencySafe(
+    tokens,
+    (token) => analyzeTokenForMemoryScan(token),
+    3,
+    "memory-scan",
+  );
   const anchor = arcFeeTxHash
     ? await anchorDecisionPayload(JSON.stringify({ product: "NEXUS", scan: Date.now(), count: tokens.length }))
     : { txHash: undefined as string | undefined, blockNumber: undefined as number | undefined };
@@ -613,13 +653,13 @@ export async function runNexusScan(limit = 20, preferredChain?: string, arcFeeTx
     decisions,
     count: decisions.length,
     scanMode: "memory" as const,
-    criteria: "memory-20|dexscreener|birdeye|news|meme-news|scam-check|ta|macro",
+    criteria: "memory-15|dexscreener|birdeye|news|meme-news|scam-check|ta|macro",
   };
 }
 
-/** Alpha scan — rank up to 30 opportunities (news + meme headlines + on-chain + AI) */
+/** Alpha scan — rank up to 20 opportunities (news + meme headlines + on-chain + AI) */
 export async function runAlphaScan(
-  limit = 30,
+  limit = 20,
   opts?: { preferredChain?: string; focusToken?: TrendingToken },
 ) {
   const { filterTradableTokens } = await import("./token-filters");
@@ -627,15 +667,15 @@ export async function runAlphaScan(
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
 
   const [dexFeed, geckoFeed] = await Promise.all([
-    fetchStableMarketFeed(Math.min(limit * 2, 45)),
-    fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 12),
+    fetchStableMarketFeed(Math.min(limit * 2, 30)),
+    fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 8),
   ]);
   const geckoHot = new Set(
     geckoFeed.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`),
   );
 
   let tokens: TrendingToken[] = filterTradableTokens(
-    mergeTrendingWithGecko(dexFeed, geckoFeed, Math.min(limit * 2, 50)),
+    mergeTrendingWithGecko(dexFeed, geckoFeed, Math.min(limit * 2, 35)),
   ).slice(0, limit);
 
   if (opts?.focusToken) {
@@ -657,48 +697,93 @@ export async function runAlphaScan(
     throw new Error("No tradable tokens for alpha scan. Check DexScreener connection.");
   }
 
-  const analyzed = await mapWithConcurrency(tokens, analyzeTokenForMemoryScan, 3);
+  const { buildAlphaIntelReport } = await import("./alpha-intel");
+  const analyzed = await mapWithConcurrencySafe(
+    tokens,
+    (token) => analyzeTokenForMemoryScan(token),
+    2,
+    "alpha-intel",
+  );
 
-  const opportunities: AlphaOpportunity[] = analyzed
-    .map(({ token, intel, signal, news, social, community }) => {
+  if (analyzed.length === 0) {
+    throw new Error("Alpha intel failed for all tokens — external APIs may be rate-limited. Retry shortly.");
+  }
+
+  const opportunities: AlphaOpportunity[] = await mapWithConcurrencySafe(
+    analyzed,
+    async ({ token, intel, signal, news, social, community, security }, index) => {
+      const key = `${token.chainId}:${token.tokenAddress.toLowerCase()}`;
       const socialHeadline = pickCommunityBuzz(community, news.map((n) => n.title));
-      return {
-      rank: 0,
-      symbol: token.symbol,
-      name: token.name,
-      tokenAddress: token.tokenAddress,
-      chainId: token.chainId,
-      priceUsd: token.priceUsd,
-      change24h: token.change24h,
-      action: signal.action,
-      confidence: signal.confidence,
-      opportunityScore:
+      const report = await buildAlphaIntelReport({
+        token,
+        intel,
+        signal,
+        news,
+        community,
+        geckoTrending: geckoHot.has(key),
+        security,
+        skipGithub: index >= 8,
+      });
+      const legacyScore =
         scoreOpportunity(token, signal, intel, social, news.length) +
-        (geckoHot.has(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ? 5 : 0),
-      reasoning: signal.reasoning,
-      whyAction: signal.whyAction,
-      newsHeadlines: news.slice(0, 3).map((n) => n.title),
-      socialBuzz: socialHeadline,
-      galaxyScore: social.lunarcrush?.galaxyScore,
-      socialDegraded:
-        usePremiumSocialApis() && social.status.lunarcrush === "402"
-          ? "Social: LunarCrush subscription required"
-          : usePremiumSocialApis()
-            ? social.degradedMessage
-            : undefined,
-      liquidityUsd: token.liquidityUsd,
-      volume24h: token.volume24h,
-    };
-    })
-    .sort((a, b) => b.opportunityScore - a.opportunityScore)
-    .map((row, i) => ({ ...row, rank: i + 1 }));
+        (geckoHot.has(key) ? 5 : 0);
+
+      return {
+        rank: 0,
+        symbol: token.symbol,
+        name: token.name,
+        tokenAddress: token.tokenAddress,
+        chainId: token.chainId,
+        priceUsd: token.priceUsd,
+        change24h: token.change24h,
+        action: signal.action,
+        confidence: signal.confidence,
+        opportunityScore: Math.round((legacyScore + report.alphaScore) / 2),
+        alphaScore: report.alphaScore,
+        narrativeAcceleration: report.narrativeAcceleration,
+        narrativeSummary: report.narrativeSummary,
+        smartMoneySignal: report.smartMoneySignal,
+        momentumHealth: report.momentumHealth,
+        riskScore: report.riskScore,
+        riskBreakdown: report.riskBreakdown,
+        aiThesis: report.aiThesis,
+        ecosystemTags: report.ecosystemTags,
+        reasoning: signal.reasoning,
+        whyAction: signal.whyAction,
+        newsHeadlines: news.slice(0, 3).map((n) => n.title),
+        socialBuzz: socialHeadline,
+        galaxyScore: social.lunarcrush?.galaxyScore,
+        socialDegraded:
+          usePremiumSocialApis() && social.status.lunarcrush === "402"
+            ? "Social: LunarCrush subscription required"
+            : usePremiumSocialApis()
+              ? social.degradedMessage
+              : undefined,
+        githubDevSummary: report.githubDev?.summary,
+        icon: token.icon,
+        liquidityUsd: token.liquidityUsd,
+        volume24h: token.volume24h,
+      };
+    },
+    2,
+    "alpha-report",
+  );
+
+  if (opportunities.length === 0) {
+    throw new Error("Alpha ranking failed — could not build reports. Retry in a moment.");
+  }
+
+  opportunities.sort((a, b) => b.alphaScore - a.alphaScore);
+  opportunities.forEach((row, i) => {
+    row.rank = i + 1;
+  });
 
   return {
     opportunities,
     count: opportunities.length,
     scanMode: "alpha" as const,
     criteria:
-      "alpha-30|geckoterminal|community|news|meme|reddit|moralis|birdeye|dexscreener|ta|macro|scam-filter",
+      "alpha-20|6-layer|narrative-accel|smart-money|geckoterminal|github-dev|community|birdeye|ai-thesis",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }
