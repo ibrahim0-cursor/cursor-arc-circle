@@ -32,7 +32,7 @@ const metrics = [
 export function ArcEcosystemHero() {
   return (
     <section className="arc-home-hero-shell relative mx-auto max-w-[1680px] px-4 pb-10 sm:px-6">
-      <div className="pointer-events-none absolute inset-x-0 top-[6%] z-0 flex justify-center opacity-95">
+      <div className="pointer-events-none absolute inset-x-0 top-[4%] z-0 flex justify-center">
         <ArcPortalHero />
       </div>
 
@@ -55,7 +55,7 @@ export function ArcEcosystemHero() {
         </h1>
 
         <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
-          Institutional AI for crypto and macro — BTC · ETH · SOL · USDC · USDT pulse through the live portal.
+          Institutional AI for crypto and macro — tokens jump into the portal, processed live by AI, and route back out.
         </p>
 
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">

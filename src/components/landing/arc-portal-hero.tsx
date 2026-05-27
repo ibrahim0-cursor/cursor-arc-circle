@@ -1,49 +1,69 @@
 "use client";
 
-import { ArcDotGlobe } from "@/components/layout/arc-dot-globe";
+import { Brain } from "lucide-react";
+import { ArcToken3d } from "@/components/landing/arc-token-3d";
+import type { CryptoId } from "@/components/landing/arc-crypto-icons";
 import { cn } from "@/lib/utils";
 
-const ORBIT_TOKENS = [
-  { id: "btc", label: "₿", duration: 13, delay: 0, size: 94, variant: "btc" as const },
-  { id: "eth", label: "Ξ", duration: 17, delay: -4, size: 108, variant: "eth" as const },
-  { id: "sol", label: "◎", duration: 11, delay: -7, size: 88, variant: "sol" as const },
-  { id: "usdc", label: "USDC", duration: 20, delay: -2, size: 112, variant: "usdc" as const },
-  { id: "usdt", label: "₮", duration: 15, delay: -9, size: 100, variant: "usdt" as const },
-] as const;
+const PORTAL_TOKENS: { id: CryptoId; angle: number; delay: number; duration: number }[] = [
+  { id: "btc", angle: -90, delay: 0, duration: 4.2 },
+  { id: "eth", angle: -18, delay: 0.85, duration: 4.2 },
+  { id: "sol", angle: 54, delay: 1.7, duration: 4.2 },
+  { id: "usdc", angle: 126, delay: 2.55, duration: 4.2 },
+  { id: "usdt", angle: 198, delay: 3.4, duration: 4.2 },
+];
 
 /**
- * Professional dot-matrix portal — globe center + rings + 5 tokens in orbit.
- * CSS orbit (GPU); globe canvas unchanged.
+ * AI portal — coins jump in, processed at core, jump back out (loop).
+ * Real token icons · 3D coins · no dot-globe.
  */
 export function ArcPortalHero({ className = "" }: { className?: string }) {
   return (
     <div className={cn("arc-portal-hero", className)} aria-hidden>
-      <div className="arc-portal-hero-glow" />
-      <div className="arc-portal-ring arc-portal-ring-outer" />
-      <div className="arc-portal-ring arc-portal-ring-inner" />
-      <div className="arc-portal-lens" />
+      <div className="arc-portal-ambient" />
 
-      <div className="arc-portal-globe-layer">
-        <ArcDotGlobe className="h-full w-full" />
+      <div className="arc-portal-tunnel arc-portal-tunnel-3" />
+      <div className="arc-portal-tunnel arc-portal-tunnel-2" />
+      <div className="arc-portal-tunnel arc-portal-tunnel-1" />
+
+      <div className="arc-portal-void">
+        <div className="arc-portal-ai-flash" />
+        <div className="arc-portal-ai-core">
+          <div className="arc-portal-ai-ring" />
+          <Brain className="arc-portal-ai-icon" strokeWidth={1.4} />
+          <span className="arc-portal-ai-label">AI</span>
+        </div>
       </div>
 
-      {ORBIT_TOKENS.map((t) => (
+      {PORTAL_TOKENS.map((t) => (
         <div
           key={t.id}
-          className="arc-portal-orbit"
+          className="arc-portal-lane"
           style={
             {
-              "--orbit-size": `${t.size}%`,
-              "--orbit-dur": `${t.duration}s`,
-              "--orbit-delay": `${t.delay}s`,
+              "--lane-angle": `${t.angle}deg`,
+              "--jump-dur": `${t.duration}s`,
+              "--jump-delay": `${t.delay}s`,
             } as React.CSSProperties
           }
         >
-          <div className={cn("arc-portal-token", `arc-portal-token-${t.variant}`)}>
-            <span>{t.label}</span>
-          </div>
+          <ArcToken3d
+            id={t.id}
+            className="arc-portal-jumper"
+            style={
+              {
+                animationDuration: `${t.duration}s`,
+                animationDelay: `${t.delay}s`,
+              } as React.CSSProperties
+            }
+          />
         </div>
       ))}
+
+      <p className="arc-portal-live-tag">
+        <span className="arc-live-dot" />
+        Live intelligence routing
+      </p>
     </div>
   );
 }
