@@ -1,7 +1,8 @@
 "use client";
 
-import { Code2, Loader2, Newspaper, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { Code2, Loader2, Newspaper, ScanLine, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
@@ -41,7 +42,7 @@ function TokenAvatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-xl border border-white/10 font-bold text-white shadow-inner",
+        "arc-token-hex flex shrink-0 items-center justify-center border border-white/10 font-bold text-white shadow-inner",
         dim,
         text,
       )}
@@ -69,8 +70,9 @@ export function NexusAlphaList({
 }) {
   if (scanning) {
     return (
-      <div className="space-y-4 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-500/10 via-fuchsia-500/5 to-transparent p-8 text-center">
-        <Loader2 className="mx-auto h-10 w-10 animate-spin text-violet-300" />
+      <div className="arc-signal-panel arc-border-trace space-y-4 p-8 text-center">
+        <ArcIconFrame icon={ScanLine} variant="nexus" size="lg" active className="mx-auto" />
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-300" />
         <h3 className="text-base font-semibold text-white">Alpha scan running…</h3>
         <p className="mx-auto max-w-md text-sm text-white/60">
           Analyzing up to 20 tokens — Birdeye, news, narrative layers, and AI thesis. This can take
@@ -124,7 +126,7 @@ export function NexusAlphaList({
           Previous scan issue: {scanError}
         </div>
       )}
-      <div className="rounded-xl border border-violet-400/30 bg-gradient-to-r from-violet-500/15 to-fuchsia-500/10 px-3 py-2.5 text-xs text-violet-100/90">
+      <div className="arc-signal-panel arc-signal-panel-nexus px-3 py-2.5 text-xs text-emerald-100/90">
         <p className="font-semibold">{opportunities.length} probabilistic opportunities (sorted by Alpha Score)</p>
         <p className="mt-1 text-white/55">
           Narrative acceleration is weighted highest. Tap a row for chart, trade panel, and full thesis.
@@ -139,11 +141,11 @@ export function NexusAlphaList({
               type="button"
               onClick={() => onSelect(row)}
               className={cn(
-                "group w-full rounded-2xl border px-3 py-3 text-left transition-all duration-200 lg:px-3 lg:py-2.5",
-                "hover:shadow-[0_0_24px_-8px_rgba(167,139,250,0.45)]",
+                "arc-signal-panel group w-full px-3 py-3 text-left transition-all duration-200 lg:px-3 lg:py-2.5",
+                "hover:shadow-[0_0_24px_-8px_rgba(18,232,168,0.35)]",
                 selected
-                  ? "border-violet-400/50 bg-gradient-to-br from-violet-500/15 to-fuchsia-500/10 ring-1 ring-violet-400/30"
-                  : "border-white/10 bg-black/30 hover:border-violet-400/25 hover:bg-violet-500/[0.06]",
+                  ? "arc-signal-panel-nexus ring-1 ring-emerald-400/35"
+                  : "hover:border-emerald-400/25",
               )}
             >
               <div className="flex items-start justify-between gap-3">

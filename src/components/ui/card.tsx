@@ -10,7 +10,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "arc-panel rounded-[var(--arc-radius-lg)] border-[var(--arc-border)] bg-[var(--arc-bg-panel)]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+        "arc-signal-panel border-[var(--arc-border)] bg-[var(--arc-bg-panel)]",
         className,
       )}
     >

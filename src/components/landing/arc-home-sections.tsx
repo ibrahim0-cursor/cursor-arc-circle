@@ -4,79 +4,88 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Activity,
+  ArrowUpRight,
   Brain,
   Globe2,
   LineChart,
   Radar,
   Radio,
+  ScanLine,
   Shield,
   Sparkles,
+  Wallet,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArcTiltCard } from "@/components/ui/arc-tilt-card";
-import { ArcHeroVisual } from "@/components/landing/arc-hero-visual";
+import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcCommandConsole } from "@/components/landing/arc-command-console";
 
 const metrics = [
-  { label: "Narrative layers", value: "6+", sub: "Acceleration · flow · risk" },
-  { label: "Data planes", value: "12+", sub: "On-chain · social · macro" },
-  { label: "Agent modes", value: "2", sub: "NEXUS · PRISM" },
+  { icon: ScanLine, label: "Narrative layers", value: "06", sub: "Acceleration · flow · risk" },
+  { icon: Radio, label: "Data planes", value: "12", sub: "On-chain · social · macro" },
+  { icon: Activity, label: "Agent systems", value: "02", sub: "NEXUS · PRISM" },
 ];
 
 export function ArcEcosystemHero() {
   return (
-    <section className="relative mx-auto max-w-[1680px] px-4 pb-10 pt-8 sm:px-6 sm:pt-14">
-      <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl">
-        <p className="arc-caption mb-3 text-cyan-200/80">ARC CIRCLE · Intelligence Operating System</p>
-        <h1 className="font-semibold tracking-tight text-[var(--arc-text)]">
-          <span className="block text-3xl sm:text-5xl md:text-6xl">Autonomous intelligence</span>
-          <span className="arc-gradient-text mt-2 block text-2xl sm:text-4xl">
-            for markets and geopolitics
-          </span>
-        </h1>
-        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-[var(--arc-text-muted)] sm:text-base">
-          <strong className="text-white/95">NEXUS</strong> runs crypto alpha, smart-money signals, and agent trading on Arc.
-          <strong className="text-white/95"> PRISM</strong> models macro and geopolitical probability with live intelligence feeds.
-        </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/nexus" className="w-full sm:w-auto">
-            <Button variant="nexus" size="lg" className="min-h-[48px] w-full sm:w-auto">
-              Enter NEXUS <Zap className="h-5 w-5" />
-            </Button>
-          </Link>
-          <Link href="/prism" className="w-full sm:w-auto">
-            <Button variant="prism" size="lg" className="min-h-[48px] w-full sm:w-auto">
-              Enter PRISM <Radar className="h-5 w-5" />
-            </Button>
-          </Link>
-        </div>
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2, duration: 0.7 }}
-      >
-        <ArcHeroVisual />
-      </motion.div>
+    <section className="relative mx-auto max-w-[1680px] px-4 pb-12 pt-10 sm:px-6 sm:pt-16">
+      <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <div className="mb-6 flex items-center gap-3">
+            <ArcIconFrame icon={Sparkles} variant="home" size="sm" active />
+            <p className="arc-caption text-cyan-300/75">ARC CIRCLE · Intelligence Operating System</p>
+          </div>
+          <h1 className="arc-display text-white">
+            <span className="block">Command</span>
+            <span className="arc-gradient-text block">global intelligence</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--arc-text-muted)]">
+            Institutional-grade AI for markets and geopolitics. One interface — two autonomous systems — built to
+            win attention before the first trade.
+          </p>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Link href="/nexus" className="w-full sm:w-auto">
+              <Button variant="nexus" size="lg" className="arc-btn-signal min-h-[52px] w-full gap-2 sm:w-auto">
+                <Zap className="h-5 w-5" strokeWidth={1.5} />
+                Launch NEXUS
+                <ArrowUpRight className="h-4 w-4 opacity-70" />
+              </Button>
+            </Link>
+            <Link href="/prism" className="w-full sm:w-auto">
+              <Button variant="prism" size="lg" className="arc-btn-signal min-h-[52px] w-full gap-2 sm:w-auto">
+                <Radar className="h-5 w-5" strokeWidth={1.5} />
+                Launch PRISM
+                <ArrowUpRight className="h-4 w-4 opacity-70" />
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.15, duration: 0.65 }}
+        >
+          <ArcCommandConsole />
+        </motion.div>
       </div>
 
-      <div className="mt-12 grid gap-3 sm:grid-cols-3">
+      <div className="mt-14 grid gap-4 sm:grid-cols-3">
         {metrics.map((m, i) => (
-          <ArcTiltCard key={m.label} glow="rgba(56,189,248,1)">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 * i }}
-              className="arc-panel arc-scan-sweep arc-hover-lift relative overflow-hidden p-4 sm:p-5"
-            >
+          <motion.div
+            key={m.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.08 }}
+            className="arc-signal-panel arc-border-trace flex gap-4 p-5"
+          >
+            <ArcIconFrame icon={m.icon} variant="home" size="md" />
+            <div>
               <p className="arc-caption">{m.label}</p>
-              <p className="mt-2 font-mono text-2xl font-semibold text-white">{m.value}</p>
-              <p className="mt-1 text-xs text-white/50">{m.sub}</p>
-            </motion.div>
-          </ArcTiltCard>
+              <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white">{m.value}</p>
+              <p className="mt-1 text-xs text-white/48">{m.sub}</p>
+            </div>
+          </motion.div>
         ))}
       </div>
     </section>
@@ -85,38 +94,41 @@ export function ArcEcosystemHero() {
 
 export function ArcIntelligenceGrid() {
   const cells = [
-    { icon: Radio, title: "Live narrative detection", copy: "Social Data X, news, Telegram, Discord, Reddit velocity." },
-    { icon: LineChart, title: "Market pulse", copy: "DexScreener, Birdeye whales, GeckoTerminal trending." },
-    { icon: Globe2, title: "Geopolitical pulse", copy: "GDELT, macro news, PRISM probability engine." },
-    { icon: Brain, title: "AI reasoning layer", copy: "Groq thesis per token — why opportunity matters." },
-    { icon: Activity, title: "Agent orchestration", copy: "Memory scan, Alpha scan, autopilot vault on Arc." },
-    { icon: Shield, title: "Risk intelligence", copy: "Rug, liquidity, concentration, hype exhaustion scores." },
+    { icon: Radio, title: "Narrative velocity", copy: "Social Data X, Telegram, Discord, news acceleration." },
+    { icon: LineChart, title: "Market pulse", copy: "DexScreener, Birdeye whales, GeckoTerminal flow." },
+    { icon: Globe2, title: "Geopolitical pulse", copy: "GDELT, macro feeds, PRISM probability engine." },
+    { icon: Brain, title: "AI reasoning", copy: "Explainable thesis — why the opportunity matters." },
+    { icon: Wallet, title: "Smart money", copy: "Whale tracking, holder concentration, buy pressure." },
+    { icon: Shield, title: "Risk matrix", copy: "Rug, liquidity, hype exhaustion — scored live." },
   ];
 
   return (
-    <section className="mx-auto max-w-[1680px] px-4 py-12 sm:px-6">
-      <p className="arc-caption mb-2">System capabilities</p>
-      <h2 className="text-xl font-semibold text-white sm:text-2xl">Intelligence infrastructure</h2>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="mx-auto max-w-[1680px] px-4 py-14 sm:px-6">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="arc-caption mb-2 text-cyan-300/70">Capabilities</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            Intelligence infrastructure
+          </h2>
+        </div>
+        <ArcIconFrame icon={ScanLine} variant="home" size="md" active />
+      </div>
+      <div className="arc-signal-panel arc-border-trace mt-8 divide-y divide-white/[0.06]">
         {cells.map((c, i) => (
-          <ArcTiltCard key={c.title} glow="rgba(20,217,154,1)">
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <Card className="arc-hover-lift h-full border-[var(--arc-border)]">
-                <CardContent className="p-5">
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/25 bg-emerald-500/10 shadow-[0_4px_20px_rgba(20,217,154,0.2)]">
-                    <c.icon className="h-5 w-5 text-emerald-300" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-base font-semibold text-white">{c.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/58">{c.copy}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </ArcTiltCard>
+          <motion.div
+            key={c.title}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.05 }}
+            className="arc-feature-row"
+          >
+            <ArcIconFrame icon={c.icon} variant={i % 2 === 0 ? "nexus" : "home"} size="md" />
+            <div>
+              <h3 className="text-base font-semibold text-white">{c.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-white/55">{c.copy}</p>
+            </div>
+          </motion.div>
         ))}
       </div>
     </section>
@@ -125,49 +137,49 @@ export function ArcIntelligenceGrid() {
 
 export function ArcSystemsShowcase() {
   return (
-    <section className="mx-auto max-w-[1680px] px-4 pb-16 sm:px-6 sm:pb-24">
+    <section className="mx-auto max-w-[1680px] px-4 pb-20 sm:px-6">
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="arc-panel-nexus arc-hover-lift overflow-hidden">
-          <CardContent className="p-6 sm:p-8">
-            <Badge variant="nexus">NEXUS · Financial terminal</Badge>
-            <h2 className="mt-4 text-2xl font-semibold text-white">Crypto command center</h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/62">
-              Alpha scan (20 tokens), memory archive, smart-money flow, AI thesis, demo trades with Arc USDC fees.
-            </p>
-            <ul className="mt-5 space-y-2 text-sm text-emerald-100/75">
-              <li className="flex gap-2">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> 6-layer probabilistic alpha
-              </li>
-              <li className="flex gap-2">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> Live feed · chart · trade panel
-              </li>
-            </ul>
-            <Link href="/nexus" className="mt-6 inline-block">
-              <Button variant="nexus">Launch NEXUS</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <motion.div
+          whileHover={{ y: -4 }}
+          className="arc-signal-panel arc-signal-panel-nexus arc-border-trace p-6 sm:p-8"
+        >
+          <Badge variant="nexus">NEXUS</Badge>
+          <div className="mt-5 flex items-start gap-4">
+            <ArcIconFrame icon={Zap} variant="nexus" size="lg" active />
+            <div>
+              <h2 className="text-2xl font-semibold text-white">Financial command terminal</h2>
+              <p className="mt-3 text-sm leading-relaxed text-white/58">
+                Alpha scan, memory archive, smart-money signals, AI thesis, Arc-native demo execution.
+              </p>
+            </div>
+          </div>
+          <Link href="/nexus" className="mt-8 inline-block">
+            <Button variant="nexus" className="arc-btn-signal gap-2">
+              Enter terminal <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </motion.div>
 
-        <Card className="arc-panel-prism arc-hover-lift overflow-hidden">
-          <CardContent className="p-6 sm:p-8">
-            <Badge variant="prism">PRISM · Strategic intelligence</Badge>
-            <h2 className="mt-4 text-2xl font-semibold text-white">Geopolitical oracle</h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/62">
-              Fed, oil, sanctions, custom events — calibrated probabilities with community and news overlays.
-            </p>
-            <ul className="mt-5 space-y-2 text-sm text-amber-100/75">
-              <li className="flex gap-2">
-                <Radar className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" /> Macro + crisis signal fusion
-              </li>
-              <li className="flex gap-2">
-                <Radar className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" /> Kelly-sized forecast outputs
-              </li>
-            </ul>
-            <Link href="/prism" className="mt-6 inline-block">
-              <Button variant="prism">Launch PRISM</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <motion.div
+          whileHover={{ y: -4 }}
+          className="arc-signal-panel arc-signal-panel-prism arc-border-trace p-6 sm:p-8"
+        >
+          <Badge variant="prism">PRISM</Badge>
+          <div className="mt-5 flex items-start gap-4">
+            <ArcIconFrame icon={Globe2} variant="prism" size="lg" active />
+            <div>
+              <h2 className="text-2xl font-semibold text-white">Strategic macro oracle</h2>
+              <p className="mt-3 text-sm leading-relaxed text-white/58">
+                Fed, oil, sanctions, custom events — calibrated probabilities with live intelligence overlays.
+              </p>
+            </div>
+          </div>
+          <Link href="/prism" className="mt-8 inline-block">
+            <Button variant="prism" className="arc-btn-signal gap-2">
+              Enter oracle <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
@@ -175,20 +187,23 @@ export function ArcSystemsShowcase() {
 
 export function ArcHomeFooter() {
   return (
-    <footer className="border-t border-[var(--arc-border)] px-6 py-12">
-      <div className="mx-auto flex max-w-[1680px] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold tracking-[0.2em] text-white/90">ARC CIRCLE</p>
-          <p className="mt-1 text-xs text-white/45">NEXUS + PRISM · Circle × Arc Testnet</p>
+    <footer className="border-t border-white/[0.08] px-6 py-14">
+      <div className="mx-auto flex max-w-[1680px] flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <ArcIconFrame icon={Sparkles} variant="home" size="md" />
+          <div>
+            <p className="font-mono text-sm font-semibold tracking-[0.18em] text-white">ARC CIRCLE</p>
+            <p className="arc-caption mt-1">NEXUS + PRISM · Arc Testnet</p>
+          </div>
         </div>
-        <nav className="flex flex-wrap gap-4 text-sm text-white/55">
-          <Link href="/nexus" className="hover:text-emerald-300">
+        <nav className="flex flex-wrap gap-6 font-mono text-xs uppercase tracking-widest text-white/50">
+          <Link href="/nexus" className="transition hover:text-emerald-300">
             NEXUS
           </Link>
-          <Link href="/prism" className="hover:text-amber-300">
+          <Link href="/prism" className="transition hover:text-amber-300">
             PRISM
           </Link>
-          <a href="https://github.com/ibrahim0-cursor/cursor-arc-circle" className="hover:text-white">
+          <a href="https://github.com/ibrahim0-cursor/cursor-arc-circle" className="transition hover:text-white">
             GitHub
           </a>
         </nav>

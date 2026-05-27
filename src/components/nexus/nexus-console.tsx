@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
+import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { NexusTokenDetail } from "@/components/nexus/nexus-decision-card";
 import { NexusDeepResearchPanel } from "@/components/nexus/nexus-deep-research";
 import { NexusSocialIntelPanel } from "@/components/nexus/nexus-social-intel";
@@ -688,10 +689,11 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1680px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-5 lg:py-8 lg:pb-8">
-        <div className="mb-3 hidden overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-400/[0.08] via-blue-500/[0.04] to-transparent p-4 sm:mb-8 sm:block sm:p-8">
+        <div className="arc-signal-panel arc-signal-panel-nexus arc-border-trace mb-3 hidden p-4 sm:mb-8 sm:block sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
             <div className="max-w-2xl flex-1">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <ArcIconFrame icon={Zap} variant="nexus" size="md" active />
                 <Badge variant="nexus">NEXUS AI Agent</Badge>
                 <Badge variant="default" className="border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
                   RSI · MACD · Whales

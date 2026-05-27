@@ -2,16 +2,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "arc-btn-3d inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#040506]",
+  "arc-btn-signal inline-flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030405]",
   {
     variants: {
       variant: {
         default:
           "bg-white text-black hover:bg-white/90 shadow-[0_0_40px_rgba(255,255,255,0.12)]",
         nexus:
-          "bg-gradient-to-b from-[var(--nexus-accent-bright)] to-[var(--nexus-accent)] text-[#031a12] shadow-[0_6px_0_#047857,0_12px_32px_var(--nexus-glow)] border border-emerald-300/30",
+          "bg-[var(--nexus-accent)] text-[#021a12] shadow-[0_0_28px_var(--nexus-glow)] border border-emerald-300/40",
         prism:
-          "bg-gradient-to-b from-[var(--prism-amber-bright)] to-[var(--prism-amber)] text-[#1c0f00] shadow-[0_6px_0_#b45309,0_12px_32px_var(--prism-glow)] border border-amber-300/30",
+          "bg-[var(--prism-amber)] text-[#1a0c00] shadow-[0_0_28px_var(--prism-glow)] border border-amber-200/35",
         outline:
           "border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20",
         ghost: "text-white/70 hover:text-white hover:bg-white/5",

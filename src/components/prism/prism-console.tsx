@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
+import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
 import type { CommunityPulse } from "@/lib/community-pulse";
@@ -95,23 +96,32 @@ export function PrismConsole() {
     <div className="relative min-h-screen text-white" data-prism-page data-arc-theme="prism">
       <ArcBackground theme="prism" />
       <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10 sm:pb-12">
-        <div className="mb-4 sm:mb-8">
-          <Badge variant="prism">PRISM</Badge>
-          <h1 className="arc-gradient-text mt-2 text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-            Macro Oracle
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75">
-            Pick an event → Generate Forecast. Live BTC/ETH macro on tap.
-          </p>
-          <Button
-            variant="prism"
-            onClick={analyze}
-            disabled={loading}
-            className={`mt-4 min-h-[52px] w-full text-base sm:mt-6 sm:w-auto ${loading ? "arc-ai-pulse" : ""}`}
-          >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-            Generate Forecast
-          </Button>
+        <div className="arc-signal-panel arc-signal-panel-prism arc-border-trace mb-4 p-5 sm:mb-8 sm:p-8">
+          <div className="flex flex-wrap items-start gap-4">
+            <ArcIconFrame icon={Radar} variant="prism" size="lg" active />
+            <div className="min-w-0 flex-1">
+              <Badge variant="prism">PRISM</Badge>
+              <h1 className="arc-gradient-text mt-2 text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                Macro Oracle
+              </h1>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--arc-text-muted)]">
+                Pick an event → Generate Forecast. Live BTC/ETH macro on tap.
+              </p>
+              <Button
+                variant="prism"
+                onClick={analyze}
+                disabled={loading}
+                className={`arc-btn-signal mt-4 min-h-[52px] w-full gap-2 text-base sm:mt-6 sm:w-auto ${loading ? "arc-ai-pulse" : ""}`}
+              >
+                {loading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Target className="h-5 w-5" strokeWidth={1.5} />
+                )}
+                Generate Forecast
+              </Button>
+            </div>
+          </div>
         </div>
 
         {market && (

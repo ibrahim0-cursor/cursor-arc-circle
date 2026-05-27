@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { ArcLogoMark } from "@/components/layout/arc-logo-mark";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
 
@@ -20,9 +20,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-[var(--arc-border)] bg-[var(--arc-bg)]/94 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
         <Link href="/" className="group flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--arc-radius-md)] border border-emerald-400/30 bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 shadow-[0_4px_16px_rgba(20,217,154,0.25)]">
-            <Sparkles className="h-5 w-5 text-emerald-400/90" strokeWidth={1.5} />
-          </div>
+          <ArcLogoMark className="h-10 w-10" />
           <div>
             <p className="text-sm font-semibold tracking-[0.22em] text-white/92">ARC CIRCLE</p>
             <p className="arc-caption text-[10px]">Intelligence OS</p>

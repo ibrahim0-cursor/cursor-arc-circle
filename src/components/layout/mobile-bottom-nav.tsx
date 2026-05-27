@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LineChart, Sparkles, Zap } from "lucide-react";
+import { Home, Radar, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/prism", label: "PRISM", icon: LineChart },
+  { href: "/prism", label: "PRISM", icon: Radar },
   { href: "/nexus", label: "NEXUS", icon: Zap },
 ] as const;
 
