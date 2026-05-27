@@ -1579,6 +1579,45 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   transform: translateY(-1px);
 }
 
+/* NEXUS — crisp UI (reduce glass blur that softens text/icons) */
+html[data-arc-theme="nexus"] [data-nexus-page] .arc-glass-card,
+html[data-arc-theme="nexus"] [data-nexus-page] .arc-panel {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-arc-theme="nexus"] [data-nexus-page] .nexus-token-strip-shell {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html[data-arc-theme="nexus"] [data-nexus-page] .nexus-premium-hero-glow {
+  filter: blur(24px);
+  opacity: 0.65;
+}
+
+html[data-arc-theme="nexus"] [data-nexus-page] img,
+html[data-arc-theme="nexus"] [data-nexus-page] .nexus-token-avatar-frame img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row:hover {
+  transform: none;
+}
+
+html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {
+  align-self: stretch;
+}
+
+html[data-arc-theme="nexus"] .nexus-section-card {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+html[data-arc-theme="nexus"] .nexus-column-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arc-border-trace::before,
   .arc-icon-active,

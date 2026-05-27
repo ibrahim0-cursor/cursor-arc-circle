@@ -25,15 +25,9 @@ export function NexusTokenAvatar({
 
   if (icon) {
     return (
-      <img
-        src={icon}
-        alt={symbol}
-        className={cn(
-          "nexus-token-avatar-frame shrink-0 rounded-xl border border-white/15 object-cover",
-          dim,
-          className,
-        )}
-      />
+      <div className={cn("nexus-token-avatar-frame shrink-0", dim, className)}>
+        <img src={icon} alt={symbol} className="h-full w-full rounded-[10px] object-cover" loading="lazy" decoding="async" />
+      </div>
     );
   }
 

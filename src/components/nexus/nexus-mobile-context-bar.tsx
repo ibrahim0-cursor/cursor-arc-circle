@@ -7,6 +7,7 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NexusScanActions } from "@/components/nexus/nexus-scan-actions";
@@ -35,6 +36,7 @@ export function NexusMobileContextBar({
     { id: "feed", label: "Tokens", icon: Radio },
     { id: "chart", label: "Chart", icon: LineChart },
     { id: "trade", label: "Trade", icon: ArrowDownUp },
+    { id: "portfolio", label: "Portfolio", icon: Wallet },
   ];
 
   return (

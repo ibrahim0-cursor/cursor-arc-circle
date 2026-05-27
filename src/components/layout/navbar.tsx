@@ -9,6 +9,7 @@ import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { NexusWalletMenu } from "@/components/nexus/nexus-wallet-menu";
 
 const links = [
   { href: "/", label: "Home", icon: Home },
@@ -87,22 +88,31 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {theme === "home" ? (
-            <ArcIcon3d icon={Sparkles} theme="home" size="sm" className="hidden lg:flex" />
+          {theme === "nexus" ? (
+            <NexusWalletMenu />
           ) : (
-            <ArcIconBadge
-              icon={theme === "prism" ? Radar : theme === "nexus" ? Zap : Home}
-              theme={badgeTheme}
-              size="sm"
-              className="hidden lg:flex"
-            />
+            <>
+              {theme === "home" ? (
+                <ArcIcon3d icon={Sparkles} theme="home" size="sm" className="hidden lg:flex" />
+              ) : (
+                <ArcIconBadge
+                  icon={theme === "prism" ? Radar : Home}
+                  theme={badgeTheme}
+                  size="sm"
+                  className="hidden lg:flex"
+                />
+              )}
+              <Link
+                href={theme === "prism" ? "/prism" : "/nexus"}
+                className={cn(
+                  "arc-btn-pill hidden rounded-full px-4 py-2 text-sm font-bold transition sm:inline-block",
+                  ctaClass,
+                )}
+              >
+                Get started
+              </Link>
+            </>
           )}
-          <Link
-            href={theme === "prism" ? "/prism" : "/nexus"}
-            className={cn("arc-btn-pill hidden rounded-full px-4 py-2 text-sm font-bold transition sm:inline-block", ctaClass)}
-          >
-            Get started
-          </Link>
           <MobileNav />
         </div>
       </div>

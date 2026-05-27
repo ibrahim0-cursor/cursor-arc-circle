@@ -1,14 +1,15 @@
 "use client";
 
-import { ArrowDownUp, LineChart, Radio } from "lucide-react";
+import { ArrowDownUp, LineChart, Radio, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type NexusMobilePanel = "feed" | "chart" | "trade";
+export type NexusMobilePanel = "feed" | "chart" | "trade" | "portfolio";
 
 const items: { id: NexusMobilePanel; label: string; icon: typeof Radio }[] = [
   { id: "feed", label: "Tokens", icon: Radio },
   { id: "chart", label: "Chart", icon: LineChart },
   { id: "trade", label: "Trade", icon: ArrowDownUp },
+  { id: "portfolio", label: "Portfolio", icon: Wallet },
 ];
 
 export function NexusMobileDock({
@@ -24,7 +25,7 @@ export function NexusMobileDock({
       role="tablist"
       aria-label="NEXUS panels"
     >
-      <div className="flex items-stretch justify-around gap-1 px-2 py-1">
+      <div className="flex items-stretch justify-around gap-0.5 px-1 py-1">
         {items.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -33,7 +34,7 @@ export function NexusMobileDock({
             aria-selected={active === id}
             onClick={() => onChange(id)}
             className={cn(
-              "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-[10px] font-semibold transition active:scale-[0.97]",
+              "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[9px] font-semibold transition",
               active === id ? "arc-nav-pill-active text-emerald-50" : "text-white/50 hover:text-white/80",
             )}
           >
