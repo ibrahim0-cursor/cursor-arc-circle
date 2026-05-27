@@ -1599,10 +1599,8 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   flex-shrink: 0;
 }
 
-.nexus-live-reasoning {
-  max-height: min(42vh, 420px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+.nexus-intel-tabs {
+  flex-shrink: 0;
 }
 
 html[data-arc-theme="nexus"] .nexus-center-layout {

@@ -6,40 +6,18 @@ import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import type { TechnicalSnapshot } from "@/lib/storage";
 import type { TechnicalAnalysis } from "@/lib/technical-analysis";
 
-export function NexusTAPanel({
+export function NexusTAContent({
   technical,
   priceUsd,
-  defaultOpen = false,
-  showCollapseHint = false,
 }: {
-  technical?: TechnicalSnapshot | TechnicalAnalysis | null;
+  technical: TechnicalSnapshot | TechnicalAnalysis;
   priceUsd?: number;
-  defaultOpen?: boolean;
-  showCollapseHint?: boolean;
 }) {
-  if (!technical) return null;
-
   const ta = technical as TechnicalAnalysis;
   const support = "support" in ta ? ta.support : undefined;
   const resistance = "resistance" in ta ? ta.resistance : undefined;
 
-  const src =
-    "taSource" in technical && technical.taSource
-      ? technical.taSource === "birdeye_ohlcv"
-        ? "Birdeye OHLCV"
-        : "DexScreener"
-      : null;
-  const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100${src ? ` · ${src}` : ""}`;
-
   return (
-    <NexusCollapsible
-      label="Technical analysis"
-      hint={hint}
-      variant="technical"
-      icon={BarChart3}
-      defaultOpen={defaultOpen}
-      showCollapseHint={showCollapseHint}
-    >
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2.5">
           <Stat
@@ -95,9 +73,52 @@ export function NexusTAPanel({
 
         <p className="nexus-muted flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 shrink-0 text-violet-300/80" />
-          Derived from live DexScreener price changes (m5 / h1 / h6 / h24)
+          {"taSource" in technical && technical.taSource === "birdeye_ohlcv"
+            ? "Birdeye OHLCV candles (15m / 1h when available)"
+            : "Derived from live DexScreener price changes (m5 / h1 / h6 / h24)"}
         </p>
       </div>
+  );
+}
+
+export function NexusTAPanel({
+  technical,
+  priceUsd,
+  defaultOpen = false,
+  showCollapseHint = false,
+  embedded = false,
+}: {
+  technical?: TechnicalSnapshot | TechnicalAnalysis | null;
+  priceUsd?: number;
+  defaultOpen?: boolean;
+  showCollapseHint?: boolean;
+  /** Render stats only (parent supplies collapsible) */
+  embedded?: boolean;
+}) {
+  if (!technical) return null;
+
+  const src =
+    "taSource" in technical && technical.taSource
+      ? technical.taSource === "birdeye_ohlcv"
+        ? "Birdeye OHLCV"
+        : "DexScreener"
+      : null;
+  const hint = `RSI ${technical.rsi.toFixed(0)} · MACD ${technical.macdSignal} · ${technical.trend.replace("_", " ")} · ${technical.score}/100${src ? ` · ${src}` : ""}`;
+
+  if (embedded) {
+    return <NexusTAContent technical={technical} priceUsd={priceUsd} />;
+  }
+
+  return (
+    <NexusCollapsible
+      label="Technical analysis"
+      hint={hint}
+      variant="technical"
+      icon={BarChart3}
+      defaultOpen={defaultOpen}
+      showCollapseHint={showCollapseHint}
+    >
+      <NexusTAContent technical={technical} priceUsd={priceUsd} />
     </NexusCollapsible>
   );
 }

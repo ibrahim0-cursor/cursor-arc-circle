@@ -13,23 +13,10 @@ import {
 } from "lucide-react";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusHolderTables } from "@/components/nexus/nexus-holder-table";
-import { NexusLiveReasoningPanel } from "@/components/nexus/nexus-live-reasoning";
+import { NexusIntelCollapsibles } from "@/components/nexus/nexus-intel-collapsibles";
 import { truncateHash } from "@/lib/utils";
 import type { TokenDossierPayload, TokenResearchDossier } from "@/lib/nexus-research-dossier";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
-
-function SignalBadge({ signal }: { signal: "bullish" | "bearish" | "neutral" }) {
-  const styles = {
-    bullish: "border-emerald-400/35 bg-emerald-500/15 text-emerald-100",
-    bearish: "border-rose-400/35 bg-rose-500/15 text-rose-100",
-    neutral: "border-white/15 bg-white/5 text-white/70",
-  };
-  return (
-    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${styles[signal]}`}>
-      {signal}
-    </span>
-  );
-}
 
 function RiskVerdict({ verdict }: { verdict: "low" | "medium" | "high" | "critical" }) {
   const map = {
@@ -71,7 +58,7 @@ export function NexusResearchDossierLive({
 }) {
   return (
     <div className="nexus-research-dossier-live space-y-3">
-      <NexusLiveReasoningPanel live={payload?.liveReasoning} token={token} loading={loading} />
+      <NexusIntelCollapsibles token={token} payload={payload} loading={loading} />
       {error && !loading && (
         <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
           {error}
@@ -211,49 +198,6 @@ export function NexusResearchDossierDeep({
             </li>
           ))}
         </ul>
-      </NexusCollapsible>
-
-      <NexusCollapsible
-        label="Technical analysis (full)"
-        hint={`${dossier.pattern.label} · 15m & 1h · MACD · RSI · MAs`}
-        variant="technical"
-        icon={BarChart3}
-        defaultOpen
-        showCollapseHint
-      >
-        <div className="space-y-3">
-          <div className="rounded-xl border border-violet-400/20 bg-violet-500/[0.06] px-3 py-2">
-            <p className="text-xs font-bold text-violet-100">{dossier.pattern.label}</p>
-            <p className="mt-0.5 text-xs text-white/65">{dossier.pattern.detail}</p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {dossier.technical.map((tf) => (
-              <div
-                key={tf.timeframe}
-                className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5"
-              >
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
-                  {tf.timeframe} · {tf.source === "birdeye_ohlcv" ? "Birdeye" : "Dex est."}
-                </p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span>
-                    RSI {tf.rsi14} <SignalBadge signal={tf.rsiSignal} />
-                  </span>
-                  <span>
-                    MACD <SignalBadge signal={tf.macdSignal} />
-                  </span>
-                </div>
-                {(tf.ma20 != null || tf.ma50 != null) && (
-                  <p className="mt-2 text-[10px] text-white/55 tabular-nums">
-                    MA20 {tf.ma20?.toFixed(tf.ma20 < 1 ? 6 : 2) ?? "—"} · MA50{" "}
-                    {tf.ma50?.toFixed(tf.ma50 < 1 ? 6 : 2) ?? "—"} · MA200{" "}
-                    {tf.ma200?.toFixed(tf.ma200 < 1 ? 6 : 2) ?? "—"}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
       </NexusCollapsible>
 
       <NexusCollapsible

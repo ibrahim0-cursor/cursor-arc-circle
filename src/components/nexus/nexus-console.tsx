@@ -109,6 +109,22 @@ export function NexusConsole() {
   const displayDecision = selectedToken ? tokenToDecision(selectedToken) : null;
   const tokenDossier = useTokenDossier(selectedToken);
 
+  useEffect(() => {
+    const p = tokenDossier.payload;
+    if (!p?.agent || !selectedToken) return;
+    setSelectedToken((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        agent: p.agent ?? prev.agent,
+        intel: {
+          ...prev.intel,
+          technical: p.technical ?? prev.intel?.technical,
+        },
+      };
+    });
+  }, [tokenDossier.payload?.fetchedAt, selectedToken?.tokenAddress, selectedToken?.chainId]);
+
   const scrollToMobileContent = useCallback(() => {
     requestAnimationFrame(() => {
       document.getElementById("nexus-mobile-content")?.scrollIntoView({ behavior: "smooth", block: "start" });

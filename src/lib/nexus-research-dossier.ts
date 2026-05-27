@@ -90,6 +90,8 @@ export type TokenDossierPayload = {
   topHolders: HolderTableRow[];
   topTraders: TraderTableRow[];
   liveReasoning: LiveReasoningPayload;
+  agent?: AgentSignal;
+  technical?: TokenIntel["technical"];
   fetchedAt: string;
 };
 
@@ -484,14 +486,14 @@ export function buildLiveReasoning(
   const narrativeParts = [
     scam.isScam ? `Avoid — ${scam.label}. ${scam.flags[0] ?? ""}` : null,
     agent?.whyAction,
-    agent?.reasoning,
-    research?.thesis?.slice(0, 320),
-    !agent?.reasoning && !research?.thesis
-      ? `${token.symbol} on ${token.chainId}: ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h with $${Math.round(token.liquidityUsd).toLocaleString()} liquidity — agent is weighting flow, holder concentration, and multi-timeframe TA before you size a position.`
-      : null,
+    agent?.reasoning && agent.reasoning !== agent?.whyAction ? agent.reasoning : null,
+    research?.thesis?.slice(0, 400),
   ].filter(Boolean);
 
-  const narrative = narrativeParts.join(" ").trim();
+  let narrative = narrativeParts.join(" ").trim();
+  if (!narrative) {
+    narrative = `${token.symbol}: ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h · $${Math.round(token.liquidityUsd).toLocaleString()} liquidity — expand signal breakdown below for flow, TA, and risk.`;
+  }
   const factors =
     agent?.reasoningFactors?.length && agent.reasoningFactors.length > 0
       ? agent.reasoningFactors.map((f) => ({
@@ -720,6 +722,8 @@ export async function buildTokenDossierPayload(
     topHolders,
     topTraders,
     liveReasoning,
+    agent: opts?.agent,
+    technical: intel.technical,
     fetchedAt: new Date().toISOString(),
   };
 }
