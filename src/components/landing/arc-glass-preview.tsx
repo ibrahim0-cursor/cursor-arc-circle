@@ -4,43 +4,49 @@ import { motion } from "framer-motion";
 import { ArrowRightLeft, LineChart, TrendingUp, Wallet } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 
-/** Glass dashboard preview — icons only updated; amounts/labels unchanged */
+/** Glass dashboard preview — center-aligned cards */
 export function ArcGlassPreview() {
   return (
-    <div className="arc-glass-preview relative mx-auto mt-8 max-w-4xl px-4">
+    <div className="arc-glass-preview relative mx-auto mt-10 w-full max-w-5xl px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="grid gap-4 md:grid-cols-3"
+        className="grid gap-5 md:grid-cols-3 md:items-stretch"
       >
-        <div className="arc-glass-card p-4 md:translate-y-6">
-          <div className="mb-3 flex items-center gap-2">
+        <div className="arc-glass-card arc-glass-preview-card flex flex-col items-center p-5 text-center">
+          <div className="mb-4 flex flex-col items-center gap-2">
             <ArcIcon3d icon={LineChart} theme="home" size="sm" />
-            <span className="text-xs text-white/50">Market pulse</span>
+            <span className="text-xs font-medium tracking-wide text-white/55">Market pulse</span>
           </div>
-          {["NEXUS", "ARC", "BASE"].map((sym, i) => (
-            <div key={sym} className="mb-2 flex items-center justify-between font-mono text-xs">
-              <span className="text-white/80">{sym}</span>
-              <span className={i === 0 ? "text-emerald-400" : "text-white/45"}>
-                {i === 0 ? "+4.2%" : "+1.1%"}
-              </span>
-            </div>
-          ))}
+          <div className="w-full max-w-[200px] space-y-2.5">
+            {[
+              { sym: "NEXUS", pct: "+4.2%", hot: true },
+              { sym: "ARC", pct: "+1.1%", hot: false },
+              { sym: "BASE", pct: "+1.1%", hot: false },
+            ].map((row) => (
+              <div key={row.sym} className="flex items-center justify-between gap-6 font-mono text-xs">
+                <span className="text-white/85">{row.sym}</span>
+                <span className={row.hot ? "text-emerald-400" : "text-white/45"}>{row.pct}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="arc-glass-card arc-glass-card-hero p-5 md:-translate-y-2">
-          <div className="flex items-center justify-between">
+        <div className="arc-glass-card arc-glass-card-hero arc-glass-preview-card flex flex-col items-center p-6 text-center">
+          <div className="mb-4 flex w-full max-w-[260px] items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <ArcIcon3d icon={Wallet} theme="home" size="sm" />
               <span className="text-sm font-medium text-white">Intelligence vault</span>
             </div>
-            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300">LIVE</span>
+            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+              LIVE
+            </span>
           </div>
-          <p className="mt-4 font-mono text-3xl font-semibold tracking-tight text-white">$24,891</p>
-          <p className="mt-1 text-xs text-white/45">Demo portfolio · Arc testnet</p>
-          <div className="mt-4 h-16 overflow-hidden rounded-xl bg-gradient-to-t from-violet-500/20 to-transparent">
+          <p className="font-mono text-3xl font-semibold tracking-tight text-white">$24,891</p>
+          <p className="mt-1.5 text-xs text-white/45">Demo portfolio · Arc testnet</p>
+          <div className="mt-5 h-16 w-full max-w-[260px] overflow-hidden rounded-xl bg-gradient-to-t from-violet-500/20 to-transparent">
             <svg viewBox="0 0 200 48" className="h-full w-full" preserveAspectRatio="none">
               <motion.path
                 d="M0,40 Q50,8 100,28 T200,12"
@@ -62,21 +68,23 @@ export function ArcGlassPreview() {
           </div>
         </div>
 
-        <div className="arc-glass-card p-4 md:translate-y-8">
-          <div className="mb-3 flex items-center gap-2">
+        <div className="arc-glass-card arc-glass-preview-card flex flex-col items-center p-5 text-center">
+          <div className="mb-4 flex flex-col items-center gap-2">
             <ArcIcon3d icon={ArrowRightLeft} theme="nexus" size="sm" />
-            <span className="text-xs text-white/50">Agent swap</span>
+            <span className="text-xs font-medium tracking-wide text-white/55">Agent swap</span>
           </div>
-          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">From</p>
-            <p className="font-mono text-sm text-white">2.5 ETH</p>
-          </div>
-          <div className="my-2 flex justify-center">
-            <ArcIcon3d icon={TrendingUp} theme="home" size="sm" className="!h-8 !w-8" />
-          </div>
-          <div className="rounded-xl border border-violet-400/20 bg-violet-500/10 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">Receive</p>
-            <p className="font-mono text-sm text-white">12,400 ARC</p>
+          <div className="w-full max-w-[220px] space-y-2">
+            <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-left">
+              <p className="text-center text-[10px] uppercase tracking-wider text-white/40">From</p>
+              <p className="mt-1 text-center font-mono text-sm text-white">2.5 ETH</p>
+            </div>
+            <div className="flex justify-center py-1">
+              <ArcIcon3d icon={TrendingUp} theme="home" size="sm" className="!h-8 !w-8" />
+            </div>
+            <div className="rounded-xl border border-violet-400/20 bg-violet-500/10 p-3 text-left">
+              <p className="text-center text-[10px] uppercase tracking-wider text-white/40">Receive</p>
+              <p className="mt-1 text-center font-mono text-sm text-white">12,400 ARC</p>
+            </div>
           </div>
         </div>
       </motion.div>

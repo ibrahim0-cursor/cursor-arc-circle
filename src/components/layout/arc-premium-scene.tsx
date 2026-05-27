@@ -29,11 +29,6 @@ export function ArcPremiumScene({
 
       {theme === "home" && (
         <>
-          <motion.div
-            className="arc-energy-beam absolute left-1/2 top-0 h-full w-px -translate-x-1/2"
-            animate={{ opacity: [0.3, 0.75, 0.3] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          />
           {showGlobe && (
             <div className="absolute left-1/2 top-[10%] h-[min(520px,52vh)] w-[min(520px,92vw)] -translate-x-1/2 opacity-90">
               <ArcDotGlobe className="h-full w-full" />
