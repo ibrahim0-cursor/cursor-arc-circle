@@ -6,11 +6,11 @@ import { ArcCryptoIcon } from "@/components/landing/arc-crypto-icons";
 import type { PortalTokenId } from "@/lib/portal-tokens";
 import { cn } from "@/lib/utils";
 
-const sizePx = { sm: 44, md: 52, lg: 64, xl: 76 } as const;
+const sizePx = { sm: 44, md: 52, lg: 64, xl: 72 } as const;
 
 type TokenId = CryptoId | PortalTokenId;
 
-/** Premium 3D planet coin — CoinGecko logo on metallic disc */
+/** 3D coin — metallic rings, logo face always readable (no tumble) */
 export function ArcToken3d({
   id,
   size = "md",
@@ -43,7 +43,14 @@ export function ArcToken3d({
         } as React.CSSProperties
       }
     >
-      <div className="arc-token-3d-halo" />
+      {planet && (
+        <>
+          <div className="arc-token-3d-glow" />
+          <div className="arc-token-3d-metal-ring arc-token-3d-metal-ring-3" />
+          <div className="arc-token-3d-metal-ring arc-token-3d-metal-ring-2" />
+          <div className="arc-token-3d-metal-ring arc-token-3d-metal-ring-1" />
+        </>
+      )}
       <div className="arc-token-3d-shadow" />
       <div className="arc-token-3d-rim-back" />
       <div className="arc-token-3d-rim" />
@@ -53,8 +60,8 @@ export function ArcToken3d({
           <Image
             src={logoSrc}
             alt=""
-            width={dim - 12}
-            height={dim - 12}
+            width={dim - 14}
+            height={dim - 14}
             unoptimized={isRemote}
             className="arc-token-3d-logo object-contain"
             priority={size === "xl" || size === "lg"}
