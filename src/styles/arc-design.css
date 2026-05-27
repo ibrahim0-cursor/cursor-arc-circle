@@ -830,6 +830,43 @@ html.arc-fancy-pointer select {
   color: rgba(255, 255, 255, 0.88);
 }
 
+/* Floating orbit — all tokens visible around AI core */
+.arc-portal-orbit-spin {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  animation: arc-orbit-spin 44s linear infinite;
+  pointer-events: none;
+}
+
+.arc-portal-orbit-slot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--slot-angle, 0deg)) translateY(-148px);
+  transform-style: preserve-3d;
+}
+
+.arc-portal-orbit-upright {
+  animation: arc-orbit-upright 44s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.arc-portal-orbit-float {
+  transform: translate(-50%, -50%);
+  animation: arc-token-float 3.4s ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+}
+
+.arc-portal-orbit-dive {
+  transform-style: preserve-3d;
+  animation: arc-token-dive 5.2s ease-in-out infinite;
+  animation-delay: var(--dive-delay, 0s);
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55));
+}
+
 .arc-portal-token-wrap {
   position: absolute;
   left: 50%;
@@ -1012,6 +1049,66 @@ html.arc-fancy-pointer select {
   }
 }
 
+@keyframes arc-orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes arc-orbit-upright {
+  from {
+    transform: rotate(calc(-1 * var(--slot-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--slot-angle, 0deg) - 360deg));
+  }
+}
+
+@keyframes arc-token-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-12px);
+  }
+}
+
+@keyframes arc-token-dive {
+  0%,
+  86%,
+  100% {
+    transform: translateY(0) scale(1) rotateX(14deg);
+    opacity: 1;
+    filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55)) brightness(1);
+  }
+  36% {
+    transform: translateY(108px) scale(0.82) rotateX(28deg);
+    opacity: 1;
+  }
+  44% {
+    transform: translateY(132px) scale(0.14) rotateX(42deg);
+    opacity: 0.25;
+    filter: brightness(0.75) blur(0.5px);
+  }
+  48% {
+    transform: translateY(138px) scale(0.08) rotateX(50deg);
+    opacity: 0;
+  }
+  52% {
+    transform: translateY(125px) scale(0.5) rotateX(38deg);
+    opacity: 0.9;
+    filter: brightness(1.2) drop-shadow(0 0 18px var(--token-glow, rgba(18, 232, 168, 0.6)));
+  }
+  60% {
+    transform: translateY(95px) scale(0.88) rotateX(22deg);
+    opacity: 1;
+  }
+}
+
 
 /* ——— 3D icon tiles (home) ——— */
 .arc-icon-3d {
@@ -1167,6 +1264,10 @@ html.arc-fancy-pointer select {
   .arc-portal-vortex-ring,
   .arc-portal-vortex-spiral,
   .arc-portal-particle,
+  .arc-portal-orbit-spin,
+  .arc-portal-orbit-upright,
+  .arc-portal-orbit-float,
+  .arc-portal-orbit-dive,
   .arc-portal-core-scan,
   .arc-portal-core-ring,
   .arc-icon-3d,

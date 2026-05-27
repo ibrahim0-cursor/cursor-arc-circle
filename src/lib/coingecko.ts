@@ -52,3 +52,38 @@ export async function fetchGlobalMarket(): Promise<GlobalMarket | null> {
     return null;
   }
 }
+
+import type { CryptoId } from "@/components/landing/arc-crypto-icons";
+
+const PORTAL_COIN_IDS: Record<CryptoId, string> = {
+  btc: "bitcoin",
+  eth: "ethereum",
+  sol: "solana",
+  usdc: "usd-coin",
+  usdt: "tether",
+};
+
+/** Official CoinGecko logo URLs for home portal tokens */
+export async function fetchPortalTokenLogos(): Promise<Record<CryptoId, string> | null> {
+  try {
+    const ids = Object.values(PORTAL_COIN_IDS).join(",");
+    const res = await fetch(
+      coingeckoUrl(
+        `/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=5&page=1&sparkline=false`,
+      ),
+      { next: { revalidate: 3600 }, headers: { Accept: "application/json" } },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json()) as { id?: string; image?: string }[];
+    const byGeckoId = new Map(rows.map((r) => [r.id, r.image]));
+
+    const logos = {} as Record<CryptoId, string>;
+    for (const [key, geckoId] of Object.entries(PORTAL_COIN_IDS) as [CryptoId, string][]) {
+      const img = byGeckoId.get(geckoId);
+      if (img) logos[key] = img;
+    }
+    return Object.keys(logos).length === 5 ? logos : null;
+  } catch {
+    return null;
+  }
+}

@@ -28,7 +28,7 @@ function Add-Env($name, $value) {
   Write-Host "  $name"
 }
 
-Write-Host "==> Sync $($map.Count) vars to production (ibrahim26/trade-alpha)"
+Write-Host "==> Sync $($map.Count) vars to production (linked Vercel project)"
 foreach ($name in ($map.Keys | Sort-Object)) {
   Add-Env $name $map[$name]
 }
