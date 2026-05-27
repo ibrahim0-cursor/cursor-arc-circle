@@ -111,7 +111,7 @@ export function NexusIntegrationsBanner() {
             {" — 6-layer Alpha (narrative, smart money, momentum, risk, AI thesis). "}
             TG {status.telegramProbe?.ok ? "ok" : status.telegram ? "…" : "off"}
             {" · "}
-            Discord {status.discordProbe?.ok ? "ok" : status.discordBot ? "…" : status.discordOAuth ? "OAuth only" : "off"}
+            DC {status.discordProbe?.ok ? "ok" : status.discordBot ? "needs guild IDs" : "off"}
             {" · "}
             ST {status.stocktwitsProbe?.ok ? "ok" : status.stocktwits ? "…" : "off"}
             {" · "}
