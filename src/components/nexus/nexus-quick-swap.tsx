@@ -125,10 +125,10 @@ export function NexusQuickSwap({
     });
   }, [tradable, heldKeys]);
 
-  const payOptions = useMemo(
-    () => sortedTradable.filter((t) => heldKeys.has(t.tokenAddress.toLowerCase())),
-    [sortedTradable, heldKeys],
-  );
+  const payOptions = useMemo(() => {
+    const held = sortedTradable.filter((t) => heldKeys.has(t.tokenAddress.toLowerCase()));
+    return held.length > 0 ? held : sortedTradable.slice(0, 20);
+  }, [sortedTradable, heldKeys]);
 
   useEffect(() => {
     if (!payToken && payOptions[0]) setPayToken(payOptions[0].tokenAddress);
@@ -267,7 +267,7 @@ export function NexusQuickSwap({
           label="You pay"
           value={payToken}
           onChange={setPayToken}
-          tokens={payOptions.length > 0 ? payOptions : sortedTradable.slice(0, 12)}
+          tokens={payOptions}
           balanceHint={
             pay && balancePay > 0
               ? `Balance ${balancePay.toFixed(4)} ${pay.symbol}`

@@ -16,10 +16,13 @@ export function NexusPortfolio({
   refreshKey,
   livePrices,
   feedTokens = [],
+  showTxHistory = true,
 }: {
   refreshKey?: number;
   livePrices?: Record<string, number>;
   feedTokens?: TrendingMarketToken[];
+  /** Tx list only on Portfolio tab — not in Trade column */
+  showTxHistory?: boolean;
 }) {
   const { address } = useAccount();
   const [positions, setPositions] = useState<MarkedPosition[]>([]);
@@ -151,7 +154,7 @@ export function NexusPortfolio({
         </>
       )}
 
-      {trades.length > 0 && (
+      {showTxHistory && trades.length > 0 && (
         <div className="border-t border-white/8 pt-3">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
             Transaction history
@@ -159,6 +162,7 @@ export function NexusPortfolio({
           <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
             {trades.slice(0, 20).map((t) => {
               const isBuy = t.side === "buy";
+              const icon = iconByAddr.get(t.tokenAddress.toLowerCase());
               const ts = new Date(t.timestamp).toLocaleString(undefined, {
                 month: "short",
                 day: "numeric",
@@ -174,7 +178,9 @@ export function NexusPortfolio({
                       : "border-rose-400/25 bg-rose-500/10 text-rose-100"
                   }`}
                 >
-                  <div className="min-w-0">
+                  <div className="flex min-w-0 flex-1 items-start gap-2">
+                    <NexusTokenAvatar symbol={t.symbol} icon={icon} size="sm" className="!h-8 !w-8" />
+                    <div className="min-w-0">
                     <span className="font-bold">{isBuy ? "BUY" : "SELL"}</span>{" "}
                     <span className="font-semibold">{t.symbol}</span>
                     {t.tokenAmount > 0 && (
@@ -188,6 +194,7 @@ export function NexusPortfolio({
                       </span>
                     )}
                     <p className="text-white/35">{ts}</p>
+                    </div>
                   </div>
                   {t.arcFeeTxHash && (
                     <a

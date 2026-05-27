@@ -30,6 +30,7 @@ import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
 import { NexusTAPanel } from "@/components/nexus/nexus-ta-panel";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
+import { NexusFeedTabs, type NexusFeedTab } from "@/components/nexus/nexus-feed-tabs";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
 import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-bar";
 import { NexusMobileTokenActions } from "@/components/nexus/nexus-mobile-token-actions";
@@ -79,7 +80,8 @@ export function NexusConsole() {
   const [alphaScanError, setAlphaScanError] = useState<string | null>(null);
   const [alphaOpportunities, setAlphaOpportunities] = useState<AlphaOpportunity[]>([]);
   const [alphaScanIntel, setAlphaScanIntel] = useState<AlphaScanIntel | null>(null);
-  const [activeTab, setActiveTab] = useState<"live" | "alpha">("alpha");
+  const [feedTab, setFeedTab] = useState<NexusFeedTab>("live");
+  const [rightTab, setRightTab] = useState<"trade" | "portfolio">("trade");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
   const [tradeTab, setTradeTab] = useState<"buy" | "sell" | "agent">("buy");
   const [actionBanner, setActionBanner] = useState<{
@@ -262,7 +264,7 @@ export function NexusConsole() {
 
       setAlphaOpportunities(rows);
       setAlphaScanIntel((data.scanIntel as AlphaScanIntel | undefined) ?? null);
-      setActiveTab("alpha");
+      setFeedTab("alpha");
       setMobilePanel("feed");
       scrollToMobileContent();
       const topBuy = rows.find((r) => r.action === "BUY");
@@ -331,45 +333,15 @@ export function NexusConsole() {
 
   const feedPanel = (
     <div className="nexus-feed-panel flex min-h-0 flex-1 flex-col max-lg:!border-0 max-lg:!bg-transparent">
-      <div className="mb-3 flex flex-wrap items-center gap-1.5 max-lg:mb-2">
-        <button
-          type="button"
-          onClick={() => void runAlphaScan()}
-          disabled={alphaScanning}
-          className={cn(
-            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-bold",
-            "border-violet-400/45 bg-violet-500/25 text-violet-50",
-          )}
-        >
-          <ArcIconBadge icon={Sparkles} theme="home" size="sm" className="!h-7 !w-7" />
-          {alphaScanning ? "Scanning…" : "Run Alpha Scan"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("alpha")}
-          className={cn(
-            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
-            activeTab === "alpha"
-              ? "border-violet-400/40 bg-violet-500/20 text-violet-100"
-              : "text-white/50",
-          )}
-        >
-          Alpha ({alphaOpportunities.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("live")}
-          className={cn(
-            "arc-btn-pill flex items-center gap-1.5 px-3 py-2 text-sm font-medium",
-            activeTab === "live" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
-          )}
-        >
-          <ArcIconBadge icon={Radio} theme="nexus" size="sm" className="!h-7 !w-7" />
-          Live
-        </button>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col max-lg:h-[calc(100dvh-12.5rem)] max-lg:min-h-[320px] lg:min-h-0">
-        {activeTab === "live" ? (
+      <NexusFeedTabs
+        active={feedTab}
+        onChange={setFeedTab}
+        alphaCount={alphaOpportunities.length}
+        onAlphaScan={() => void runAlphaScan()}
+        alphaScanning={alphaScanning}
+      />
+      <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-[280px] lg:min-h-0">
+        {feedTab === "live" && (
           <NexusTrendingFeed
             className="h-full min-h-0"
             cleanFeed
@@ -378,11 +350,13 @@ export function NexusConsole() {
             onTokensRefresh={handleFeedRefresh}
             onOpenTrade={(tab) => {
               setTradeTab(tab);
+              setRightTab("trade");
               setMobilePanel("trade");
               scrollToMobileContent();
             }}
           />
-        ) : (
+        )}
+        {feedTab === "alpha" && (
           <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
             <NexusAlphaList
               opportunities={alphaOpportunities}
@@ -392,6 +366,11 @@ export function NexusConsole() {
               scanning={alphaScanning}
               scanError={alphaScanError}
             />
+          </div>
+        )}
+        {feedTab === "swap" && (
+          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+            <NexusQuickSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
           </div>
         )}
       </div>
@@ -488,46 +467,65 @@ export function NexusConsole() {
   );
 
   const tradePanel = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 space-y-3 border-b border-white/[0.06] pb-3 max-lg:pb-2">
-        <div className="lg:hidden">
-          <NexusTokenStrip
-            tokens={feedTokens}
-            selected={selectedToken}
-            onSelect={(t) => handleTokenSelect(t)}
-            mobileLimit={STABLE_FEED_LIMIT}
-          />
-          {selectedToken && (
-            <NexusMobileTokenActions
-              token={selectedToken}
-              onTradeTab={(tab) => setTradeTab(tab)}
-            />
-          )}
-        </div>
-        <NexusTradeHub
-          embedded
-          token={selectedToken}
-          activeTab={tradeTab}
-          onTabChange={setTradeTab}
-          onTradeComplete={() => setPortfolioKey((k) => k + 1)}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-24">
+      <div className="lg:hidden mb-2 space-y-2">
+        <NexusTokenStrip
+          tokens={feedTokens}
+          selected={selectedToken}
+          onSelect={(t) => handleTokenSelect(t)}
+          mobileLimit={STABLE_FEED_LIMIT}
         />
+        {selectedToken && <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />}
       </div>
-      <div className="nexus-trade-column-scroll min-h-0 flex-1 space-y-3 py-3 max-lg:pb-28 lg:pb-6">
-        <NexusPortfolio
-          refreshKey={portfolioKey}
-          livePrices={livePrices}
-          feedTokens={feedTokens}
-        />
-        <NexusQuickSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
-      </div>
+      <NexusTradeHub
+        embedded
+        token={selectedToken}
+        activeTab={tradeTab}
+        onTabChange={setTradeTab}
+        onTradeComplete={() => setPortfolioKey((k) => k + 1)}
+      />
     </div>
   );
 
   const portfolioPanel = (
-    <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto p-1 max-lg:pb-28">
-      <NexusPortfolio refreshKey={portfolioKey} livePrices={livePrices} feedTokens={feedTokens} />
-      <div className="mt-3">
-        <NexusQuickSwap tokens={feedTokens} onComplete={() => setPortfolioKey((k) => k + 1)} />
+    <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto p-1 max-lg:pb-24">
+      <NexusPortfolio
+        refreshKey={portfolioKey}
+        livePrices={livePrices}
+        feedTokens={feedTokens}
+        showTxHistory
+      />
+    </div>
+  );
+
+  const rightColumnPanel = (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mb-2 flex gap-1.5 border-b border-white/[0.06] pb-2">
+        <button
+          type="button"
+          onClick={() => setRightTab("trade")}
+          className={cn(
+            "arc-btn-pill flex-1 px-3 py-2 text-sm font-semibold",
+            rightTab === "trade" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
+          )}
+        >
+          Buy · Sell · Agent
+        </button>
+        <button
+          type="button"
+          onClick={() => setRightTab("portfolio")}
+          className={cn(
+            "arc-btn-pill flex-1 px-3 py-2 text-sm font-semibold",
+            rightTab === "portfolio"
+              ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-100"
+              : "text-white/50",
+          )}
+        >
+          Portfolio
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {rightTab === "trade" ? tradePanel : portfolioPanel}
       </div>
     </div>
   );
@@ -538,13 +536,7 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1920px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8 xl:px-6">
-        <NexusPremiumHero
-          stableCount={STABLE_FEED_LIMIT}
-          feeUsd={feeUsd}
-          alphaScanning={alphaScanning}
-          arcFeePending={arcFeePending}
-          onAlphaScan={() => void runAlphaScan()}
-        />
+        <NexusPremiumHero stableCount={STABLE_FEED_LIMIT} />
 
         <NexusMobileContextBar
           selectedToken={selectedToken}
@@ -553,9 +545,6 @@ export function NexusConsole() {
             setMobilePanel(p);
             scrollToMobileContent();
           }}
-          onAlphaScan={() => void runAlphaScan()}
-          alphaScanning={alphaScanning}
-          arcFeePending={arcFeePending}
         />
 
         <ArcSettlementBanner txHash={lastArcFeeTx ?? undefined} />
@@ -625,11 +614,11 @@ export function NexusConsole() {
           >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
             <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
-              <p className="arc-caption text-cyan-300/80">Execution</p>
-              <p className="text-sm font-semibold text-white">Trade · portfolio · swap</p>
+              <p className="arc-caption text-cyan-300/80">Wallet</p>
+              <p className="text-sm font-semibold text-white">Trade &amp; portfolio</p>
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 lg:px-3">
-              {tradePanel}
+              {rightColumnPanel}
             </div>
           </div>
         </div>

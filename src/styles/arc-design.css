@@ -1608,6 +1608,7 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row:hover {
 
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {
   align-self: stretch;
+  max-height: min(720px, calc(100vh - 5.5rem));
 }
 
 html[data-arc-theme="nexus"] .nexus-section-card {

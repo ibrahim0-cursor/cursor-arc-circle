@@ -1,51 +1,20 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
-import { NexusScanActions } from "@/components/nexus/nexus-scan-actions";
+import { Radio, Sparkles } from "lucide-react";
 
-export function NexusPremiumHero({
-  stableCount,
-  feeUsd,
-  alphaScanning,
-  arcFeePending,
-  onAlphaScan,
-}: {
-  stableCount: number;
-  feeUsd: string | number;
-  alphaScanning: boolean;
-  arcFeePending: boolean;
-  onAlphaScan: () => void;
-}) {
+/** Slim strip — main controls live in the feed column tabs */
+export function NexusPremiumHero({ stableCount }: { stableCount: number; feeUsd?: string | number; alphaScanning?: boolean; arcFeePending?: boolean; onAlphaScan?: () => void }) {
   return (
-    <section className="nexus-premium-hero arc-panel arc-panel-nexus mb-3 overflow-hidden sm:mb-4">
-      <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-      <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <ArcIconFrame icon={Sparkles} variant="home" size="md" active className="shrink-0" />
-          <div>
-            <p className="arc-caption text-violet-300/90">NEXUS · AI trading agent</p>
-            <h1 className="text-lg font-bold text-white sm:text-xl">Alpha-first intelligence</h1>
-            <p className="mt-1 text-xs text-white/55 sm:text-sm">
-              Run Alpha Scan for ranked 2x+ setups · Live feed shows {stableCount} moving alts (not
-              WETH/cbBTC) · Arc ~${feeUsd}/tx
-            </p>
-          </div>
-        </div>
-        <NexusScanActions
-          className="w-full sm:w-auto"
-          actions={[
-            {
-              id: "alpha",
-              label: "Alpha Scan",
-              icon: Sparkles,
-              onClick: onAlphaScan,
-              disabled: alphaScanning || arcFeePending,
-              loading: alphaScanning,
-            },
-          ]}
-        />
-      </div>
-    </section>
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 sm:px-4">
+      <p className="text-xs text-white/55 sm:text-sm">
+        <span className="font-semibold text-white">NEXUS</span> — Live Feed ({stableCount} movers) · Alpha Scan · Swap · Trade · Portfolio
+      </p>
+      <span className="hidden items-center gap-1 text-[10px] text-violet-300/80 sm:inline-flex">
+        <Sparkles className="h-3 w-3" /> Alpha
+      </span>
+      <span className="hidden items-center gap-1 text-[10px] text-emerald-300/80 sm:inline-flex">
+        <Radio className="h-3 w-3" /> Live
+      </span>
+    </div>
   );
 }

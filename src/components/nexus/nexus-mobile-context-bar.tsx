@@ -4,13 +4,11 @@ import {
   ArrowDownUp,
   LineChart,
   Radio,
-  Sparkles,
   TrendingDown,
   TrendingUp,
   Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { NexusScanActions } from "@/components/nexus/nexus-scan-actions";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { formatPct, formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -21,16 +19,10 @@ export function NexusMobileContextBar({
   selectedToken,
   activePanel,
   onPanelChange,
-  onAlphaScan,
-  alphaScanning,
-  arcFeePending,
 }: {
   selectedToken: TrendingMarketToken | null;
   activePanel: NexusMobilePanel;
   onPanelChange: (p: NexusMobilePanel) => void;
-  onAlphaScan: () => void;
-  alphaScanning?: boolean;
-  arcFeePending?: boolean;
 }) {
   const panels: { id: NexusMobilePanel; label: string; icon: typeof LineChart }[] = [
     { id: "feed", label: "Tokens", icon: Radio },
@@ -105,20 +97,9 @@ export function NexusMobileContextBar({
         ))}
       </div>
 
-      <NexusScanActions
-        compact
-        className="mb-0"
-        actions={[
-          {
-            id: "alpha",
-            label: "Alpha Scan",
-            icon: Sparkles,
-            onClick: onAlphaScan,
-            disabled: alphaScanning || arcFeePending,
-            loading: alphaScanning,
-          },
-        ]}
-      />
+      <p className="mb-2 text-center text-[10px] text-white/45">
+        Tokens tab: <strong className="text-emerald-200/90">Live Feed</strong> · Alpha · Swap
+      </p>
     </div>
   );
 }
