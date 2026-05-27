@@ -1,38 +1,47 @@
 /* ARC CIRCLE — proprietary intelligence OS design system */
 
 :root {
-  --arc-bg: #060608;
-  --arc-bg-elevated: #0c0d10;
-  --arc-bg-panel: #101114;
-  --arc-border: rgba(255, 255, 255, 0.07);
-  --arc-border-strong: rgba(255, 255, 255, 0.12);
-  --arc-text: #f2f4f8;
-  --arc-text-muted: rgba(242, 244, 248, 0.58);
-  --arc-text-dim: rgba(242, 244, 248, 0.38);
+  --arc-bg: #040506;
+  --arc-bg-elevated: #0a0b0f;
+  --arc-bg-panel: #0e1016;
+  --arc-border: rgba(255, 255, 255, 0.08);
+  --arc-border-strong: rgba(255, 255, 255, 0.16);
+  --arc-text: #f4f6fb;
+  --arc-text-muted: rgba(244, 246, 251, 0.62);
+  --arc-text-dim: rgba(244, 246, 251, 0.4);
 
-  /* NEXUS — financial intelligence terminal */
-  --nexus-accent: #10b981;
-  --nexus-accent-dim: rgba(16, 185, 129, 0.15);
-  --nexus-cyan: #22d3ee;
-  --nexus-teal: #0d9488;
-  --nexus-surface: #080a0c;
+  /* NEXUS — emerald / cyan intelligence */
+  --nexus-accent: #14d99a;
+  --nexus-accent-bright: #5eecc4;
+  --nexus-accent-dim: rgba(20, 217, 154, 0.18);
+  --nexus-cyan: #2dd4f0;
+  --nexus-teal: #0f766e;
+  --nexus-surface: #06090c;
+  --nexus-glow: rgba(20, 217, 154, 0.35);
 
-  /* PRISM — geopolitical command */
-  --prism-navy: #0a0e1a;
-  --prism-amber: #d97706;
-  --prism-amber-dim: rgba(217, 119, 6, 0.12);
-  --prism-radar: #b45309;
-  --prism-red-muted: rgba(185, 28, 28, 0.35);
+  /* PRISM — amber / infrared strategic */
+  --prism-navy: #070b14;
+  --prism-amber: #f59e0b;
+  --prism-amber-bright: #fbbf24;
+  --prism-amber-dim: rgba(245, 158, 11, 0.16);
+  --prism-radar: #ea580c;
+  --prism-red-muted: rgba(239, 68, 68, 0.4);
+  --prism-glow: rgba(245, 158, 11, 0.32);
+
+  /* Home — dual spectrum */
+  --home-violet: #7c6cf0;
+  --home-cyan: #38bdf8;
 
   --arc-radius-sm: 10px;
   --arc-radius-md: 14px;
-  --arc-radius-lg: 18px;
-  --arc-motion: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --arc-radius-lg: 20px;
+  --arc-motion: 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  --arc-depth-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
 }
 
 [data-arc-theme="home"] {
-  --arc-accent: var(--nexus-cyan);
-  --arc-accent-secondary: #6366f1;
+  --arc-accent: var(--home-cyan);
+  --arc-accent-secondary: var(--home-violet);
   --arc-surface: var(--arc-bg);
 }
 
@@ -44,36 +53,125 @@
 
 [data-arc-theme="prism"] {
   --arc-accent: var(--prism-amber);
-  --arc-accent-secondary: #7c3aed;
+  --arc-accent-secondary: #a855f7;
   --arc-surface: var(--prism-navy);
 }
 
-/* Matte panels — minimal glass */
+/* 3D scene */
+.arc-scene-3d {
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+.arc-orb {
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  filter: blur(0.5px);
+}
+
+.arc-tilt-root {
+  transform-style: preserve-3d;
+  transition: box-shadow var(--arc-motion);
+}
+
+.arc-tilt-root:hover {
+  box-shadow: var(--arc-depth-shadow), 0 0 0 1px var(--arc-border-strong);
+}
+
+/* Depth panels — layered 3D stack */
 .arc-panel {
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  position: relative;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.02) 42%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
   border: 1px solid var(--arc-border);
   border-radius: var(--arc-radius-lg);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 12px 40px rgba(0, 0, 0, 0.35);
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+    0 20px 50px -20px rgba(0, 0, 0, 0.7),
+    0 8px 16px -8px rgba(0, 0, 0, 0.45);
+  transform-style: preserve-3d;
+  transition:
+    transform var(--arc-motion),
+    border-color var(--arc-motion),
+    box-shadow var(--arc-motion);
+}
+
+.arc-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 40%,
+    transparent 60%,
+    var(--arc-accent) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .arc-panel-nexus {
-  border-color: rgba(16, 185, 129, 0.18);
-  background: linear-gradient(165deg, rgba(16, 185, 129, 0.06) 0%, rgba(8, 10, 12, 0.95) 55%);
+  border-color: rgba(20, 217, 154, 0.22);
+  background: linear-gradient(
+    155deg,
+    rgba(20, 217, 154, 0.12) 0%,
+    rgba(6, 9, 12, 0.97) 48%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(94, 236, 196, 0.08) inset,
+    0 28px 60px -24px var(--nexus-glow),
+    var(--arc-depth-shadow);
 }
 
 .arc-panel-prism {
-  border-color: rgba(217, 119, 6, 0.2);
-  background: linear-gradient(165deg, rgba(217, 119, 6, 0.05) 0%, rgba(10, 14, 26, 0.96) 50%);
+  border-color: rgba(245, 158, 11, 0.24);
+  background: linear-gradient(
+    155deg,
+    rgba(245, 158, 11, 0.1) 0%,
+    rgba(7, 11, 20, 0.98) 50%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(251, 191, 36, 0.06) inset,
+    0 28px 60px -24px var(--prism-glow),
+    var(--arc-depth-shadow);
 }
 
 .arc-caption {
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--arc-text-dim);
+}
+
+.arc-gradient-text {
+  background: linear-gradient(
+    120deg,
+    var(--arc-accent) 0%,
+    var(--arc-accent-secondary) 55%,
+    var(--arc-text) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .arc-pulse-line {
@@ -92,10 +190,32 @@
 
 @keyframes arc-flow {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(-100%) translateZ(0);
   }
   100% {
-    transform: translateX(200%);
+    transform: translateX(200%) translateZ(0);
+  }
+}
+
+@keyframes arc-float-3d {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(8deg) rotateY(-6deg);
+  }
+  50% {
+    transform: translateY(-12px) rotateX(12deg) rotateY(6deg);
+  }
+}
+
+@keyframes arc-holo-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
@@ -105,20 +225,26 @@
   inset: 0;
   background: linear-gradient(
     105deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.03) 50%,
-    transparent 60%
+    transparent 38%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 62%
   );
-  animation: arc-flow 4s linear infinite;
+  animation: arc-flow 3.5s linear infinite;
   pointer-events: none;
 }
 
 .arc-grid-bg {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent);
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, black, transparent);
+}
+
+.arc-grid-perspective {
+  transform: rotateX(58deg) scale(1.4) translateY(-8%);
+  transform-origin: center top;
+  opacity: 0.35;
 }
 
 .arc-hover-lift {
@@ -129,6 +255,55 @@
 }
 
 .arc-hover-lift:hover {
-  transform: translateY(-1px);
+  transform: translateY(-4px) translateZ(8px);
   border-color: var(--arc-border-strong);
+  box-shadow: var(--arc-depth-shadow), 0 0 32px -8px var(--arc-accent);
+}
+
+.arc-btn-3d {
+  position: relative;
+  transform: translateZ(0);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.arc-btn-3d:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.08);
+}
+
+.arc-btn-3d:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.arc-shimmer-border {
+  background-size: 200% 200%;
+  animation: arc-holo-shift 6s ease infinite;
+}
+
+/* Scan / AI active states */
+.arc-ai-pulse {
+  animation: arc-ai-glow 2s ease-in-out infinite;
+}
+
+@keyframes arc-ai-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--arc-accent);
+  }
+  50% {
+    box-shadow: 0 0 24px 2px color-mix(in srgb, var(--arc-accent) 40%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc-orb,
+  .arc-scan-sweep::after,
+  .arc-shimmer-border,
+  .arc-ai-pulse,
+  .arc-pulse-line {
+    animation: none !important;
+  }
+  .arc-hover-lift:hover {
+    transform: translateY(-2px);
+  }
 }

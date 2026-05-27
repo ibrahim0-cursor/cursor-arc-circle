@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 
 const styles = {
   default: "bg-white/10 text-white border-white/10",
-  nexus: "bg-cyan-400/10 text-cyan-200 border-cyan-400/20",
-  prism: "bg-violet-400/10 text-violet-200 border-violet-400/20",
+  nexus: "bg-emerald-500/15 text-emerald-200 border-emerald-400/30 shadow-[0_2px_12px_rgba(20,217,154,0.15)]",
+  prism: "bg-amber-500/15 text-amber-100 border-amber-400/30 shadow-[0_2px_12px_rgba(245,158,11,0.15)]",
   buy: "bg-emerald-400/10 text-emerald-200 border-emerald-400/20",
   sell: "bg-rose-400/10 text-rose-200 border-rose-400/20",
   hold: "bg-amber-400/10 text-amber-200 border-amber-400/20",

@@ -17,10 +17,10 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--arc-border)] bg-[var(--arc-bg)]/92">
+    <header className="sticky top-0 z-50 border-b border-[var(--arc-border)] bg-[var(--arc-bg)]/94 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
         <Link href="/" className="group flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--arc-radius-md)] border border-emerald-500/20 bg-emerald-500/8">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--arc-radius-md)] border border-emerald-400/30 bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 shadow-[0_4px_16px_rgba(20,217,154,0.25)]">
             <Sparkles className="h-5 w-5 text-emerald-400/90" strokeWidth={1.5} />
           </div>
           <div>

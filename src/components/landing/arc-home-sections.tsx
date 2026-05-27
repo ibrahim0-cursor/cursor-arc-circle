@@ -16,6 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ArcTiltCard } from "@/components/ui/arc-tilt-card";
+import { ArcHeroVisual } from "@/components/landing/arc-hero-visual";
 
 const metrics = [
   { label: "Narrative layers", value: "6+", sub: "Acceleration · flow · risk" },
@@ -26,11 +28,12 @@ const metrics = [
 export function ArcEcosystemHero() {
   return (
     <section className="relative mx-auto max-w-[1680px] px-4 pb-10 pt-8 sm:px-6 sm:pt-14">
+      <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl">
-        <p className="arc-caption mb-3 text-cyan-200/70">ARC CIRCLE · Intelligence Operating System</p>
+        <p className="arc-caption mb-3 text-cyan-200/80">ARC CIRCLE · Intelligence Operating System</p>
         <h1 className="font-semibold tracking-tight text-[var(--arc-text)]">
           <span className="block text-3xl sm:text-5xl md:text-6xl">Autonomous intelligence</span>
-          <span className="mt-2 block bg-gradient-to-r from-emerald-300/90 via-cyan-200/80 to-indigo-300/70 bg-clip-text text-2xl text-transparent sm:text-4xl">
+          <span className="arc-gradient-text mt-2 block text-2xl sm:text-4xl">
             for markets and geopolitics
           </span>
         </h1>
@@ -51,20 +54,29 @@ export function ArcEcosystemHero() {
           </Link>
         </div>
       </motion.div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2, duration: 0.7 }}
+      >
+        <ArcHeroVisual />
+      </motion.div>
+      </div>
 
       <div className="mt-12 grid gap-3 sm:grid-cols-3">
         {metrics.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 * i }}
-            className="arc-panel arc-hover-lift relative overflow-hidden p-4 sm:p-5"
-          >
-            <p className="arc-caption">{m.label}</p>
-            <p className="mt-2 font-mono text-2xl font-semibold text-white">{m.value}</p>
-            <p className="mt-1 text-xs text-white/50">{m.sub}</p>
-          </motion.div>
+          <ArcTiltCard key={m.label} glow="rgba(56,189,248,1)">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 * i }}
+              className="arc-panel arc-scan-sweep arc-hover-lift relative overflow-hidden p-4 sm:p-5"
+            >
+              <p className="arc-caption">{m.label}</p>
+              <p className="mt-2 font-mono text-2xl font-semibold text-white">{m.value}</p>
+              <p className="mt-1 text-xs text-white/50">{m.sub}</p>
+            </motion.div>
+          </ArcTiltCard>
         ))}
       </div>
     </section>
@@ -87,13 +99,24 @@ export function ArcIntelligenceGrid() {
       <h2 className="text-xl font-semibold text-white sm:text-2xl">Intelligence infrastructure</h2>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cells.map((c, i) => (
-          <Card key={c.title} className="arc-hover-lift h-full border-[var(--arc-border)]">
-            <CardContent className="p-5">
-              <c.icon className="mb-3 h-5 w-5 text-emerald-400/90" strokeWidth={1.5} />
-              <h3 className="text-base font-semibold text-white">{c.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/58">{c.copy}</p>
-            </CardContent>
-          </Card>
+          <ArcTiltCard key={c.title} glow="rgba(20,217,154,1)">
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <Card className="arc-hover-lift h-full border-[var(--arc-border)]">
+                <CardContent className="p-5">
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/25 bg-emerald-500/10 shadow-[0_4px_20px_rgba(20,217,154,0.2)]">
+                    <c.icon className="h-5 w-5 text-emerald-300" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-base font-semibold text-white">{c.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/58">{c.copy}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </ArcTiltCard>
         ))}
       </div>
     </section>

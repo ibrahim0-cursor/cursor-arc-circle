@@ -97,7 +97,9 @@ export function PrismConsole() {
       <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10 sm:pb-12">
         <div className="mb-4 sm:mb-8">
           <Badge variant="prism">PRISM</Badge>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">Macro Oracle</h1>
+          <h1 className="arc-gradient-text mt-2 text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            Macro Oracle
+          </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75">
             Pick an event → Generate Forecast. Live BTC/ETH macro on tap.
           </p>
@@ -105,7 +107,7 @@ export function PrismConsole() {
             variant="prism"
             onClick={analyze}
             disabled={loading}
-            className="mt-4 min-h-[52px] w-full text-base sm:mt-6 sm:w-auto"
+            className={`mt-4 min-h-[52px] w-full text-base sm:mt-6 sm:w-auto ${loading ? "arc-ai-pulse" : ""}`}
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
             Generate Forecast

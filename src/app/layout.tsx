@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="min-h-full bg-[#050508] antialiased">
+      <body className="min-h-full bg-[var(--arc-bg)] antialiased">
         <AppProviders>
           <Navbar />
           <main className="pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 [&:has([data-nexus-page])]:pb-0">

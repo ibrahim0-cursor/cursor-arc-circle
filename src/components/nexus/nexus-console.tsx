@@ -48,6 +48,7 @@ import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import type { NexusDecision } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 
 const AGENT_MEMORY_KEY = "nexus-agent-memory";
 const SAVED_SCANS_KEY = AGENT_MEMORY_KEY;
@@ -696,7 +697,9 @@ export function NexusConsole() {
                   RSI · MACD · Whales
                 </Badge>
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">Crypto Intelligence</h1>
+              <h1 className="arc-gradient-text text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                Crypto Intelligence
+              </h1>
               {!heroCompact && (
                 <p className="mt-2 text-sm leading-relaxed text-white/80 sm:mt-3 sm:text-base">
                   Live feed with RSI, MACD, whales, and AI BUY · SELL · HOLD. Arc fees ~${feeUsd}/tx.
@@ -720,7 +723,10 @@ export function NexusConsole() {
               </Button>
               <Button
                 variant="outline"
-                className="min-h-[44px] w-full gap-2 border-violet-400/35 sm:w-auto"
+                className={cn(
+                  "min-h-[44px] w-full gap-2 border-emerald-400/35 sm:w-auto",
+                  alphaScanning && "arc-ai-pulse",
+                )}
                 title={`Rank ${ALPHA_SCAN_LIMIT} opportunities — news, meme headlines, Birdeye, AI`}
                 onClick={() => void runAlphaScan()}
                 disabled={scanning || alphaScanning || arcFeePending}

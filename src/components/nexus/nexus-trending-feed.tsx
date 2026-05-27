@@ -215,8 +215,8 @@ export function NexusTrendingFeed({
           "w-full rounded-2xl border text-left transition-all duration-200 active:scale-[0.99] max-lg:min-h-[72px]",
           compactDesktop ? "p-2 lg:rounded-xl" : "p-3",
           selected
-            ? "border-cyan-400/55 bg-gradient-to-br from-cyan-400/[0.12] to-violet-500/[0.06] ring-1 ring-cyan-400/35 shadow-[0_0_20px_-6px_rgba(34,211,238,0.35)]"
-            : "border-white/10 bg-gradient-to-br from-black/30 to-white/[0.02] hover:border-cyan-400/25 hover:shadow-[0_0_16px_-8px_rgba(34,211,238,0.25)]",
+            ? "border-emerald-400/50 bg-gradient-to-br from-emerald-500/[0.14] to-cyan-500/[0.06] ring-1 ring-emerald-400/30 shadow-[0_8px_28px_-8px_var(--nexus-glow)]"
+            : "arc-panel border-[var(--arc-border)] hover:border-emerald-400/30 hover:shadow-[0_8px_24px_-10px_var(--nexus-glow)]",
         )}
       >
         <div className="flex items-start justify-between gap-2">
