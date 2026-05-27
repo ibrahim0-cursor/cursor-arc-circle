@@ -15,7 +15,7 @@ export function NexusExecutionPanel({ compact = false }: { compact?: boolean }) 
 
   return (
     <div className="space-y-3">
-      <NexusAgentWalletCard requiredUsdc={requiredUsdc} compact={compact} />
+      <NexusAgentWalletCard requiredUsdc={requiredUsdc} compact={false} />
 
       {agent.enabled ? (
         <div className="space-y-3 rounded-xl border border-rose-400/35 bg-rose-500/12 p-3">

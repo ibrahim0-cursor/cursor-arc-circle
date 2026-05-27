@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Copy, ExternalLink, Loader2, RefreshCw, Wallet } from "lucide-react";
+import { useAccount } from "wagmi";
 import { useToast } from "@/components/ui/toast-provider";
 import { useAgentWallet } from "@/hooks/use-agent-wallet";
+import { truncateHash } from "@/lib/utils";
 import { arcExplorerAddress } from "@/lib/arc";
 
 export function NexusAgentWalletCard({
@@ -14,8 +16,12 @@ export function NexusAgentWalletCard({
   compact?: boolean;
 }) {
   const toast = useToast();
-  const { wallet, loading, usdcBalance, refreshBalance, syncDeposits } = useAgentWallet();
+  const { address: connectedWallet } = useAccount();
+  const { wallet, loading, usdcBalance, refreshBalance, syncDeposits, creditDepositTx } =
+    useAgentWallet();
   const [syncing, setSyncing] = useState(false);
+  const [txHash, setTxHash] = useState("");
+  const [crediting, setCrediting] = useState(false);
   const ready = usdcBalance >= requiredUsdc;
 
   async function copyAddress() {
@@ -82,21 +88,29 @@ export function NexusAgentWalletCard({
       <p className="mt-1 text-xs text-white/60">
         {ready
           ? `Funded · ~$${requiredUsdc.toFixed(2)} per scheduled buy`
-          : `Send USDC on Arc Testnet to the address below (from your connected wallet), then tap Sync deposits`}
+          : `Send USDC on Arc Testnet to the vault address below from your connected wallet, then Sync deposits`}
       </p>
-      {!compact && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <code className="max-w-full truncate rounded-lg bg-black/40 px-2 py-1 text-[10px] text-cyan-100/90">
+      {connectedWallet && (
+        <p className="text-[10px] text-white/45">
+          Credits apply to connected wallet:{" "}
+          <span className="font-mono text-cyan-200/90">{truncateHash(connectedWallet, 6, 4)}</span>
+        </p>
+      )}
+      <div className="mt-2 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="min-w-0 flex-1 truncate rounded-lg bg-black/40 px-2 py-1.5 text-[11px] text-cyan-100/90 sm:text-xs">
             {wallet.address}
           </code>
           <button
             type="button"
             onClick={() => void copyAddress()}
-            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-white/15 px-2.5 text-xs font-bold text-white/80"
+            className="inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 text-xs font-bold text-cyan-50"
           >
-            <Copy className="h-3.5 w-3.5" />
-            Copy
+            <Copy className="h-4 w-4" />
+            Copy address
           </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <a
             href={arcExplorerAddress(wallet.address)}
             target="_blank"
@@ -116,7 +130,43 @@ export function NexusAgentWalletCard({
             Sync deposits
           </button>
         </div>
-      )}
+        <div className="flex flex-wrap gap-2">
+          <input
+            value={txHash}
+            onChange={(e) => setTxHash(e.target.value)}
+            placeholder="Paste deposit tx hash (optional)"
+            className="min-h-[40px] min-w-0 flex-1 rounded-lg border border-white/15 bg-black/30 px-2.5 text-xs text-white"
+          />
+          <button
+            type="button"
+            disabled={crediting || !txHash.trim()}
+            onClick={async () => {
+              setCrediting(true);
+              try {
+                const data = (await creditDepositTx(txHash.trim())) as { credited?: number };
+                toast({
+                  type: "success",
+                  title: "Deposit credited",
+                  message: data.credited ? `+$${data.credited.toFixed(2)} USDC` : "Transaction applied",
+                });
+                setTxHash("");
+                await refreshBalance();
+              } catch (e) {
+                toast({
+                  type: "error",
+                  title: "Could not credit",
+                  message: e instanceof Error ? e.message : "Check tx is USDC from your wallet to vault",
+                });
+              } finally {
+                setCrediting(false);
+              }
+            }}
+            className="inline-flex min-h-[40px] items-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 text-xs font-bold text-emerald-100 disabled:opacity-40"
+          >
+            {crediting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Credit tx"}
+          </button>
+        </div>
+      </div>
       <p className="mt-1.5 text-[10px] text-white/45">
         <strong className="text-white/70">Shared agent vault</strong> — every user sends USDC to this same
         address from their connected wallet. We credit your balance by your wallet address (not your MetaMask

@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
-import { createCircleWallet } from "@/lib/circle";
 import {
   resolveAgentVaultAddress,
   scanVaultDeposits,
@@ -9,7 +7,9 @@ import {
 import {
   creditAgentVault,
   getAgentVaultLedger,
+  getVaultScanCursor,
   saveAgentVaultLedger,
+  setVaultScanCursor,
 } from "@/lib/storage";
 
 export async function GET(request: Request) {
@@ -55,13 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "owner wallet required" }, { status: 400 });
     }
 
-    let circleAddress: string | null = null;
-    if (process.env.CIRCLE_API_KEY && process.env.CIRCLE_WALLET_SET_ID) {
-      const created = await createCircleWallet(randomUUID(), owner);
-      if (created.address && !created.demo) circleAddress = created.address;
-    }
-
-    const vault = resolveAgentVaultAddress(circleAddress);
+    const vault = resolveAgentVaultAddress();
     if (!vault.configured) {
       return NextResponse.json(
         {
@@ -92,10 +86,12 @@ export async function POST(request: Request) {
       });
     }
 
+    const fromBlock = await getVaultScanCursor();
     const { deposits, scannedToBlock } = await scanVaultDeposits(
       owner,
       vault.address,
       ledger.creditedTxHashes,
+      fromBlock,
     );
 
     for (const d of deposits) {
@@ -106,6 +102,7 @@ export async function POST(request: Request) {
       ...ledger,
       updatedAt: new Date().toISOString(),
     });
+    await setVaultScanCursor(scannedToBlock);
 
     return NextResponse.json({
       ok: true,

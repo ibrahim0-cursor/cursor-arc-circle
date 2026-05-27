@@ -18,12 +18,8 @@ export type AgentVaultLedger = {
   updatedAt: string;
 };
 
-/** Deposit address users send USDC to on Arc Testnet */
-export function resolveAgentVaultAddress(circleAddress?: string | null): AgentVaultMeta {
-  if (circleAddress && isAddress(circleAddress) && !circleAddress.startsWith("0xDemo")) {
-    return { address: circleAddress, source: "circle", configured: true };
-  }
-
+/** Shared deposit address on Arc Testnet — always prefer env so every user sees the same vault */
+export function resolveAgentVaultAddress(_circleAddress?: string | null): AgentVaultMeta {
   const envAddr =
     process.env.NEXT_PUBLIC_AGENT_VAULT_ADDRESS ??
     process.env.AGENT_VAULT_ADDRESS ??
@@ -54,10 +50,12 @@ export async function scanVaultDeposits(
   const credited = new Set(alreadyCredited.map((h) => h.toLowerCase()));
 
   const latest = await client.getBlockNumber();
-  const maxSpan = BigInt(320);
+  const maxSpan = BigInt(8000);
   const zero = BigInt(0);
-  let start = fromBlock ?? (latest > maxSpan ? latest - maxSpan : zero);
-  if (start > latest) start = latest > maxSpan ? latest - maxSpan : zero;
+  const windowStart = latest > maxSpan ? latest - maxSpan : zero;
+  let start = fromBlock != null ? fromBlock + BigInt(1) : windowStart;
+  if (start < windowStart) start = windowStart;
+  if (start > latest) start = windowStart;
 
   const found: Array<{ txHash: string; amountUsdc: number }> = [];
   const batchSize = BigInt(16);

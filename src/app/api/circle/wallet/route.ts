@@ -7,7 +7,7 @@ import { getArcStatus } from "@/lib/arc";
 export async function POST() {
   try {
     const circle = await createCircleWallet(randomUUID());
-    const vault = resolveAgentVaultAddress(circle.address);
+    const vault = resolveAgentVaultAddress();
     const address = vault.configured ? vault.address : circle.address;
     const balances = circle.walletId
       ? await getCircleBalances(circle.walletId)

@@ -321,22 +321,94 @@ type AgentVaultStore = {
 };
 
 async function readVaultStore(): Promise<AgentVaultStore> {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("agent_vault_meta")
+      .select("ledgers, last_scanned_block")
+      .eq("id", "global")
+      .maybeSingle();
+    if (!error && data) {
+      return {
+        ledgers: (data.ledgers as Record<string, AgentVaultLedger>) ?? {},
+        lastScannedBlock: data.last_scanned_block ?? undefined,
+      };
+    }
+  }
   return readJson<AgentVaultStore>("agent-vault-ledger.json", { ledgers: {} });
 }
 
 async function writeVaultStore(store: AgentVaultStore) {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error } = await supabase.from("agent_vault_meta").upsert(
+      {
+        id: "global",
+        ledgers: store.ledgers,
+        last_scanned_block: store.lastScannedBlock ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+    if (!error) {
+      await writeJson("agent-vault-ledger.json", store);
+      return;
+    }
+    console.warn("Supabase agent_vault_meta write:", error.message);
+  }
   await writeJson("agent-vault-ledger.json", store);
 }
 
-export async function getAgentVaultLedger(ownerWallet: string): Promise<AgentVaultLedger> {
+export async function getVaultScanCursor(): Promise<bigint | undefined> {
   const store = await readVaultStore();
+  return store.lastScannedBlock ? BigInt(store.lastScannedBlock) : undefined;
+}
+
+export async function setVaultScanCursor(block: bigint) {
+  const store = await readVaultStore();
+  store.lastScannedBlock = block.toString();
+  await writeVaultStore(store);
+}
+
+export async function getAgentVaultLedger(ownerWallet: string): Promise<AgentVaultLedger> {
   const key = ownerWallet.toLowerCase();
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("agent_vault_ledgers")
+      .select("ledger")
+      .eq("wallet", key)
+      .maybeSingle();
+    if (!error && data?.ledger) {
+      return data.ledger as AgentVaultLedger;
+    }
+  }
+  const store = await readVaultStore();
   return store.ledgers[key] ?? emptyLedger(ownerWallet);
 }
 
 export async function saveAgentVaultLedger(ledger: AgentVaultLedger) {
+  const key = ledger.ownerWallet.toLowerCase();
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error } = await supabase.from("agent_vault_ledgers").upsert(
+      {
+        wallet: key,
+        ledger,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "wallet" },
+    );
+    if (!error) {
+      const store = await readVaultStore();
+      store.ledgers[key] = ledger;
+      await writeJson("agent-vault-ledger.json", store);
+      return ledger;
+    }
+    console.warn("Supabase agent_vault_ledgers write:", error.message);
+  }
   const store = await readVaultStore();
-  store.ledgers[ledger.ownerWallet.toLowerCase()] = ledger;
+  store.ledgers[key] = ledger;
   await writeVaultStore(store);
   return ledger;
 }

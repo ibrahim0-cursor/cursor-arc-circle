@@ -316,7 +316,6 @@ export function NexusTradeHub({
                   <NexusTokenChatButton token={marketToken} onOpenTrade={setTab} />
                 </div>
               )}
-              <NexusTradeBalanceBar symbol={trade?.symbol} position={position} />
               <NexusAutopilotPanel
                 token={marketToken}
                 onTradeComplete={onTradeComplete}
