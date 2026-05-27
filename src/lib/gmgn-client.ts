@@ -87,7 +87,8 @@ function signCritical(
   }
 }
 
-async function gmgnFetch<T>(
+/** Low-level OpenAPI request (read routes use API key only; trade routes need GMGN_PRIVATE_KEY). */
+export async function gmgnApiRequest<T>(
   method: "GET" | "POST",
   path: string,
   params: Record<string, string | number | undefined> = {},
@@ -167,7 +168,7 @@ export async function fetchGmgnMarketRank(
   interval = "1h",
   limit = 20,
 ): Promise<GmgnTrendingToken[]> {
-  const res = await gmgnFetch<{ rank?: RankRow[] }>("GET", "/v1/market/rank", {
+  const res = await gmgnApiRequest<{ rank?: RankRow[] }>("GET", "/v1/market/rank", {
     chain,
     interval,
     limit,

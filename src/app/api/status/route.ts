@@ -22,6 +22,7 @@ import { probeApeWisdom } from "@/lib/apewisdom";
 import { probeHackerNews } from "@/lib/hackernews";
 import { hasPerceptionKey, probePerception } from "@/lib/perception";
 import { hasGmgnApiKey, hasGmgnPrivateKey, probeGmgn } from "@/lib/gmgn-client";
+import { probeGmgnAnalyticsSkills } from "@/lib/gmgn-discovery";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,7 @@ export async function GET() {
     hackerNewsProbe,
     perceptionProbe,
     gmgnProbe,
+    gmgnAnalyticsProbe,
   ] = await Promise.all([
     getArcStatus(),
     getCircleStatus(),
@@ -81,6 +83,9 @@ export async function GET() {
     probeHackerNews(),
     hasPerceptionKey() ? probePerception() : Promise.resolve({ ok: false, configured: false, error: "not configured" }),
     probeGmgn(),
+    hasGmgnApiKey()
+      ? probeGmgnAnalyticsSkills("sol")
+      : Promise.resolve({ ok: false, skills: {} }),
   ]);
   const redditEffective =
     redditProbe.ok || redditPublicProbe.ok
@@ -147,6 +152,7 @@ export async function GET() {
     gmgn: hasGmgnApiKey(),
     gmgnPrivateKey: hasGmgnPrivateKey(),
     gmgnProbe,
+    gmgnAnalyticsProbe,
     socialStack: premiumSocial ? "premium" : "free",
     geckoterminal: true,
     geckoProbe,

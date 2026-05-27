@@ -9,6 +9,7 @@ import { fetchMoralisTokenMeta, hasMoralisKey } from "./moralis";
 import type { TokenIntel } from "./storage";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import { tokenSocialFromIntel, type TokenSocialIntel } from "./social-intel";
+import { enrichTokenIntelWithGmgn } from "./gmgn-enrichment";
 
 export type DeepAnalysisBundle = {
   intel: TokenIntel;
@@ -17,6 +18,8 @@ export type DeepAnalysisBundle = {
   community: CommunityPulse;
   turnoverRatio: number;
   buySellRatio: number;
+  gmgnLines?: string[];
+  gmgnSecurity?: unknown;
 };
 
 export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<DeepAnalysisBundle> {
@@ -95,11 +98,23 @@ export async function buildDeepTokenIntel(inputToken: TrendingToken): Promise<De
   const ta = await resolveTokenTechnical(token);
   intel = { ...intel, technical: technicalToIntel(ta), social: tokenSocialFromIntel(social) };
 
+  const gmgn = await enrichTokenIntelWithGmgn(token.chainId, token.tokenAddress, intel);
+  intel = gmgn.intel;
+
   const turnoverRatio =
     token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
   const buySellRatio =
     (token.txns24h?.buys ?? intel.buy24h ?? 1) /
     Math.max(token.txns24h?.sells ?? intel.sell24h ?? 1, 1);
 
-  return { intel, news, social, community, turnoverRatio, buySellRatio };
+  return {
+    intel,
+    news,
+    social,
+    community,
+    turnoverRatio,
+    buySellRatio,
+    gmgnLines: gmgn.enrichment?.lines,
+    gmgnSecurity: gmgn.gmgnSecurity,
+  };
 }

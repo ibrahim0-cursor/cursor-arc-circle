@@ -466,10 +466,14 @@ async function refreshTokenFromDex(token: TrendingToken): Promise<TrendingToken>
 
 async function analyzeTokenForMemoryScan(token: TrendingToken) {
   const { scoreTokenSecurity } = await import("./token-security");
+  const { mergeGmgnIntoSecurityReport } = await import("./gmgn-enrichment");
   const fresh = await refreshTokenFromDex(token);
   const bundle = await buildDeepTokenIntel(fresh);
   const intel = bundle.intel;
-  const security = scoreTokenSecurity(fresh, intel);
+  let security = scoreTokenSecurity(fresh, intel);
+  if (bundle.gmgnSecurity) {
+    security = mergeGmgnIntoSecurityReport(security, bundle.gmgnSecurity);
+  }
   const scam = assessTokenScam(fresh, intel, security);
   if (scam.isScam) {
     security.scamRisk = true;
@@ -491,6 +495,8 @@ async function analyzeTokenForMemoryScan(token: TrendingToken) {
     news: bundle.news,
     social: bundle.social,
     community: bundle.community,
+    gmgnLines: bundle.gmgnLines,
+    gmgnSecurity: bundle.gmgnSecurity,
   };
 }
 
@@ -668,17 +674,38 @@ export async function runAlphaScan(
   const { fetchStableMarketFeed, fetchTokenByAddress } = await import("./dexscreener");
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
 
-  const [dexFeed, geckoFeed] = await Promise.all([
+  const { fetchGmgnDiscoveryTokens } = await import("./gmgn-discovery");
+  const [dexFeed, geckoFeed, gmgnDiscovery] = await Promise.all([
     fetchStableMarketFeed(Math.min(limit * 2, 30)),
     fetchGeckoAlphaCandidates(["base", "arbitrum", "eth"], 8),
+    fetchGmgnDiscoveryTokens("sol").catch(() => ({
+      tokens: [] as TrendingToken[],
+      sources: {},
+      errors: [] as string[],
+    })),
   ]);
   const geckoHot = new Set(
     geckoFeed.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`),
   );
 
-  let tokens: TrendingToken[] = filterTradableTokens(
-    mergeTrendingWithGecko(dexFeed, geckoFeed, Math.min(limit * 2, 35)),
-  ).slice(0, limit);
+  const merged = mergeTrendingWithGecko(
+    [...gmgnDiscovery.tokens, ...dexFeed],
+    geckoFeed,
+    Math.min(limit * 2, 40),
+  );
+  let tokens: TrendingToken[] = filterTradableTokens(merged).slice(0, limit);
+  if (tokens.length < Math.min(limit, 8) && gmgnDiscovery.tokens.length > 0) {
+    const gmgnOnly = filterTradableTokens(gmgnDiscovery.tokens).slice(0, limit);
+    const seen = new Set(tokens.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`));
+    for (const t of gmgnOnly) {
+      const k = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
+      if (!seen.has(k)) {
+        tokens.push(t);
+        seen.add(k);
+      }
+      if (tokens.length >= limit) break;
+    }
+  }
 
   if (opts?.focusToken) {
     const focus = opts.focusToken;
@@ -718,10 +745,11 @@ export async function runAlphaScan(
 
   const opportunities: AlphaOpportunity[] = await mapWithConcurrencySafe(
     analyzed,
-    async ({ token, intel, signal, news, social, community, security }, index) => {
+    async ({ token, intel, signal, news, social, community, security, gmgnLines }, index) => {
       const key = `${token.chainId}:${token.tokenAddress.toLowerCase()}`;
       const socialHeadline = pickCommunityBuzz(community, news.map((n) => n.title));
       const gmgn = gmgnBoostForSymbol(token.symbol, gmgnCtx);
+      const gmgnExtra = gmgnLines?.length ? gmgnLines.join(" · ") : undefined;
       const report = await buildAlphaIntelReport({
         token,
         intel,
@@ -729,7 +757,7 @@ export async function runAlphaScan(
         news,
         community,
         geckoTrending: geckoHot.has(key),
-        gmgnLine: gmgn.line,
+        gmgnLine: gmgnExtra ?? gmgn.line,
         security,
         skipGithub: index >= 8,
       });
@@ -799,7 +827,7 @@ export async function runAlphaScan(
     count: opportunities.length,
     scanMode: "alpha" as const,
     criteria:
-      "alpha-20|gmgn|apewisdom|reddit-public|hackernews|perception|geckoterminal|github|birdeye|ai-thesis",
+      "alpha-20|gmgn-discovery|gmgn-security|apewisdom|reddit-public|hackernews|perception|geckoterminal|github|birdeye|ai-thesis",
     topBuys: opportunities.filter((o) => o.action === "BUY").slice(0, 10),
   };
 }

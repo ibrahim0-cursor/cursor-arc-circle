@@ -18,13 +18,14 @@ export async function getGmgnAlphaContext(force = false): Promise<GmgnAlphaConte
     return contextCache.ctx;
   }
 
-  const [sol, base] = await Promise.all([
+  const [sol, base, sol5m] = await Promise.all([
     fetchGmgnMarketRank("sol", "1h", 30),
     fetchGmgnMarketRank("base", "1h", 15),
+    fetchGmgnMarketRank("sol", "5m", 20),
   ]);
 
   const bySymbol = new Map<string, GmgnTrendingToken>();
-  for (const row of [...sol, ...base]) {
+  for (const row of [...sol, ...base, ...sol5m]) {
     const sym = row.symbol.toUpperCase();
     if (!bySymbol.has(sym) || row.volume24h > (bySymbol.get(sym)?.volume24h ?? 0)) {
       bySymbol.set(sym, row);

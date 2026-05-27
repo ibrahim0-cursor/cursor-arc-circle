@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { GMGN_SKILL_CLI, isGmgnAnalyticsSkill } from "@/lib/gmgn-analytics";
 import { fetchGmgnSkillsCatalog, getGmgnSkillById } from "@/lib/gmgn-skills";
 import { hasGmgnApiKey, hasGmgnPrivateKey } from "@/lib/gmgn-client";
 
@@ -46,12 +47,21 @@ export async function POST(request: Request) {
     );
   }
 
+  const cli = isGmgnAnalyticsSkill(skill.id)
+    ? GMGN_SKILL_CLI[skill.id]
+    : skill.cliCommand;
+  const apiRoute = isGmgnAnalyticsSkill(skill.id)
+    ? `/api/nexus/gmgn/analytics?skill=${skill.id}&chain=sol`
+    : undefined;
+
   return NextResponse.json({
     ok: true,
     installed: skill.id,
     skill,
-    message: `Skill "${skill.title}" enabled for this session. Use ARC NEXUS GMGN tools or gmgn-cli locally.`,
+    message: `Skill "${skill.title}" enabled on ARC (OpenAPI).${apiRoute ? " Use apiRoute for server calls." : ""}`,
     installation: skill.installation,
+    cliCommand: cli,
+    apiRoute,
     nextSteps: [
       "npm install -g gmgn-cli",
       "Set GMGN_API_KEY in .env.local / Vercel",

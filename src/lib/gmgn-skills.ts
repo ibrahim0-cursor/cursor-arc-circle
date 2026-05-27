@@ -15,8 +15,11 @@ export type GmgnSkill = {
   url: string;
   detailUrl?: string;
   installation: string;
+  /** Equivalent gmgn-cli command (ARC uses OpenAPI on server). */
+  cliCommand?: string;
   capabilities: string[] | string;
   requiresPrivateKey?: boolean;
+  recommended?: boolean;
 };
 
 const SKILLS_JSON_URL = "https://gmgn.ai/static/opstatic/skills.json";
@@ -44,8 +47,10 @@ function normalizeSkill(raw: Record<string, unknown>): GmgnSkill | null {
     url: String(raw.url ?? "https://gmgn.ai/ai").trim(),
     detailUrl: raw.detailUrl ? String(raw.detailUrl) : undefined,
     installation: String(raw.installation ?? "").trim(),
+    cliCommand: raw.cliCommand ? String(raw.cliCommand).trim() : undefined,
     capabilities,
     requiresPrivateKey: Boolean(raw.requiresPrivateKey),
+    recommended: raw.recommended === true || raw.recommended === "true",
   };
 }
 

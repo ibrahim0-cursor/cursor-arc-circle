@@ -32,6 +32,10 @@ export function NexusGmgnSkillsPanel({ defaultQuery = "" }: { defaultQuery?: str
   const [installed, setInstalled] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stack, setStack] = useState<
+    Array<{ tier: string; order: number; why: string; skills: GmgnSkill[] }>
+  >([]);
+  const [bootstrapping, setBootstrapping] = useState(false);
 
   const search = useCallback(async (q: string) => {
     setLoading(true);
@@ -52,12 +56,40 @@ export function NexusGmgnSkillsPanel({ defaultQuery = "" }: { defaultQuery?: str
   useEffect(() => {
     setInstalled(loadInstalled());
     void search("");
+    fetch("/api/nexus/gmgn/recommended")
+      .then((r) => r.json())
+      .then((d) => setStack(d.stack ?? []))
+      .catch(() => setStack([]));
   }, [search]);
 
   useEffect(() => {
     const t = setTimeout(() => void search(query), 300);
     return () => clearTimeout(t);
   }, [query, search]);
+
+  async function enableAllDataAnalytics() {
+    setBootstrapping(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/nexus/gmgn/bootstrap", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Bootstrap failed");
+      const ids = (data.skills as { id: string }[] | undefined)?.map((s) => s.id) ?? [];
+      const next = [...new Set([...installed, ...ids])];
+      setInstalled(next);
+      saveInstalled(next);
+      setMessage(
+        data.probe?.ok
+          ? "All 12 Data Analytics skills active on ARC (OpenAPI). Alpha Scan uses GMGN discovery."
+          : "Skills registered on ARC; some GMGN probes failed — check GMGN_API_KEY / rate limits.",
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bootstrap failed");
+    } finally {
+      setBootstrapping(false);
+    }
+  }
 
   async function confirmInstall() {
     if (!selected) return;
@@ -93,6 +125,56 @@ export function NexusGmgnSkillsPanel({ defaultQuery = "" }: { defaultQuery?: str
       showCollapseHint
     >
       <div className="space-y-3">
+        <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-3 text-xs text-emerald-100/90">
+          <p className="font-semibold text-emerald-200">Autonomous agent — install in this order</p>
+          <p className="mt-1 text-white/70">
+            1) <strong>Brain</strong> (gmgn-market, gmgn-token, gmgn-track) — already powers Alpha Scan.{" "}
+            2) <strong>Signals</strong> for autopilot triggers. 3) <strong>Execution</strong> only with{" "}
+            GMGN_PRIVATE_KEY + manual checks. Do not install all 40+ at once.
+          </p>
+        </div>
+
+        {stack.length > 0 && (
+          <div className="space-y-2">
+            {stack.slice(0, 2).map((tier) => (
+              <div key={tier.tier} className="rounded-lg border border-white/10 bg-black/30 p-2.5">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-violet-300/80">
+                  Tier {tier.order}: {tier.tier}
+                </p>
+                <p className="mt-0.5 text-[11px] text-white/50">{tier.why}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {tier.skills.slice(0, 6).map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        setSelected(s);
+                        setQuery(s.title);
+                      }}
+                      className="rounded-md border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-100"
+                    >
+                      {s.title.replace(/ \(bundle\)/, "")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          disabled={bootstrapping}
+          onClick={() => void enableAllDataAnalytics()}
+          className="arc-glass-interactive w-full rounded-xl border border-emerald-400/40 bg-emerald-500/15 py-2.5 text-sm font-bold text-emerald-100"
+        >
+          {bootstrapping ? (
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+          ) : (
+            "Enable all 12 Data Analytics on ARC (server)"
+          )}
+        </button>
+
         <p className="text-xs leading-relaxed text-white/55">
           Curated directory from{" "}
           <a
