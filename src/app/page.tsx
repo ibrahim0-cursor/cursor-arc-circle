@@ -9,7 +9,7 @@ import {
 export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden text-white" data-arc-theme="home">
-      <ArcBackground theme="home" showGlobe />
+      <ArcBackground theme="home" />
       <div className="relative">
         <ArcEcosystemHero />
         <ArcIntelligenceGrid />

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Droplets, Home, Radar, Zap } from "lucide-react";
+import { Droplets, Home, Radar, Sparkles, Zap } from "lucide-react";
 import { ArcLogoMark } from "@/components/layout/arc-logo-mark";
 import { arcThemeFromPath } from "@/components/layout/arc-theme-sync";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -67,7 +68,18 @@ export function Navbar() {
                   active ? "arc-nav-pill-active font-semibold" : "text-white/55 hover:bg-white/5 hover:text-white",
                 )}
               >
-                <Icon className={cn("h-4 w-4", active && "opacity-100")} />
+                {theme === "home" ? (
+                  <ArcIcon3d
+                    icon={Icon}
+                    theme={
+                      link.href === "/nexus" ? "nexus" : link.href === "/prism" ? "prism" : "home"
+                    }
+                    size="sm"
+                    className="!h-7 !w-7"
+                  />
+                ) : (
+                  <Icon className="h-4 w-4" />
+                )}
                 {link.label}
               </Link>
             );
@@ -75,12 +87,16 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ArcIconBadge
-            icon={theme === "prism" ? Radar : theme === "nexus" ? Zap : Home}
-            theme={badgeTheme}
-            size="sm"
-            className="hidden lg:flex"
-          />
+          {theme === "home" ? (
+            <ArcIcon3d icon={Sparkles} theme="home" size="sm" className="hidden lg:flex" />
+          ) : (
+            <ArcIconBadge
+              icon={theme === "prism" ? Radar : theme === "nexus" ? Zap : Home}
+              theme={badgeTheme}
+              size="sm"
+              className="hidden lg:flex"
+            />
+          )}
           <Link
             href={theme === "prism" ? "/prism" : "/nexus"}
             className={cn("arc-btn-pill hidden rounded-full px-4 py-2 text-sm font-bold transition sm:inline-block", ctaClass)}

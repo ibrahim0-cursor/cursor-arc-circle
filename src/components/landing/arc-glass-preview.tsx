@@ -2,22 +2,23 @@
 
 import { motion } from "framer-motion";
 import { ArrowRightLeft, LineChart, TrendingUp, Wallet } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 
-/** Cryptox / EXORA style floating glass dashboard preview */
+/** Glass dashboard preview — icons only updated; amounts/labels unchanged */
 export function ArcGlassPreview() {
   return (
-    <div className="arc-glass-preview relative mx-auto mt-10 max-w-4xl px-4">
+    <div className="arc-glass-preview relative mx-auto mt-8 max-w-4xl px-4">
       <motion.div
-        initial={{ opacity: 0, y: 28 }}
+        initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
+        transition={{ duration: 0.5 }}
         className="grid gap-4 md:grid-cols-3"
       >
         <div className="arc-glass-card p-4 md:translate-y-6">
-          <div className="mb-3 flex items-center gap-2 text-xs text-white/50">
-            <LineChart className="h-4 w-4 text-violet-300" />
-            Market pulse
+          <div className="mb-3 flex items-center gap-2">
+            <ArcIcon3d icon={LineChart} theme="home" size="sm" />
+            <span className="text-xs text-white/50">Market pulse</span>
           </div>
           {["NEXUS", "ARC", "BASE"].map((sym, i) => (
             <div key={sym} className="mb-2 flex items-center justify-between font-mono text-xs">
@@ -32,7 +33,7 @@ export function ArcGlassPreview() {
         <div className="arc-glass-card arc-glass-card-hero p-5 md:-translate-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-violet-200" />
+              <ArcIcon3d icon={Wallet} theme="home" size="sm" />
               <span className="text-sm font-medium text-white">Intelligence vault</span>
             </div>
             <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300">LIVE</span>
@@ -62,16 +63,16 @@ export function ArcGlassPreview() {
         </div>
 
         <div className="arc-glass-card p-4 md:translate-y-8">
-          <div className="mb-3 flex items-center gap-2 text-xs text-white/50">
-            <ArrowRightLeft className="h-4 w-4 text-cyan-300" />
-            Agent swap
+          <div className="mb-3 flex items-center gap-2">
+            <ArcIcon3d icon={ArrowRightLeft} theme="nexus" size="sm" />
+            <span className="text-xs text-white/50">Agent swap</span>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/30 p-3">
             <p className="text-[10px] uppercase tracking-wider text-white/40">From</p>
             <p className="font-mono text-sm text-white">2.5 ETH</p>
           </div>
           <div className="my-2 flex justify-center">
-            <TrendingUp className="h-4 w-4 text-violet-300" />
+            <ArcIcon3d icon={TrendingUp} theme="home" size="sm" className="!h-8 !w-8" />
           </div>
           <div className="rounded-xl border border-violet-400/20 bg-violet-500/10 p-3">
             <p className="text-[10px] uppercase tracking-wider text-white/40">Receive</p>

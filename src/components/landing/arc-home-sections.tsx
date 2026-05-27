@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcGlassPreview } from "@/components/landing/arc-glass-preview";
 import { ArcLivePulseCard } from "@/components/landing/arc-live-pulse-card";
+import { ArcPortalHero } from "@/components/landing/arc-portal-hero";
 
 const metrics = [
   { icon: ScanLine, label: "Narrative layers", value: "06", sub: "Acceleration · flow · risk" },
@@ -31,38 +31,42 @@ const metrics = [
 
 export function ArcEcosystemHero() {
   return (
-    <section className="arc-hero-centered relative mx-auto max-w-[1680px] px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
+    <section className="arc-home-hero-shell relative mx-auto max-w-[1680px] px-4 pb-10 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-[6%] z-0 flex justify-center opacity-95">
+        <ArcPortalHero />
+      </div>
+
       <ArcLivePulseCard />
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
-        className="relative z-10 mx-auto max-w-4xl text-center"
+        transition={{ duration: 0.55 }}
+        className="relative z-10 mx-auto max-w-4xl pt-6 text-center sm:pt-10"
       >
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <ArcIconFrame icon={Sparkles} variant="home" size="sm" active />
-          <p className="arc-caption text-violet-300/80">ARC CIRCLE · Intelligence OS</p>
+        <div className="mb-5 flex items-center justify-center gap-3">
+          <ArcIcon3d icon={Sparkles} theme="home" size="sm" />
+          <p className="arc-caption text-violet-300/85">ARC CIRCLE · Intelligence OS</p>
         </div>
 
-        <h1 className="arc-display text-white">
+        <h1 className="arc-display text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
           <span className="block">Autonomous</span>
           <span className="arc-gradient-text block">market intelligence</span>
         </h1>
 
-        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
-          Institutional AI for crypto and macro — glass-clear signals, six-layer alpha, and Arc-native execution.
-          Built to win users at first glance.
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
+          Institutional AI for crypto and macro — live portal routing, six-layer alpha, Arc-native execution.
         </p>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link href="/nexus" className="w-full sm:w-auto" data-cursor-hover>
+        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link href="/nexus" className="w-full sm:w-auto">
             <Button variant="default" size="lg" className="arc-btn-pill min-h-[54px] w-full gap-2 px-8 sm:w-auto">
+              <Zap className="h-5 w-5" strokeWidth={1.5} />
               Launch NEXUS
               <ArrowUpRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/prism" className="w-full sm:w-auto" data-cursor-hover>
+          <Link href="/prism" className="w-full sm:w-auto">
             <Button variant="outline" size="lg" className="arc-btn-pill min-h-[54px] w-full gap-2 border-white/20 px-8 sm:w-auto">
               <Radar className="h-5 w-5" strokeWidth={1.5} />
               Open PRISM
@@ -71,25 +75,28 @@ export function ArcEcosystemHero() {
         </div>
       </motion.div>
 
-      <ArcGlassPreview />
+      <div className="relative z-10">
+        <ArcGlassPreview />
+      </div>
 
-      <div className="relative z-10 mt-16 grid gap-4 sm:grid-cols-3">
+      <div className="relative z-10 mt-14 grid gap-4 sm:grid-cols-3">
         {metrics.map((m, i) => (
           <motion.div
             key={m.label}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.1 + i * 0.08 }}
-            className="arc-panel flex gap-4 overflow-hidden p-5"
-            data-cursor-hover
+            transition={{ delay: 0.08 + i * 0.06 }}
+            className="arc-panel relative overflow-hidden p-5 pt-6"
           >
             <div className="arc-panel-stripe arc-panel-stripe-home absolute inset-x-0 top-0" />
-            <ArcIconBadge icon={m.icon} theme="home" size="md" className="relative z-10" />
-            <div className="text-left">
-              <p className="arc-caption">{m.label}</p>
-              <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white">{m.value}</p>
-              <p className="mt-1 text-xs text-white/48">{m.sub}</p>
+            <div className="flex gap-4">
+              <ArcIcon3d icon={m.icon} theme="home" size="md" delay={i * 0.15} />
+              <div className="text-left">
+                <p className="arc-caption">{m.label}</p>
+                <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white">{m.value}</p>
+                <p className="mt-1 text-xs text-white/48">{m.sub}</p>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -117,7 +124,7 @@ export function ArcIntelligenceGrid() {
             Intelligence infrastructure
           </h2>
         </div>
-        <ArcIconFrame icon={ScanLine} variant="home" size="md" active />
+        <ArcIcon3d icon={ScanLine} theme="home" size="md" />
       </div>
       <div className="arc-glass-card mt-8 divide-y divide-white/[0.06] overflow-hidden">
         {cells.map((c, i) => (
@@ -126,11 +133,15 @@ export function ArcIntelligenceGrid() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ delay: i * 0.04 }}
             className="arc-feature-row"
-            data-cursor-hover
           >
-            <ArcIconFrame icon={c.icon} variant={i % 2 === 0 ? "nexus" : "home"} size="md" />
+            <ArcIcon3d
+              icon={c.icon}
+              theme={i % 3 === 0 ? "home" : i % 3 === 1 ? "nexus" : "prism"}
+              size="md"
+              delay={i * 0.12}
+            />
             <div>
               <h3 className="text-base font-semibold text-white">{c.title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-white/55">{c.copy}</p>
@@ -146,10 +157,11 @@ export function ArcSystemsShowcase() {
   return (
     <section className="relative z-10 mx-auto max-w-[1680px] px-4 pb-20 sm:px-6">
       <div className="grid gap-6 lg:grid-cols-2">
-        <motion.div whileHover={{ y: -4 }} className="arc-glass-card p-6 sm:p-8" data-cursor-hover>
+        <motion.div whileHover={{ y: -4 }} className="arc-panel relative overflow-hidden p-6 sm:p-8">
+          <div className="arc-panel-stripe arc-panel-stripe-nexus absolute inset-x-0 top-0" />
           <Badge variant="nexus">NEXUS</Badge>
-          <div className="mt-5 flex items-start gap-4">
-            <ArcIconFrame icon={Zap} variant="nexus" size="lg" active />
+          <div className="relative mt-5 flex items-start gap-4">
+            <ArcIcon3d icon={Zap} theme="nexus" size="lg" />
             <div>
               <h2 className="text-2xl font-semibold text-white">Financial command terminal</h2>
               <p className="mt-3 text-sm leading-relaxed text-white/58">
@@ -157,17 +169,18 @@ export function ArcSystemsShowcase() {
               </p>
             </div>
           </div>
-          <Link href="/nexus" className="mt-8 inline-block">
+          <Link href="/nexus" className="relative mt-8 inline-block">
             <Button variant="nexus" className="arc-btn-pill gap-2">
               Enter terminal <ArrowUpRight className="h-4 w-4" />
             </Button>
           </Link>
         </motion.div>
 
-        <motion.div whileHover={{ y: -4 }} className="arc-glass-card p-6 sm:p-8" data-cursor-hover>
+        <motion.div whileHover={{ y: -4 }} className="arc-panel relative overflow-hidden p-6 sm:p-8">
+          <div className="arc-panel-stripe arc-panel-stripe-prism absolute inset-x-0 top-0" />
           <Badge variant="prism">PRISM</Badge>
-          <div className="mt-5 flex items-start gap-4">
-            <ArcIconFrame icon={Globe2} variant="prism" size="lg" active />
+          <div className="relative mt-5 flex items-start gap-4">
+            <ArcIcon3d icon={Globe2} theme="prism" size="lg" />
             <div>
               <h2 className="text-2xl font-semibold text-white">Strategic macro oracle</h2>
               <p className="mt-3 text-sm leading-relaxed text-white/58">
@@ -175,7 +188,7 @@ export function ArcSystemsShowcase() {
               </p>
             </div>
           </div>
-          <Link href="/prism" className="mt-8 inline-block">
+          <Link href="/prism" className="relative mt-8 inline-block">
             <Button variant="prism" className="arc-btn-pill gap-2">
               Enter oracle <ArrowUpRight className="h-4 w-4" />
             </Button>
@@ -191,23 +204,22 @@ export function ArcHomeFooter() {
     <footer className="relative z-10 border-t border-white/[0.08] px-6 py-14">
       <div className="mx-auto flex max-w-[1680px] flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <ArcIconFrame icon={Sparkles} variant="home" size="md" />
+          <ArcIcon3d icon={Sparkles} theme="home" size="md" />
           <div>
             <p className="font-mono text-sm font-semibold tracking-[0.18em] text-white">ARC CIRCLE</p>
             <p className="arc-caption mt-1">NEXUS + PRISM · Arc Testnet</p>
           </div>
         </div>
         <nav className="flex flex-wrap gap-6 font-mono text-xs uppercase tracking-widest text-white/50">
-          <Link href="/nexus" className="transition hover:text-emerald-300" data-cursor-hover>
+          <Link href="/nexus" className="transition hover:text-emerald-300">
             NEXUS
           </Link>
-          <Link href="/prism" className="transition hover:text-amber-300" data-cursor-hover>
+          <Link href="/prism" className="transition hover:text-amber-300">
             PRISM
           </Link>
           <a
             href="https://github.com/ibrahim0-cursor/cursor-arc-circle"
             className="transition hover:text-white"
-            data-cursor-hover
           >
             GitHub
           </a>

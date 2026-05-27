@@ -628,6 +628,262 @@ html.arc-fancy-pointer select {
   border-radius: 12px;
 }
 
+/* ——— Home portal hero ——— */
+.arc-portal-hero {
+  position: relative;
+  width: min(480px, 92vw);
+  height: min(420px, 52vh);
+  margin: 0 auto;
+  perspective: 900px;
+  transform: translateZ(0);
+  contain: layout style paint;
+}
+
+.arc-portal-hero-glow {
+  position: absolute;
+  inset: 5% 0 15%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.45), transparent 68%);
+  filter: blur(28px);
+  animation: arc-portal-glow 5s ease-in-out infinite;
+}
+
+.arc-portal-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.arc-portal-ring-outer {
+  width: 100%;
+  height: 100%;
+  animation: arc-portal-spin 24s linear infinite;
+}
+
+.arc-portal-ring-inner {
+  width: 72%;
+  height: 72%;
+  border-color: rgba(232, 121, 249, 0.55);
+  animation: arc-portal-spin-rev 16s linear infinite;
+}
+
+.arc-portal-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38%;
+  height: 38%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.9) 0%, rgba(88, 28, 135, 0.5) 55%, transparent 100%);
+  box-shadow: 0 0 60px rgba(168, 85, 247, 0.5);
+}
+
+.arc-portal-vortex {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(192, 132, 252, 0.5),
+    transparent,
+    rgba(99, 102, 241, 0.45),
+    transparent
+  );
+  animation: arc-portal-spin 6s linear infinite;
+}
+
+.arc-portal-coin-track {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  height: 88%;
+  transform: translate(-50%, -50%);
+  animation: arc-portal-spin 11s linear infinite;
+}
+
+.arc-portal-coin-track-alt {
+  animation-duration: 14s;
+  animation-direction: reverse;
+  opacity: 0.75;
+}
+
+.arc-portal-coin {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  display: flex;
+  height: 44px;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  transform: translate(-50%, -50%);
+  animation: arc-portal-coin-depth 11s linear infinite;
+  will-change: transform, opacity;
+}
+
+.arc-portal-coin-track-alt .arc-portal-coin {
+  animation-duration: 14s;
+  animation-direction: reverse;
+}
+
+.arc-portal-coin-btc {
+  background: linear-gradient(145deg, #f59e0b, #d97706);
+  box-shadow:
+    0 0 20px rgba(245, 158, 11, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.arc-portal-coin-eth {
+  height: 36px;
+  width: 36px;
+  font-size: 1rem;
+  background: linear-gradient(145deg, #818cf8, #4f46e5);
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.5);
+}
+
+@keyframes arc-portal-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes arc-portal-spin-rev {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+@keyframes arc-portal-glow {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes arc-portal-coin-depth {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.2;
+    filter: brightness(1);
+  }
+  20% {
+    opacity: 1;
+  }
+  48% {
+    transform: translate(-50%, -50%) scale(0.32);
+    opacity: 0.5;
+    filter: brightness(0.7);
+  }
+  52% {
+    transform: translate(-50%, -50%) scale(0.28);
+    opacity: 0.35;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.2;
+    filter: brightness(1);
+  }
+}
+
+/* ——— 3D icon tiles (home) ——— */
+.arc-icon-3d {
+  position: relative;
+  flex-shrink: 0;
+  transform-style: preserve-3d;
+  animation: arc-icon-3d-float 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.arc-icon-3d-plate {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(0, 0, 0, 0.5) 100%);
+  box-shadow:
+    0 10px 24px -8px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: rotateX(14deg) rotateY(-18deg);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arc-icon-3d-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.22), transparent 42%);
+  pointer-events: none;
+}
+
+.arc-icon-3d-home .arc-icon-3d-plate {
+  color: #e9d5ff;
+  box-shadow:
+    0 12px 28px -10px rgba(168, 85, 247, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.arc-icon-3d-nexus .arc-icon-3d-plate {
+  color: #a7f3d0;
+  box-shadow: 0 12px 28px -10px rgba(18, 232, 168, 0.4);
+}
+
+.arc-icon-3d-prism .arc-icon-3d-plate {
+  color: #fde68a;
+  box-shadow: 0 12px 28px -10px rgba(245, 158, 11, 0.4);
+}
+
+.arc-icon-3d-neutral .arc-icon-3d-plate {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.arc-feature-row:hover .arc-icon-3d-plate,
+.arc-glass-card:hover .arc-icon-3d-plate {
+  transform: rotateX(6deg) rotateY(8deg) translateY(-2px);
+}
+
+@keyframes arc-icon-3d-float {
+  0%,
+  100% {
+    transform: translateY(0) rotateY(-6deg);
+  }
+  50% {
+    transform: translateY(-5px) rotateY(6deg);
+  }
+}
+
+.arc-home-hero-shell {
+  position: relative;
+  min-height: min(88vh, 920px);
+  padding-top: 2rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arc-border-trace::before,
   .arc-icon-active,
@@ -635,7 +891,13 @@ html.arc-fancy-pointer select {
   .arc-ai-pulse,
   .arc-scan-line,
   .arc-dot-globe-glow,
-  .arc-dot-globe-orbit {
+  .arc-dot-globe-orbit,
+  .arc-portal-ring,
+  .arc-portal-vortex,
+  .arc-portal-coin-track,
+  .arc-portal-coin,
+  .arc-portal-hero-glow,
+  .arc-icon-3d {
     animation: none !important;
   }
 }
