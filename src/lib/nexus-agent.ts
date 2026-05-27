@@ -643,18 +643,13 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
   return { ...base, technical: technicalToIntel(ta) };
 }
 
-/** Fast path: heuristic + security only (no Groq batch) — loads in under 15s on Vercel */
+/** Fast path: heuristic + security only (no Groq, no Birdeye OHLCV) — must finish under Vercel limits */
 export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
   const macro = await getMacroRegime();
-  const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
-  const rankOf = new Map(
-    sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
-  );
   return Promise.all(
     tokens.map(async (token) => {
-    const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
-    const intel = await intelForFeedRank(token, rank);
+    const intel = token.intel ?? buildLocalTokenIntel(token);
     const security = scoreTokenSecurity(token, intel);
     let signal = heuristicDecision(token, intel, macro);
     signal = finalizeFeedSignal(token, intel, signal, security);

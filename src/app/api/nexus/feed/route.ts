@@ -65,8 +65,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const quick = searchParams.get("quick") === "1";
     const limit = quick
-      ? Math.min(Number(searchParams.get("limit") ?? 50), 60)
-      : Math.min(Number(searchParams.get("limit") ?? 60), 80);
+      ? Math.min(Number(searchParams.get("limit") ?? 40), 45)
+      : Math.min(Number(searchParams.get("limit") ?? 50), 60);
 
     let tokens = filterTradableTokens(await fetchTrendingMarketTokens(limit));
     tokens = await enrichMissingPairs(tokens, quick ? 8 : 16);

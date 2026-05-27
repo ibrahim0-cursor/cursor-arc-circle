@@ -115,7 +115,7 @@ export function NexusTrendingFeed({
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const q = quick ? "&quick=1" : "";
-    const lim = quick ? 80 : 100;
+    const lim = quick ? 40 : 55;
     try {
       const res = await fetch(`/api/nexus/feed?limit=${lim}${q}&t=${Date.now()}`, {
         cache: "no-store",
@@ -149,7 +149,7 @@ export function NexusTrendingFeed({
       } catch (err) {
         const msg =
           err instanceof Error && err.name === "AbortError"
-            ? "Feed timed out — retry or check Vercel function limits"
+            ? "Feed timed out — tap Retry (server may be busy; not related to Supabase token)"
             : err instanceof Error
               ? err.message
               : "Feed load failed";
