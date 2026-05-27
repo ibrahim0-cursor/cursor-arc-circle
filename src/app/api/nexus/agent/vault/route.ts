@@ -72,7 +72,10 @@ export async function POST(request: Request) {
       const verified = await verifyVaultDepositTx(owner, vault.address, body.txHash);
       if (!verified) {
         return NextResponse.json(
-          { error: "Transaction not found or not a USDC deposit from your wallet to the agent vault" },
+          {
+            error:
+              "Could not verify deposit. Send USDC on Arc Testnet from your connected wallet to the vault address, wait for confirmation, then paste that tx hash. Must be the same wallet shown above.",
+          },
           { status: 400 },
         );
       }

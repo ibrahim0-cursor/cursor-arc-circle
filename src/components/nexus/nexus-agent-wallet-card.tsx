@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, ExternalLink, Loader2, RefreshCw, Wallet } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useToast } from "@/components/ui/toast-provider";
@@ -19,6 +19,7 @@ export function NexusAgentWalletCard({
   const { address: connectedWallet } = useAccount();
   const { wallet, loading, usdcBalance, refreshBalance, syncDeposits, creditDepositTx } =
     useAgentWallet();
+  const [depositHint, setDepositHint] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [crediting, setCrediting] = useState(false);
@@ -30,20 +31,39 @@ export function NexusAgentWalletCard({
     toast({ type: "success", title: "Copied", message: "Agent deposit address copied" });
   }
 
-  async function handleSync() {
+  useEffect(() => {
+    if (!connectedWallet || !wallet?.configured) return;
+    void handleSync(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once when vault UI mounts
+  }, [connectedWallet, wallet?.address]);
+
+  async function handleSync(silent = false) {
     setSyncing(true);
     try {
-      const data = (await syncDeposits()) as { newDeposits?: number };
+      const data = (await syncDeposits()) as {
+        newDeposits?: number;
+        ledger?: { balanceUsdc?: number; totalDeposited?: number };
+      };
       const n = data.newDeposits ?? 0;
-      toast({
-        type: n > 0 ? "success" : "info",
-        title: n > 0 ? "Deposit credited" : "Sync complete",
-        message:
-          n > 0
-            ? `${n} deposit(s) added · balance $${usdcBalance.toFixed(2)}`
-            : "No new deposits found — send USDC on Arc Testnet from your connected wallet, then sync again",
-      });
-      await refreshBalance();
+      const refreshed = await refreshBalance();
+      const bal = refreshed?.balanceUsdc ?? data.ledger?.balanceUsdc ?? usdcBalance;
+      if (!silent) {
+        toast({
+          type: n > 0 || bal > 0 ? "success" : "info",
+          title: n > 0 ? "Deposit credited" : bal > 0 ? "Balance loaded" : "Sync complete",
+          message:
+            n > 0
+              ? `${n} deposit(s) · balance $${bal.toFixed(2)}`
+              : bal > 0
+                ? `Vault balance $${bal.toFixed(2)} USDC`
+                : "No deposit found — send native USDC on Arc Testnet from your connected wallet to the vault address, then Credit tx with your hash",
+        });
+      }
+      setDepositHint(
+        bal > 0
+          ? `Ready for autopilot · $${bal.toFixed(2)} available`
+          : "Send USDC from connected wallet → vault, then Sync or Credit tx",
+      );
     } catch (e) {
       toast({
         type: "error",
@@ -87,9 +107,10 @@ export function NexusAgentWalletCard({
       </p>
       <p className="mt-1 text-xs text-white/60">
         {ready
-          ? `Funded · ~$${requiredUsdc.toFixed(2)} per scheduled buy`
-          : `Send USDC on Arc Testnet to the vault address below from your connected wallet, then Sync deposits`}
+          ? `Funded · $${requiredUsdc.toFixed(2)} needed per buy (trade only; ~$0.01 Arc fee from wallet)`
+          : `Send USDC on Arc Testnet to the vault below from your connected wallet`}
       </p>
+      {depositHint && <p className="text-[10px] text-emerald-200/80">{depositHint}</p>}
       {connectedWallet && (
         <p className="text-[10px] text-white/45">
           Credits apply to connected wallet:{" "}
@@ -123,7 +144,7 @@ export function NexusAgentWalletCard({
           <button
             type="button"
             disabled={syncing}
-            onClick={() => void handleSync()}
+            onClick={() => void handleSync(false)}
             className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-violet-400/40 bg-violet-500/15 px-2.5 text-xs font-bold text-violet-100"
           >
             {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
@@ -143,14 +164,21 @@ export function NexusAgentWalletCard({
             onClick={async () => {
               setCrediting(true);
               try {
-                const data = (await creditDepositTx(txHash.trim())) as { credited?: number };
+                const data = (await creditDepositTx(txHash.trim())) as {
+                  credited?: number;
+                  ledger?: { balanceUsdc?: number };
+                };
+                const refreshed = await refreshBalance();
+                const bal = refreshed?.balanceUsdc ?? data.ledger?.balanceUsdc ?? 0;
                 toast({
                   type: "success",
                   title: "Deposit credited",
-                  message: data.credited ? `+$${data.credited.toFixed(2)} USDC` : "Transaction applied",
+                  message: data.credited
+                    ? `+$${data.credited.toFixed(2)} USDC · balance $${bal.toFixed(2)}`
+                    : `Balance $${bal.toFixed(2)} USDC`,
                 });
+                setDepositHint(`Ready for autopilot · $${bal.toFixed(2)} available`);
                 setTxHash("");
-                await refreshBalance();
               } catch (e) {
                 toast({
                   type: "error",
@@ -170,8 +198,8 @@ export function NexusAgentWalletCard({
       <p className="mt-1.5 text-[10px] text-white/45">
         <strong className="text-white/70">Shared agent vault</strong> — every user sends USDC to this same
         address from their connected wallet. We credit your balance by your wallet address (not your MetaMask
-        login address as the vault). Autopilot spends only your credited balance; your wallet pays ~$0.01 Arc
-        fee per trade.
+        login address as the vault). Autopilot buys deduct from your credited vault balance. Your wallet only
+        pays the small Arc network fee (~$0.01) per trade, not the buy size.
       </p>
     </div>
   );

@@ -103,12 +103,17 @@ export function autopilotIntervalMs(config: AutopilotConfig): number {
   return AUTOPILOT_INTERVALS[config.interval].ms;
 }
 
+/** Minimum vault balance to run one buy (trade size only — Arc network fee is paid from wallet, ~$0.01) */
 export function estimateRequiredUsdc(config: AutopilotConfig, balance: number): number {
+  const arcBuffer = 0.005;
   if (config.amountMode === "custom_usdc") {
-    return Math.max(0.05, Number(config.customUsdc) || 0) + 0.02;
+    return Math.max(0.05, Number(config.customUsdc) || 0) + arcBuffer;
+  }
+  if (config.amountMode === "custom_token" && config.customAmountUnit === "usdc") {
+    return Math.max(0.05, Number(config.customToken) || 0) + arcBuffer;
   }
   if (config.amountMode === "percent") {
-    return Math.max(0.05, (balance * config.percent) / 100) + 0.02;
+    return Math.max(0.05, (balance * config.percent) / 100) + arcBuffer;
   }
-  return 0.07;
+  return 0.055;
 }

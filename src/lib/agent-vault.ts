@@ -1,6 +1,13 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { formatEther, isAddress } from "viem";
+import { decodeEventLog, formatUnits, isAddress, parseAbiItem } from "viem";
 import { getArcPublicClient } from "./arc";
+
+const TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4c1160f071e847c379df" as const;
+const erc20Transfer = parseAbiItem(
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+);
+const USDC_DECIMALS = 18;
 
 export type AgentVaultMeta = {
   address: string;
@@ -78,7 +85,7 @@ export async function scanVaultDeposits(
         if (!tx.value || tx.value <= BigInt(0)) continue;
         const hash = tx.hash.toLowerCase();
         if (credited.has(hash)) continue;
-        const amountUsdc = Number(formatEther(tx.value));
+        const amountUsdc = Number(formatUnits(tx.value, USDC_DECIMALS));
         if (amountUsdc < 0.01) continue;
         found.push({ txHash: tx.hash, amountUsdc });
         credited.add(hash);
@@ -89,20 +96,57 @@ export async function scanVaultDeposits(
   return { deposits: found, scannedToBlock: latest };
 }
 
+/** Parse native USDC or ERC-20 Transfer logs in a tx receipt */
+export async function extractVaultDepositFromTx(
+  ownerWallet: string,
+  vaultAddress: string,
+  txHash: string,
+): Promise<{ amountUsdc: number } | null> {
+  const client = getArcPublicClient();
+  const hash = txHash.trim() as `0x${string}`;
+  const owner = ownerWallet.toLowerCase();
+  const vault = vaultAddress.toLowerCase();
+
+  const tx = await client.getTransaction({ hash }).catch(() => null);
+  if (tx?.to && tx.from && tx.value > BigInt(0)) {
+    if (tx.to.toLowerCase() === vault && tx.from.toLowerCase() === owner) {
+      const amountUsdc = Number(formatUnits(tx.value, USDC_DECIMALS));
+      if (amountUsdc >= 0.01) return { amountUsdc };
+    }
+  }
+
+  const receipt = await client.getTransactionReceipt({ hash }).catch(() => null);
+  if (!receipt) return null;
+
+  let total = 0;
+  for (const log of receipt.logs) {
+    if (log.topics[0]?.toLowerCase() !== TRANSFER_TOPIC) continue;
+    try {
+      const decoded = decodeEventLog({
+        abi: [erc20Transfer],
+        data: log.data,
+        topics: log.topics,
+      });
+      if (decoded.eventName !== "Transfer") continue;
+      const { from, to, value } = decoded.args;
+      if (from.toLowerCase() !== owner || to.toLowerCase() !== vault) continue;
+      total += Number(formatUnits(value, USDC_DECIMALS));
+    } catch {
+      /* skip non-standard logs */
+    }
+  }
+
+  if (total >= 0.01) return { amountUsdc: total };
+  return null;
+}
+
 /** Verify a single deposit transaction and return credited amount */
 export async function verifyVaultDepositTx(
   ownerWallet: string,
   vaultAddress: string,
   txHash: string,
 ): Promise<{ amountUsdc: number } | null> {
-  const client = getArcPublicClient();
-  const tx = await client.getTransaction({ hash: txHash as `0x${string}` });
-  if (!tx?.to || !tx.from || !tx.value) return null;
-  if (tx.to.toLowerCase() !== vaultAddress.toLowerCase()) return null;
-  if (tx.from.toLowerCase() !== ownerWallet.toLowerCase()) return null;
-  const amountUsdc = Number(formatEther(tx.value));
-  if (amountUsdc < 0.01) return null;
-  return { amountUsdc };
+  return extractVaultDepositFromTx(ownerWallet, vaultAddress, txHash);
 }
 
 export function emptyLedger(ownerWallet: string): AgentVaultLedger {

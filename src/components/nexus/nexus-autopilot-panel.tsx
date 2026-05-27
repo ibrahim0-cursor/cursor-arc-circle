@@ -82,7 +82,7 @@ export function NexusAutopilotPanel({
 }) {
   const toast = useToast();
   const { address, isConnected } = useAccount();
-  const { usdcBalance: agentUsdc, refreshBalance } = useAgentWallet();
+  const { usdcBalance: agentUsdc, refreshBalance, syncDeposits } = useAgentWallet();
   const { payArcFee, ensureArcNetwork, isPending: arcPending } = useArcSettlement();
   const [config, setConfig] = useState<AutopilotConfig>(() => loadAutopilot());
   const [logs, setLogs] = useState<AutopilotLog[]>([]);
@@ -182,8 +182,8 @@ export function NexusAutopilotPanel({
         if (cfg.amountMode === "custom_token" && cfg.customAmountUnit === "usdc") {
           return { usdcAmount: Math.max(0, Number(cfg.customToken) || 0) };
         }
-        const avail = Math.max(0, agentUsdc - 0.02);
-        return { usdcAmount: Math.max(0.5, (avail * cfg.percent) / 100) };
+        const avail = Math.max(0, agentUsdcRef.current - 0.01);
+        return { usdcAmount: Math.max(0.05, (avail * cfg.percent) / 100) };
       }
       if (cfg.amountMode === "custom_token") {
         if (cfg.customAmountUnit === "usdc" && priceUsd > 0) {
@@ -259,11 +259,28 @@ export function NexusAutopilotPanel({
         }
       }
 
-      const vaultBal = agentUsdcRef.current;
+      let vaultBal = agentUsdcRef.current;
+      const refreshed = await refreshBalance();
+      if (refreshed) {
+        vaultBal = refreshed.balanceUsdc;
+        agentUsdcRef.current = vaultBal;
+      }
       const need = estimateRequiredUsdc(cfg, vaultBal);
       if (side === "buy" && vaultBal < need) {
-        pushLog(`Need ~$${need.toFixed(2)} USDC in agent vault — deposit first`, "error");
-        void refreshBalance();
+        try {
+          await syncDeposits();
+          const again = await refreshBalance();
+          vaultBal = again?.balanceUsdc ?? vaultBal;
+          agentUsdcRef.current = vaultBal;
+        } catch {
+          /* user can sync manually */
+        }
+      }
+      if (side === "buy" && vaultBal < need) {
+        pushLog(
+          `Vault $${vaultBal.toFixed(2)} — need $${need.toFixed(2)} for this buy. Sync deposits or Credit tx.`,
+          "error",
+        );
         return;
       }
 
@@ -315,7 +332,23 @@ export function NexusAutopilotPanel({
 
       await refreshBalance();
       const sigLabel = signal ? `${signal.action} ${signal.confidence}%` : "DCA schedule";
-      pushLog(`Auto ${side.toUpperCase()} · ${sigLabel} · vault $${(tradeData.agentBalanceUsdc ?? agentUsdc).toFixed(2)}`, "trade");
+      const tr = tradeData.trade as
+        | { usdcAmount?: number; tokenAmount?: number; symbol?: string }
+        | undefined;
+      if (side === "buy" && tr) {
+        pushLog(
+          `Bought ${(tr.tokenAmount ?? 0).toFixed(4)} ${tr.symbol ?? t.symbol} for $${(tr.usdcAmount ?? 0).toFixed(2)} · vault $${(tradeData.agentBalanceUsdc ?? vaultBal).toFixed(2)}`,
+          "trade",
+        );
+      } else if (side === "sell" && tr) {
+        pushLog(
+          `Sold ${(tr.tokenAmount ?? 0).toFixed(4)} ${tr.symbol ?? t.symbol} → $${(tr.usdcAmount ?? 0).toFixed(2)} · ${sigLabel}`,
+          "trade",
+        );
+      } else {
+        pushLog(`Auto ${side.toUpperCase()} · ${sigLabel} · vault $${(tradeData.agentBalanceUsdc ?? vaultBal).toFixed(2)}`, "trade");
+      }
+      agentUsdcRef.current = Number(tradeData.agentBalanceUsdc ?? vaultBal);
       toast({ type: "success", title: "Autopilot trade", message: `${side.toUpperCase()} ${t.symbol}` });
       onTradeComplete?.();
       if (cfg.scheduleMode === "once") {
@@ -339,6 +372,7 @@ export function NexusAutopilotPanel({
     resolveAmounts,
     toast,
     refreshBalance,
+    syncDeposits,
   ]);
 
   runCycleRef.current = runCycle;
@@ -700,35 +734,39 @@ export function NexusAutopilotPanel({
             <Button
               variant="nexus"
               className="min-h-[48px] flex-1 gap-2"
-              disabled={
-                !isConnected ||
-                running ||
-                arcPending ||
-                config.enabled ||
-                !hasDeposit
-              }
+              disabled={!isConnected || running || arcPending || config.enabled}
               onClick={() => {
-                if (!hasDeposit) {
+                void (async () => {
+                  try {
+                    await syncDeposits();
+                  } catch {
+                    /* still try with cached balance */
+                  }
+                  const w = await refreshBalance();
+                  const bal = w?.balanceUsdc ?? agentUsdcRef.current;
+                  agentUsdcRef.current = bal;
+                  const need = estimateRequiredUsdc(config, bal);
+                  if (bal < need) {
+                    toast({
+                      type: "error",
+                      title: "Deposit to agent vault",
+                      message: `Balance $${bal.toFixed(2)} — need $${need.toFixed(2)}. Send USDC from connected wallet, then Sync or Credit tx.`,
+                    });
+                    return;
+                  }
+                  const next = { ...config, enabled: true };
+                  persist(next);
+                  startedRef.current = false;
                   toast({
-                    type: "error",
-                    title: "Deposit to agent vault",
-                    message: `Need ~$${requiredUsdc.toFixed(2)} USDC on agent address (Execution tab)`,
+                    type: "success",
+                    title: "Agent running",
+                    message: `Vault $${bal.toFixed(2)} · ${displaySymbol} · $${need.toFixed(2)} per buy`,
                   });
-                  return;
-                }
-                const next = { ...config, enabled: true };
-                persist(next);
-                startedRef.current = false;
-                toast({
-                  type: "success",
-                  title: "Agent running",
-                  message: `Executing ${displaySymbol} now, then every ${
-                    config.interval === "custom"
-                      ? `${config.customIntervalMinutes}m`
-                      : AUTOPILOT_INTERVALS[config.interval as keyof typeof AUTOPILOT_INTERVALS]?.label
-                  }`,
-                });
-                pushLog("Run Agent — immediate trade + schedule", "info");
+                  pushLog(
+                    `Run Agent — vault $${bal.toFixed(2)} · ~$${(config.amountMode === "custom_usdc" ? config.customUsdc : "pct")} per buy`,
+                    "info",
+                  );
+                })();
               }}
             >
               {running || arcPending ? (
