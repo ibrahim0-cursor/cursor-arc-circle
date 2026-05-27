@@ -256,7 +256,7 @@ async function gmgnTrenches(
   if (opts.sortBy) body.sort_by = opts.sortBy;
   if (opts.filters && Object.keys(opts.filters).length > 0) body.filters = opts.filters;
 
-  const res = await gmgnApiRequest<unknown>("POST", "/v1/trenches", {}, body);
+  const res = await gmgnApiRequest<unknown>("POST", "/v1/trenches", { chain }, body);
   return wrap(skill, res, GMGN_SKILL_CLI[skill], { chain, ...opts });
 }
 
