@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { CheckCircle2, ChevronDown, ExternalLink, History, Loader2 } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { nexusActionGlass, nexusGlassCta } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { cn } from "@/lib/utils";
@@ -458,8 +459,9 @@ export function NexusQuickSwap({
 
   return (
     <section className="nexus-quick-swap-panel nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace relative space-y-2.5 rounded-2xl p-3">
-      <div className="nexus-quick-swap-header flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-white">
+      <div className="nexus-quick-swap-header relative flex items-center gap-2.5 pr-11">
+        <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" />
+        <p className="min-w-0 flex-1 text-sm font-semibold text-white">
           {swapView === "history" ? "Tx history" : "Quick swap"}
         </p>
         <button
@@ -468,7 +470,7 @@ export function NexusQuickSwap({
           className={nexusActionGlass(
             "alpha",
             swapView === "history",
-            "nexus-tx-history-fab flex shrink-0 items-center justify-center",
+            "nexus-tx-history-fab absolute right-0 top-1/2 z-[2] flex -translate-y-1/2 items-center justify-center",
           )}
           title={swapView === "history" ? "Back to swap" : "Transaction history"}
           aria-label="Transaction history"
