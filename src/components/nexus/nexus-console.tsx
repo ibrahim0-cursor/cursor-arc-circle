@@ -554,6 +554,7 @@ export function NexusConsole() {
             token={selectedToken}
             onTradeTab={openTradePanel}
             onOpenAutopilot={() => openTradePanel("agent")}
+            activeTab={tradeTab}
           />
         )}
       </div>
