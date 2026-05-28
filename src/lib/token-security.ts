@@ -106,15 +106,26 @@ function feedKey(t: { chainId: string; tokenAddress: string }) {
 }
 
 /** First load: top tokens by volume. Later refreshes: same roster, updated quotes/signals. */
-export function mergeFeedTokensStable<T extends { chainId: string; tokenAddress: string }>(
+export function mergeFeedTokensStable<
+  T extends {
+    chainId: string;
+    tokenAddress: string;
+    symbol?: string;
+    name?: string;
+    priceUsd?: number;
+    change24h?: number;
+  },
+>(
   existing: T[],
   incoming: T[],
   max = 30,
+  isExcluded?: (t: T) => boolean,
 ): T[] {
-  const map = new Map(incoming.map((t) => [feedKey(t), t]));
+  const drop = (list: T[]) => (isExcluded ? list.filter((t) => !isExcluded(t)) : list);
+  const map = new Map(drop(incoming).map((t) => [feedKey(t), t]));
 
   if (existing.length === 0) {
-    return [...incoming]
+    return drop([...incoming])
       .sort((a, b) => {
         const volA = "volume24h" in a ? Number((a as { volume24h?: number }).volume24h ?? 0) : 0;
         const volB = "volume24h" in b ? Number((b as { volume24h?: number }).volume24h ?? 0) : 0;
@@ -123,18 +134,21 @@ export function mergeFeedTokensStable<T extends { chainId: string; tokenAddress:
       .slice(0, max);
   }
 
-  const refreshed = existing.slice(0, max).map((t) => {
-    const fresh = map.get(feedKey(t));
-    return fresh ? ({ ...t, ...fresh } as T) : t;
-  });
+  const refreshed = drop(existing)
+    .slice(0, max)
+    .map((t) => {
+      const fresh = map.get(feedKey(t));
+      return fresh ? ({ ...t, ...fresh } as T) : t;
+    })
+    .filter((t) => !isExcluded?.(t));
 
   if (refreshed.length >= max) return refreshed;
 
-  for (const t of incoming) {
+  for (const t of drop(incoming)) {
     if (refreshed.length >= max) break;
     if (!refreshed.some((r) => feedKey(r) === feedKey(t))) refreshed.push(t);
   }
-  return refreshed;
+  return drop(refreshed);
 }
 
 /** @deprecated use mergeFeedTokensStable for live feed */

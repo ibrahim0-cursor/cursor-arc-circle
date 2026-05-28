@@ -139,12 +139,16 @@ function normalizeSymbol(symbol: string): string {
   return symbol.trim().toLowerCase().replace(/^\$/, "");
 }
 
-function matchesStableSymbol(sym: string): boolean {
+function matchesStableSymbol(sym: string, priceUsd?: number): boolean {
   if (STABLE_SYMBOLS.has(sym)) return true;
   if (/^s?usd[a-z0-9]{0,6}$/i.test(sym)) return true;
   if (/^[a-z]{1,4}usd[a-z0-9]{0,2}$/i.test(sym) && sym.length <= 7) return true;
   if (/^usd[a-z0-9]{0,4}$/i.test(sym) && sym.length <= 7) return true;
   if (/^(eur|euro)[a-z0-9]{0,3}$/i.test(sym) && sym.length <= 6) return true;
+  /* msUSD, wsUSD, synth-*USD, etc. */
+  if (/usd$/i.test(sym) && sym.length >= 3 && sym.length <= 12) {
+    if (priceUsd == null || (priceUsd >= 0.9 && priceUsd <= 1.1)) return true;
+  }
   return false;
 }
 
@@ -179,7 +183,7 @@ export function isStablecoin(
   opts?: Omit<StablecoinCheckInput, "symbol" | "name">,
 ): boolean {
   const sym = normalizeSymbol(symbol);
-  if (matchesStableSymbol(sym)) return true;
+  if (matchesStableSymbol(sym, opts?.priceUsd)) return true;
   if (name && matchesStableName(name)) return true;
   if (matchesStableAddress(opts?.tokenAddress)) return true;
   if (matchesPriceHeuristic(opts?.priceUsd, opts?.change24h, sym, name)) return true;

@@ -44,13 +44,15 @@ async function enrichMissingPairs(
 }
 
 function buildFeedPayload(analyzed: Awaited<ReturnType<typeof analyzeTrendingFeed>>, mode: string) {
-  const feed = analyzed.map(({ token, intel, signal, security }) => ({
-    ...trendingToDemoToken(token),
-    intel,
-    agent: signal,
-    security,
-    updatedAt: new Date().toISOString(),
-  }));
+  const feed = filterLiveFeedTokens(
+    analyzed.map(({ token, intel, signal, security }) => ({
+      ...trendingToDemoToken(token),
+      intel,
+      agent: signal,
+      security,
+      updatedAt: new Date().toISOString(),
+    })),
+  );
 
   const counts = {
     buy: feed.filter((t) => t.agent.action === "BUY").length,
@@ -81,9 +83,10 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
 }
 
 async function buildFeed(quick: boolean, limit: number) {
-  let tokens = filterLiveFeedTokens(await fetchStableMarketFeed(limit * 2)).slice(0, limit);
+  let tokens = filterLiveFeedTokens(await fetchStableMarketFeed(limit * 3)).slice(0, limit);
   tokens = await enrichTokensWithIcons(tokens, quick ? 4 : 8);
   tokens = await enrichMissingPairs(tokens, quick ? 2 : 6);
+  tokens = filterLiveFeedTokens(tokens);
 
   const analyzed = quick
     ? await analyzeTrendingFeedQuick(tokens)

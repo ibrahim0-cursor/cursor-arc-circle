@@ -20,7 +20,7 @@ import { STABLE_FEED_LIMIT, ALPHA_SCAN_LIMIT } from "@/lib/feed-config";
 import { ALPHA_SCAN_ERROR_TIP, ALPHA_SCAN_SUCCESS } from "@/lib/nexus-copy";
 import { tokenKey } from "@/lib/feed-curation";
 import { NexusQuickSwap } from "@/components/nexus/nexus-quick-swap";
-import { filterTradableTokens } from "@/lib/token-filters";
+import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
 import { ArcSettlementBanner } from "@/components/nexus/arc-settlement-banner";
 import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -196,15 +196,32 @@ export function NexusConsole() {
 
   const handleFeedRefresh = useCallback((tokens: TrendingMarketToken[]) => {
     const tradable = filterTradableTokens(tokens);
-    setFeedTokens((prev) => mergeFeedTokensStable(prev, tradable, STABLE_FEED_LIMIT));
+    const feedExcluded = (t: TrendingMarketToken) =>
+      isStablecoin(t.symbol, t.name, {
+        tokenAddress: t.tokenAddress,
+        chainId: t.chainId,
+        priceUsd: t.priceUsd,
+        change24h: t.change24h,
+      });
+    setFeedTokens((prev) => mergeFeedTokensStable(prev, tradable, STABLE_FEED_LIMIT, feedExcluded));
     setSelectedToken((prev) => {
       if (!prev) return tradable[0] ?? null;
+      if (
+        isStablecoin(prev.symbol, prev.name, {
+          tokenAddress: prev.tokenAddress,
+          chainId: prev.chainId,
+          priceUsd: prev.priceUsd,
+          change24h: prev.change24h,
+        })
+      ) {
+        return tradable[0] ?? null;
+      }
       const match = tradable.find(
         (t) =>
           t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase() &&
           t.chainId === prev.chainId,
       );
-      if (!match) return prev;
+      if (!match) return tradable[0] ?? prev;
       return {
         ...match,
         security: match.security ?? prev.security,

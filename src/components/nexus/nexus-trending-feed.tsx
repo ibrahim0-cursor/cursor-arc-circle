@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { mergeFeedTokensStable } from "@/lib/token-security";
+import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { agentVerdictLine, FEED_ROW_HINT } from "@/lib/nexus-copy";
 import { cn } from "@/lib/utils";
@@ -57,8 +58,17 @@ const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
 const QUICK_TIMEOUT_MS = 12_000;
 const FULL_TIMEOUT_MS = 25_000;
-const FEED_SESSION_KEY = "nexus-feed-v1";
+const FEED_SESSION_KEY = "nexus-feed-v2";
 const FEED_SESSION_TTL_MS = 90_000;
+
+function isFeedExcluded(t: TrendingMarketToken): boolean {
+  return isStablecoin(t.symbol, t.name, {
+    tokenAddress: t.tokenAddress,
+    chainId: t.chainId,
+    priceUsd: t.priceUsd,
+    change24h: t.change24h,
+  });
+}
 
 type FeedSessionCache = {
   at: number;
@@ -75,6 +85,8 @@ function readFeedSession(): FeedSessionCache | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as FeedSessionCache;
     if (!parsed?.tokens?.length || Date.now() - parsed.at > FEED_SESSION_TTL_MS) return null;
+    parsed.tokens = filterTradableTokens(parsed.tokens);
+    if (!parsed.tokens.length) return null;
     return parsed;
   } catch {
     return null;
@@ -184,13 +196,14 @@ export function NexusTrendingFeed({
   }, [selectedAddress]);
 
   const applyFeed = useCallback((list: TrendingMarketToken[], data: { feedCycle?: number; updatedAt?: string; counts?: typeof counts }) => {
+    const tradable = filterTradableTokens(list);
     setFeedCycle(data.feedCycle ?? 0);
     setUpdatedAt(data.updatedAt ?? new Date().toISOString());
     setCounts(data.counts ?? { buy: 0, sell: 0, hold: 0 });
     setSecondsLeft(REFRESH_MS / 1000);
     setError(null);
     setTokens((prev) => {
-      const merged = mergeFeedTokensStable(prev, list, MAX_FEED);
+      const merged = mergeFeedTokensStable(prev, tradable, MAX_FEED, isFeedExcluded);
       onRefreshRef.current?.(merged);
       writeFeedSession({
         at: Date.now(),
@@ -201,9 +214,9 @@ export function NexusTrendingFeed({
       });
       return merged;
     });
-    if (!userPickedRef.current && !didInitialPick.current && list[0]) {
+    if (!userPickedRef.current && !didInitialPick.current && tradable[0]) {
       didInitialPick.current = true;
-      onSelectRef.current(list[0], { openChart: false });
+      onSelectRef.current(tradable[0], { openChart: false });
     }
   }, []);
 
@@ -493,7 +506,7 @@ export function NexusTrendingFeed({
           <h3 className="arc-caption text-white/80 sm:text-sm">
             <span className="lg:hidden">{tokens.length} tokens · {secondsLeft}s</span>
             <span className="hidden lg:inline">
-              {tokens.length} tokens (stable roster · max {MAX_FEED}) · refresh in {secondsLeft}s
+              {tokens.length} movers (max {MAX_FEED}) · refresh in {secondsLeft}s
             </span>
           </h3>
           {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />}
