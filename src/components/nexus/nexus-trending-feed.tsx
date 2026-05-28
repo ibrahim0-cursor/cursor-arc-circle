@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
@@ -155,7 +155,7 @@ export function NexusTrendingFeed({
       if (!silent) setLoading(true);
       else setRefreshing(true);
       try {
-        const { list, data } = await fetchFeed(true, 22_000);
+        const { list, data } = await fetchFeed(true, 30_000);
         applyFeed(list, data);
         if (!silent) {
           void (async () => {
@@ -217,11 +217,11 @@ export function NexusTrendingFeed({
         type="button"
         onClick={() => handleUserSelect(token)}
         className={cn(
-          "w-full rounded-2xl border text-left transition-all duration-200 active:scale-[0.99] max-lg:min-h-[72px]",
+          "nexus-feed-row w-full rounded-2xl border text-left transition-all duration-200 active:scale-[0.99] max-lg:min-h-[72px]",
           compactDesktop ? "p-2 lg:rounded-xl" : "p-3",
           selected
-            ? "arc-glass-card arc-glass-card-nexus arc-glass-interactive border-emerald-400/40 shadow-[0_0_24px_-6px_var(--nexus-glow)]"
-            : "arc-glass-card arc-glass-interactive border-[var(--arc-border)] hover:border-emerald-400/35 hover:shadow-[0_0_20px_-8px_var(--nexus-glow)]",
+            ? "arc-glass-card arc-glass-card-nexus arc-glass-interactive arc-border-trace border-emerald-400/40 shadow-[0_0_24px_-6px_var(--nexus-glow)]"
+            : "arc-glass-card arc-glass-interactive arc-border-trace border-[var(--arc-border)] hover:border-emerald-400/35 hover:shadow-[0_0_20px_-8px_var(--nexus-glow)]",
         )}
       >
         <div className="flex items-start justify-between gap-2">
@@ -394,7 +394,7 @@ export function NexusTrendingFeed({
     <div className={cn("flex min-h-0 flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <ArcIconBadge icon={BarChart3} theme="nexus" size="sm" />
+          <ArcIcon3d icon={BarChart3} theme="nexus" size="sm" />
           <h3 className="arc-caption text-white/80 sm:text-sm">
             <span className="lg:hidden">{tokens.length} tokens · {secondsLeft}s</span>
             <span className="hidden lg:inline">

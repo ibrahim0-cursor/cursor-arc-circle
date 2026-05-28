@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { ArrowDownUp, LineChart, Radio, Sparkles } from "lucide-react";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { ArcBackground } from "@/components/layout/arc-background";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusPremiumHero } from "@/components/nexus/nexus-premium-hero";
@@ -419,8 +418,8 @@ export function NexusConsole() {
 
   const chartPanel = !selectedToken ? (
     <div className="arc-signal-panel arc-signal-panel-nexus flex flex-col items-center justify-center gap-3 px-4 py-12 text-center lg:py-16">
-      <ArcIconFrame icon={LineChart} variant="nexus" size="md" />
-      <p className="text-sm text-white/55">Select a token from the feed to view chart &amp; analysis.</p>
+      <ArcIcon3d icon={LineChart} theme="nexus" size="lg" />
+      <p className="text-sm text-[var(--arc-text-muted)]">Select a token from the feed to view chart &amp; analysis.</p>
     </div>
   ) : (
     <div className="nexus-center-layout flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-4">
@@ -650,11 +649,16 @@ export function NexusConsole() {
           className="hidden items-stretch gap-4 lg:grid lg:gap-5 xl:gap-6"
           data-nexus-layout="desktop"
         >
-          <div className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]">
+          <div className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus arc-border-trace arc-hover-lift flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]">
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
-              <p className="arc-caption text-emerald-300/80">Discovery</p>
-              <p className="text-sm font-semibold text-white">Market feed</p>
+            <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <ArcIcon3d icon={Radio} theme="nexus" size="sm" delay={0} />
+                <div>
+                  <p className="arc-caption text-emerald-300/80">Discovery</p>
+                  <p className="text-sm font-semibold text-white">Market feed</p>
+                </div>
+              </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 lg:px-3">
               {feedPanel}
@@ -662,12 +666,17 @@ export function NexusConsole() {
           </div>
           <div
             id="nexus-chart-panel"
-            className="nexus-column-shell nexus-center-panel nexus-column-panel arc-panel arc-panel-nexus flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
+            className="nexus-column-shell nexus-center-panel nexus-column-panel arc-panel arc-panel-nexus arc-border-trace arc-hover-lift flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
           >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
-              <p className="arc-caption text-violet-300/80">Token intelligence</p>
-              <p className="text-sm font-semibold text-white">Chart · agent reasoning · TA</p>
+            <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <ArcIcon3d icon={LineChart} theme="nexus" size="sm" delay={0.05} />
+                <div>
+                  <p className="arc-caption text-violet-300/80">Token intelligence</p>
+                  <p className="text-sm font-semibold text-white">Chart · agent reasoning · TA</p>
+                </div>
+              </div>
             </div>
             <div className="arc-panel-body flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 lg:px-4">
               {chartPanel}
@@ -675,12 +684,17 @@ export function NexusConsole() {
           </div>
           <div
             id="nexus-trade-panel"
-            className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
+            className="nexus-column-shell nexus-column-panel arc-panel arc-panel-nexus arc-border-trace arc-hover-lift flex h-[min(720px,calc(100vh-5.5rem))] min-h-0 min-w-0 flex-col overflow-hidden lg:sticky lg:top-[4.75rem]"
           >
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
-            <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-2.5">
-              <p className="arc-caption text-cyan-300/80">Wallet</p>
-              <p className="text-sm font-semibold text-white">Trade &amp; portfolio</p>
+            <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <ArcIcon3d icon={ArrowDownUp} theme="nexus" size="sm" delay={0.1} />
+                <div>
+                  <p className="arc-caption text-cyan-300/80">Wallet</p>
+                  <p className="text-sm font-semibold text-white">Trade &amp; portfolio</p>
+                </div>
+              </div>
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 lg:px-3">
               {rightColumnPanel}

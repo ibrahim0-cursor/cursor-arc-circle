@@ -545,11 +545,12 @@ html[data-arc-theme="home"] body {
 }
 
 html[data-arc-theme="nexus"] body {
-  background-color: #020806;
+  background-color: #06040c;
   background-image:
-    radial-gradient(ellipse 100% 65% at 50% -10%, rgba(18, 232, 168, 0.28), transparent 55%),
-    radial-gradient(ellipse 55% 40% at 90% 60%, rgba(56, 189, 248, 0.14), transparent),
-    linear-gradient(180deg, rgba(18, 232, 168, 0.04) 0%, transparent 40%);
+    radial-gradient(ellipse 110% 70% at 50% -15%, rgba(139, 92, 246, 0.32), transparent 55%),
+    radial-gradient(ellipse 100% 65% at 50% -10%, rgba(18, 232, 168, 0.22), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 100% 40%, rgba(99, 102, 241, 0.14), transparent),
+    radial-gradient(ellipse 40% 35% at 0% 70%, rgba(168, 85, 247, 0.1), transparent);
   background-attachment: fixed;
 }
 
@@ -1641,31 +1642,28 @@ html[data-arc-theme="nexus"] .nexus-center-layout {
   transform: translateY(-1px);
 }
 
-/* NEXUS — crisp UI (reduce glass blur that softens text/icons) */
+/* NEXUS — homepage parity: full glass depth + lift (easy mode still scales type) */
 html[data-arc-theme="nexus"] [data-nexus-page] .arc-glass-card,
 html[data-arc-theme="nexus"] [data-nexus-page] .arc-panel {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
-html[data-arc-theme="nexus"] [data-nexus-page] .nexus-token-strip-shell {
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 20px 40px -18px rgba(0, 0, 0, 0.7),
+    0 0 32px -8px rgba(168, 85, 247, 0.2);
 }
 
-html[data-arc-theme="nexus"] [data-nexus-page] .nexus-premium-hero-glow {
-  filter: blur(24px);
-  opacity: 0.65;
+.nexus-workspace-title {
+  font-family: var(--arc-font-display, inherit);
+  letter-spacing: -0.02em;
 }
 
-html[data-arc-theme="nexus"] [data-nexus-page] img,
-html[data-arc-theme="nexus"] [data-nexus-page] .nexus-token-avatar-frame img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
-html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row:hover {
-  transform: none;
+.nexus-workspace-intro {
+  border-color: rgba(167, 139, 250, 0.22) !important;
 }
 
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {

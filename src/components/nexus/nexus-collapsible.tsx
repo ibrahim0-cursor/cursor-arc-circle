@@ -2,7 +2,7 @@
 
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 
 export type NexusCollapsibleVariant = "default" | "reasoning" | "technical" | "intel";
 
@@ -37,7 +37,7 @@ export function NexusCollapsible({
   const badgeTheme = VARIANT_THEME[variant];
 
   return (
-    <div className={`arc-panel arc-panel-nexus overflow-hidden ${className}`}>
+    <div className={`arc-panel arc-panel-nexus arc-border-trace arc-hover-lift overflow-hidden ${className}`}>
       <div className="arc-panel-stripe arc-panel-stripe-nexus" />
       <button
         type="button"
@@ -48,7 +48,7 @@ export function NexusCollapsible({
         className="nexus-collapsible-trigger sticky top-0 z-10 flex w-full min-h-[48px] items-center justify-between gap-3 border-b border-white/[0.06] bg-[#0a0c12]/95 px-4 py-3.5 text-left backdrop-blur-md transition hover:bg-white/[0.04] max-lg:min-h-[52px] max-lg:py-4"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {Icon && <ArcIconBadge icon={Icon} theme={badgeTheme} size="sm" />}
+          {Icon && <ArcIcon3d icon={Icon} theme={badgeTheme} size="sm" />}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold tracking-tight text-white">{label}</p>
             {hint && !open && (

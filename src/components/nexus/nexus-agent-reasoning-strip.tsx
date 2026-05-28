@@ -1,6 +1,7 @@
 "use client";
 
 import { Brain, Loader2, Target } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { cn } from "@/lib/utils";
 import type { TokenDossierPayload, LiveReasoningFactor } from "@/lib/nexus-research-dossier";
 import type { AgentSignal } from "@/lib/storage";
@@ -82,15 +83,13 @@ export function NexusAgentReasoningStrip({
   return (
     <section
       className={cn(
-        "nexus-agent-reasoning-strip rounded-xl border px-3 py-3",
-        isAlpha
-          ? "border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-500/[0.1] to-cyan-500/[0.06]"
-          : "border-cyan-400/25 bg-cyan-500/[0.07]",
+        "nexus-agent-reasoning-strip arc-glass-card arc-border-trace rounded-xl px-3 py-3",
+        isAlpha ? "arc-glass-card-nexus border-fuchsia-400/30" : "border-cyan-400/25",
       )}
       aria-label="Agent reasoning — read before you trade"
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <Brain className="h-4 w-4 shrink-0 text-cyan-200" />
+        <ArcIcon3d icon={Brain} theme="nexus" size="sm" delay={0.05} />
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-100/90">
             Agent reasoning

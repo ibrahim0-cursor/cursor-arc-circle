@@ -2,8 +2,7 @@
 
 import { Code2, Loader2, Newspaper, ScanLine, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import {
   ALPHA_SCAN_EMPTY,
   ALPHA_SCAN_ERROR_TIP,
@@ -61,8 +60,8 @@ export function NexusAlphaList({
 }) {
   if (scanning) {
     return (
-      <div className="arc-glass-card arc-glass-card-nexus space-y-4 p-8 text-center">
-        <ArcIconBadge icon={ScanLine} theme="nexus" size="lg" className="mx-auto" />
+      <div className="arc-glass-card arc-glass-card-nexus arc-border-trace space-y-4 p-8 text-center">
+        <ArcIcon3d icon={ScanLine} theme="nexus" size="lg" className="mx-auto" />
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-300" />
         <h3 className="text-base font-semibold text-white">Alpha scan running…</h3>
         <p className="mx-auto max-w-md text-sm text-white/60">{ALPHA_SCAN_LOADING}</p>
@@ -91,9 +90,9 @@ export function NexusAlphaList({
 
   if (opportunities.length === 0) {
     return (
-      <div className="arc-panel arc-panel-nexus space-y-3 p-8 text-center">
+      <div className="arc-panel arc-panel-nexus arc-border-trace space-y-3 p-8 text-center">
         <div className="arc-panel-stripe arc-panel-stripe-nexus -mx-8 -mt-8 mb-4 w-[calc(100%+4rem)]" />
-        <ArcIconBadge icon={Sparkles} theme="nexus" size="lg" className="mx-auto" />
+        <ArcIcon3d icon={Sparkles} theme="nexus" size="lg" className="mx-auto" />
         <h3 className="text-base font-semibold text-white">Alpha Scan</h3>
         <p className="mx-auto max-w-md text-sm text-white/60">{ALPHA_SCAN_EMPTY}</p>
       </div>
