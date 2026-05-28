@@ -17,7 +17,7 @@ import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { buildDemoQuote } from "@/lib/demo-trading";
 import { arcExplorerAddress, arcExplorerTx } from "@/lib/arc";
 import { ARC_TESTNET_ID } from "@/lib/arc-chain";
-import { formatPct, formatUsd, truncateHash } from "@/lib/utils";
+import { formatPct, formatTokenPrice, formatUsd, truncateHash } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusDecision, DemoPosition } from "@/lib/storage";
 
@@ -385,7 +385,9 @@ export function NexusTradeHub({
             <div className="arc-glass-card arc-glass-card-nexus flex items-center justify-between gap-2 px-3 py-2.5">
               <div>
                 <span className="text-lg font-bold text-white">{trade.symbol}</span>
-                <span className="ml-2 text-sm text-white/70">{formatUsd(livePrice)}</span>
+                <span className="ml-2 font-mono text-sm tabular-nums text-cyan-100/90">
+                  {formatTokenPrice(livePrice)}
+                </span>
               </div>
               {marketToken && <NexusTokenChatButton token={marketToken} onOpenTrade={setTab} />}
             </div>

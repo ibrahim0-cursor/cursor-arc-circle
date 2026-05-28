@@ -15,6 +15,7 @@ import { getMacroRegime, type MacroRegime } from "./macro-regime";
 import { hasBirdeyeKey } from "./birdeye-client";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import type { TokenSocialIntel } from "./social-intel";
+import { formatTokenPrice } from "./utils";
 
 
 function buildReasoningFactors(
@@ -252,7 +253,7 @@ function buildWhyAction(
   const cites = top.map((f) => `${f.label} (${f.detail})`).join("; ");
 
   if (action === "HOLD") {
-    return `${token.symbol} @ ${token.priceUsd < 1 ? token.priceUsd.toFixed(4) : `$${token.priceUsd.toFixed(2)}`}: ${cites}. Net edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)} — mixed tape, no high-conviction entry.`;
+    return `${token.symbol} @ ${formatTokenPrice(token.priceUsd)}: ${cites}. Net edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)} — mixed tape, no high-conviction entry.`;
   }
   if (action === "BUY") {
     return `${token.symbol}: ${cites}. Bullish edge +${edge.toFixed(0)} with ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h — tactical long while liquidity supports size.`;

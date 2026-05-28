@@ -21,6 +21,13 @@ export async function GET(request: Request) {
       pairAddress: pair.pairAddress,
       url: pair.url,
       priceUsd: pair.priceUsd,
+      change24h: pair.change24h,
+      volume24h: pair.volume24h,
+      liquidityUsd: pair.liquidityUsd,
+      marketCap: pair.marketCap,
+      fdv: pair.fdv,
+      txns24h: pair.txns24h,
+      priceChange: pair.priceChange,
     });
   } catch (error) {
     return NextResponse.json(

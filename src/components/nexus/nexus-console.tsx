@@ -36,6 +36,7 @@ import {
 import { NexusIntelCollapsibles } from "@/components/nexus/nexus-intel-collapsibles";
 import { NexusAgentReasoningStrip } from "@/components/nexus/nexus-agent-reasoning-strip";
 import { useTokenDossier } from "@/hooks/use-token-dossier";
+import { useLiveTokenQuote, type LiveTokenQuote } from "@/hooks/use-live-token-quote";
 import { NexusIntegrationsBanner } from "@/components/nexus/nexus-integrations-banner";
 import { NexusFeedTabs, type NexusFeedTab } from "@/components/nexus/nexus-feed-tabs";
 import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus-mobile-dock";
@@ -114,6 +115,34 @@ export function NexusConsole() {
 
   const displayDecision = selectedToken ? tokenToDecision(selectedToken) : null;
   const tokenDossier = useTokenDossier(selectedToken, intelTier);
+
+  const applyLiveQuote = useCallback((quote: LiveTokenQuote) => {
+    const addr = quote.tokenAddress.toLowerCase();
+    const mergeQuote = (t: TrendingMarketToken): TrendingMarketToken => ({
+      ...t,
+      priceUsd: quote.priceUsd,
+      change24h: quote.change24h ?? t.change24h,
+      volume24h: quote.volume24h ?? t.volume24h,
+      liquidityUsd: quote.liquidityUsd ?? t.liquidityUsd,
+      marketCap: quote.marketCap ?? t.marketCap,
+      fdv: quote.fdv ?? t.fdv,
+      pairAddress: quote.pairAddress || t.pairAddress,
+      url: quote.url || t.url,
+      txns24h: quote.txns24h ?? t.txns24h,
+      priceChange: quote.priceChange ?? t.priceChange,
+    });
+    setSelectedToken((prev) => {
+      if (!prev || prev.tokenAddress.toLowerCase() !== addr || prev.chainId !== quote.chainId) return prev;
+      return mergeQuote(prev);
+    });
+    setFeedTokens((prev) =>
+      prev.map((t) =>
+        t.tokenAddress.toLowerCase() === addr && t.chainId === quote.chainId ? mergeQuote(t) : t,
+      ),
+    );
+  }, []);
+
+  useLiveTokenQuote(selectedToken, applyLiveQuote);
 
   useEffect(() => {
     const p = tokenDossier.payload;

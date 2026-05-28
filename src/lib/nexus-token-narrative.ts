@@ -3,6 +3,7 @@ import { hasGmgnApiKey } from "./gmgn-client";
 import { hasBirdeyeKey } from "./birdeye-client";
 import type { AgentSignal, TokenIntel } from "./storage";
 import type { LiveReasoningFactor } from "./nexus-research-dossier";
+import { formatCompact, formatTokenPrice } from "./utils";
 
 export type NarrativeTier = "feed" | "alpha";
 
@@ -14,9 +15,9 @@ export type TokenNarrativeBundle = {
 };
 
 function fmtUsd(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}K`;
-  return `$${n.toFixed(n < 1 ? 6 : 2)}`;
+  if (n >= 1_000_000) return formatCompact(n);
+  if (n >= 1000) return formatCompact(n);
+  return formatTokenPrice(n);
 }
 
 function turnover(token: TrendingToken): number {

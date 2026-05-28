@@ -21,7 +21,7 @@ import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
+import { formatCompact, formatPct, formatTokenPrice } from "@/lib/utils";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
@@ -41,6 +41,8 @@ export type TrendingMarketToken = {
   change24h: number;
   volume24h: number;
   liquidityUsd: number;
+  marketCap?: number;
+  fdv?: number;
   icon?: string;
   url: string;
   intel?: TokenIntel;
@@ -389,7 +391,9 @@ export function NexusTrendingFeed({
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <p className={cn("font-medium", compactDesktop && "text-xs")}>{formatUsd(token.priceUsd)}</p>
+            <p className={cn("font-medium tabular-nums", compactDesktop && "text-xs")}>
+              {formatTokenPrice(token.priceUsd)}
+            </p>
             <p
               className={`flex items-center justify-end gap-1 text-xs ${token.change24h >= 0 ? "text-emerald-300" : "text-rose-300"}`}
             >

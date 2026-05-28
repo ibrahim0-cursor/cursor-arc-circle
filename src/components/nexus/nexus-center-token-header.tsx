@@ -5,7 +5,7 @@ import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { nexusActionGlass } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
-import { cn, formatPct, formatUsd } from "@/lib/utils";
+import { cn, formatCompact, formatPct, formatTokenPrice } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusDecision } from "@/lib/storage";
 
@@ -24,25 +24,36 @@ export function NexusCenterTokenHeader({
   const action = decision?.action ?? token.agent?.action;
   const up = token.change24h >= 0;
 
+  const mcap = token.marketCap ?? token.intel?.marketCap;
+  const liq = token.liquidityUsd;
+
   return (
-    <div className="nexus-center-header arc-glass-card arc-glass-card-nexus arc-border-trace flex flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+    <div className="nexus-center-header arc-glass-card arc-glass-card-nexus arc-border-trace flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:px-4">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
         <NexusTokenAvatar symbol={token.symbol} icon={token.icon} size="md" />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{token.symbol}</h2>
             {token.name && token.name !== token.symbol && (
-              <span className="truncate text-xs text-white/50">{token.name}</span>
+              <span className="max-w-[12rem] truncate text-xs text-white/50">{token.name}</span>
             )}
           </div>
-          <p className="font-mono text-base font-semibold text-white sm:text-lg">{formatUsd(token.priceUsd)}</p>
-          <p className={cn("text-xs font-semibold", up ? "text-emerald-300" : "text-rose-300")}>
-            {formatPct(token.change24h)} · 24h
+          <p className="mt-1 font-mono text-xl font-bold tabular-nums tracking-tight text-cyan-50 sm:text-2xl">
+            {formatTokenPrice(token.priceUsd)}
           </p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+            <span className={cn("font-semibold", up ? "text-emerald-300" : "text-rose-300")}>
+              {formatPct(token.change24h)} · 24h
+            </span>
+            {mcap != null && mcap > 0 && (
+              <span className="text-white/45">MCap {formatCompact(mcap)}</span>
+            )}
+            {liq > 0 && <span className="text-white/40">Liq {formatCompact(liq)}</span>}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:justify-start">
         {action && (
           <span
             className={cn(

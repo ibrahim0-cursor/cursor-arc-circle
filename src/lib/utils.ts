@@ -13,6 +13,31 @@ export function formatUsd(value: number) {
   }).format(value);
 }
 
+/** Live market token price — enough precision for sub-cent memecoins */
+export function formatTokenPrice(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+  if (abs >= 0.01) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 6,
+    }).format(value);
+  }
+  const decimals = Math.min(12, Math.max(6, Math.ceil(-Math.log10(abs)) + 4));
+  const raw = value.toFixed(decimals).replace(/\.?0+$/, "");
+  return `$${raw}`;
+}
+
 export function formatPct(value: number) {
   const sign = value >= 0 ? "+" : "";
   return `${sign}${value.toFixed(2)}%`;
