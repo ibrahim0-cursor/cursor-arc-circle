@@ -457,24 +457,25 @@ export function NexusQuickSwap({
     amountNum > 0 && !!pay && !!receive && !sameToken && isConnected && !loading && !arcPending;
 
   return (
-    <section className="nexus-quick-swap-panel nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace relative space-y-3 rounded-2xl p-3 pt-4">
-      <button
-        type="button"
-        onClick={() => setSwapView((v) => (v === "history" ? "swap" : "history"))}
-        className={nexusActionGlass(
-          "alpha",
-          swapView === "history",
-          "nexus-tx-history-fab absolute right-2 top-2 z-[5] flex items-center justify-center",
-        )}
-        title={swapView === "history" ? "Back to swap" : "Transaction history"}
-        aria-label="Transaction history"
-      >
-        <History className="h-4 w-4 shrink-0" />
-      </button>
-
-      <p className="pr-10 text-sm font-semibold text-white">
-        {swapView === "history" ? "Tx history" : "Quick swap"}
-      </p>
+    <section className="nexus-quick-swap-panel nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace relative space-y-2.5 rounded-2xl p-3">
+      <div className="nexus-quick-swap-header flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-white">
+          {swapView === "history" ? "Tx history" : "Quick swap"}
+        </p>
+        <button
+          type="button"
+          onClick={() => setSwapView((v) => (v === "history" ? "swap" : "history"))}
+          className={nexusActionGlass(
+            "alpha",
+            swapView === "history",
+            "nexus-tx-history-fab flex shrink-0 items-center justify-center",
+          )}
+          title={swapView === "history" ? "Back to swap" : "Transaction history"}
+          aria-label="Transaction history"
+        >
+          <History className="h-4 w-4 shrink-0" />
+        </button>
+      </div>
 
       {swapView === "history" ? (
         <div className="max-h-52 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">

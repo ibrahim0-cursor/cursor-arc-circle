@@ -1960,6 +1960,11 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
   position: relative;
 }
 
+.nexus-quick-swap-header {
+  min-height: 2.25rem;
+  margin-bottom: -0.125rem;
+}
+
 .nexus-glass-cta--dim {
   opacity: 0.32 !important;
   filter: saturate(0.45) brightness(0.75);
