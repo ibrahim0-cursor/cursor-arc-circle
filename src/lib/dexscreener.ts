@@ -196,7 +196,16 @@ export async function fetchTrendingMarketTokens(
 
   function addToken(token: TrendingToken | null) {
     if (!token || token.priceUsd <= 0) return;
-    if (isStablecoin(token.symbol, token.name)) return;
+    if (
+      isStablecoin(token.symbol, token.name, {
+        tokenAddress: token.tokenAddress,
+        chainId: token.chainId,
+        priceUsd: token.priceUsd,
+        change24h: token.change24h,
+      })
+    ) {
+      return;
+    }
     if (isBlueChip(token.symbol, token.name)) return;
     const key = `${token.chainId}:${token.tokenAddress}`;
     if (seen.has(key)) return;
@@ -277,10 +286,20 @@ export async function fetchTrendingMarketTokens(
     sorted = stable ? ranked.slice(0, limit) : shuffleWithSeed(ranked, cycle).slice(0, limit);
   }
 
-  return sorted.map((token) => ({
-    ...token,
-    intel: buildLocalTokenIntel(token),
-  }));
+  return sorted
+    .filter(
+      (token) =>
+        !isStablecoin(token.symbol, token.name, {
+          tokenAddress: token.tokenAddress,
+          chainId: token.chainId,
+          priceUsd: token.priceUsd,
+          change24h: token.change24h,
+        }),
+    )
+    .map((token) => ({
+      ...token,
+      intel: buildLocalTokenIntel(token),
+    }));
 }
 
 /** @deprecated use fetchSwappableTokens */

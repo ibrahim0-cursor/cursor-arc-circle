@@ -9,7 +9,7 @@ import {
   getStaleFeedCache,
   setFeedCache,
 } from "@/lib/feed-cache";
-import { filterTradableTokens } from "@/lib/token-filters";
+import { filterLiveFeedTokens } from "@/lib/token-filters";
 import { analyzeTrendingFeed, analyzeTrendingFeedQuick } from "@/lib/nexus-agent";
 import { trendingToDemoToken } from "@/lib/demo-trading";
 import { enrichTokensWithIcons } from "@/lib/token-icons";
@@ -81,7 +81,7 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
 }
 
 async function buildFeed(quick: boolean, limit: number) {
-  let tokens = filterTradableTokens(await fetchStableMarketFeed(limit));
+  let tokens = filterLiveFeedTokens(await fetchStableMarketFeed(limit * 2)).slice(0, limit);
   tokens = await enrichTokensWithIcons(tokens, quick ? 4 : 8);
   tokens = await enrichMissingPairs(tokens, quick ? 2 : 6);
 
