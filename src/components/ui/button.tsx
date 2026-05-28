@@ -10,6 +10,10 @@ const buttonVariants = cva(
           "bg-white text-black hover:bg-white/90 shadow-[0_0_40px_rgba(255,255,255,0.12)]",
         nexus:
           "bg-[var(--nexus-accent)] text-[#021a12] shadow-[0_0_28px_var(--nexus-glow)] border border-emerald-300/40",
+        nexusSell:
+          "bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-[0_0_28px_rgba(244,63,94,0.42)] border border-rose-300/50 hover:from-rose-500 hover:to-rose-400",
+        nexusSwap:
+          "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-violet-50 shadow-[0_0_28px_rgba(168,85,247,0.38)] border border-violet-300/45 hover:from-violet-500 hover:to-fuchsia-500",
         prism:
           "bg-[var(--prism-amber)] text-[#1a0c00] shadow-[0_0_28px_var(--prism-glow)] border border-amber-200/35",
         outline:

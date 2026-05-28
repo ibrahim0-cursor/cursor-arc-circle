@@ -429,7 +429,7 @@ export function NexusConsole() {
         <NexusCenterTokenHeader
           token={selectedToken}
           decision={displayDecision}
-          onExpandChart={() => setChartFullscreen(true)}
+          onOpenAutopilot={() => openTradePanel("agent")}
           actions={
             <>
               <button
@@ -466,7 +466,7 @@ export function NexusConsole() {
         <NexusMobileTokenActions
           token={selectedToken}
           onTradeTab={openTradePanel}
-          onExpandChart={() => setChartFullscreen(true)}
+          onOpenAutopilot={() => openTradePanel("agent")}
         />
       </div>
 
@@ -543,7 +543,7 @@ export function NexusConsole() {
           <NexusMobileTokenActions
             token={selectedToken}
             onTradeTab={openTradePanel}
-            onExpandChart={() => setChartFullscreen(true)}
+            onOpenAutopilot={() => openTradePanel("agent")}
           />
         )}
       </div>

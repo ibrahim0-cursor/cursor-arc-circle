@@ -268,8 +268,12 @@ export function NexusTradeHub({
         </div>
         {isConnected ? (
           <Button
-            variant="nexus"
-            className="nexus-confirm-trade-btn min-h-[52px] w-full gap-2 text-base font-semibold"
+            variant={side === "sell" ? "nexusSell" : "nexus"}
+            className={cn(
+              "min-h-[52px] w-full gap-2 text-base font-semibold",
+              side === "buy" && "nexus-confirm-trade-btn",
+              side === "sell" && "nexus-confirm-sell-btn",
+            )}
             onClick={executeDemoTrade}
             disabled={loading || arcPending || amountNum <= 0}
           >
@@ -344,12 +348,16 @@ export function NexusTradeHub({
                       : id === "buy"
                         ? "border-emerald-400/55 bg-emerald-500/25 shadow-[0_0_20px_rgba(18,232,168,0.2)]"
                         : "border-rose-400/55 bg-rose-500/25 shadow-[0_0_20px_rgba(244,63,94,0.2)]"
-                    : "border-white/10 bg-black/30 text-white/55",
+                    : id === "agent"
+                      ? "border-violet-400/25 bg-violet-500/10 text-violet-200/75"
+                      : id === "sell"
+                        ? "border-rose-400/20 bg-rose-500/10 text-rose-200/60"
+                        : "border-white/10 bg-black/30 text-white/55",
                 )}
               >
                 <ArcIcon3d
                   icon={Icon}
-                  theme={iconTheme}
+                  theme={id === "agent" ? "home" : iconTheme}
                   size="sm"
                   delay={id === "agent" ? 0.15 : 0}
                   className={cn("pointer-events-none scale-90", tradeTab !== id && "opacity-70")}

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Maximize2 } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
@@ -13,12 +12,13 @@ export function NexusCenterTokenHeader({
   token,
   decision,
   actions,
-  onExpandChart,
+  onOpenAutopilot,
 }: {
   token: TrendingMarketToken;
   decision?: NexusDecision | null;
   actions?: ReactNode;
-  onExpandChart?: () => void;
+  /** Opens trade column on Autopilot tab */
+  onOpenAutopilot?: () => void;
 }) {
   const action = decision?.action ?? token.agent?.action;
   const up = token.change24h >= 0;
@@ -54,16 +54,15 @@ export function NexusCenterTokenHeader({
             {action}
           </span>
         )}
-        {onExpandChart && (
+        {onOpenAutopilot && (
           <button
             type="button"
-            onClick={onExpandChart}
-            className="arc-glass-interactive inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 text-xs font-bold text-violet-100"
-            title="Fullscreen chart"
+            onClick={onOpenAutopilot}
+            className="arc-glass-interactive inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-violet-400/50 bg-gradient-to-r from-violet-600/35 to-fuchsia-600/25 px-3 text-xs font-bold text-violet-50 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+            title="Open Autopilot agent"
           >
-            <ArcIcon3d icon={NEXUS_TRADE_ICONS.chart} theme="nexus" size="sm" className="!h-8 !w-8" />
-            <Maximize2 className="h-3.5 w-3.5 lg:hidden" />
-            <span className="hidden lg:inline">Chart</span>
+            <ArcIcon3d icon={NEXUS_TRADE_ICONS.autopilot} theme="home" size="sm" className="!h-8 !w-8" />
+            <span>Autopilot</span>
           </button>
         )}
         {actions}

@@ -1684,6 +1684,16 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
     0 12px 32px -8px rgba(18, 232, 168, 0.35);
 }
 
+.nexus-confirm-sell-btn {
+  box-shadow:
+    0 0 0 1px rgba(244, 63, 94, 0.25) inset,
+    0 12px 32px -8px rgba(244, 63, 94, 0.4);
+}
+
+.nexus-swap-btn {
+  letter-spacing: 0.01em;
+}
+
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {
   align-self: stretch;
   height: min(720px, calc(100vh - 5.5rem));

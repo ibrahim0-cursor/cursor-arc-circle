@@ -47,7 +47,9 @@ export function NexusFeedTabs({
         onClick={() => onChange("swap")}
         className={cn(
           "arc-glass-interactive arc-btn-pill flex items-center gap-2 px-3 py-2 text-sm font-semibold",
-          active === "swap" ? "arc-nav-pill-active text-cyan-100" : "text-white/50",
+          active === "swap"
+            ? "arc-nav-pill-active border-fuchsia-400/45 bg-fuchsia-500/20 text-fuchsia-100 shadow-[0_0_18px_rgba(192,132,252,0.22)]"
+            : "text-white/50",
         )}
       >
         <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" delay={0.2} />
