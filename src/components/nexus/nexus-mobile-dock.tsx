@@ -41,7 +41,7 @@ export function NexusMobileDock({
             onClick={() => onChange(id)}
             className={cn(
               "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[9px] font-semibold transition",
-              active === id ? "arc-nav-pill-active text-emerald-50" : "text-white/50 hover:text-white/80",
+              active === id ? "arc-nav-pill-active text-cyan-50" : "text-white/50 hover:text-white/80",
             )}
           >
             <ArcIcon3d

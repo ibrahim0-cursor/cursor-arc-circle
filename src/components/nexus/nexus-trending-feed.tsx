@@ -312,8 +312,8 @@ export function NexusTrendingFeed({
           "nexus-feed-row w-full rounded-2xl border text-left transition-all duration-200 active:scale-[0.99] max-lg:min-h-[72px]",
           compactDesktop ? "p-2 lg:rounded-xl" : "p-3",
           selected
-            ? "arc-glass-card arc-glass-card-nexus arc-glass-interactive arc-border-trace border-emerald-400/40 shadow-[0_0_24px_-6px_var(--nexus-glow)]"
-            : "arc-glass-card arc-glass-interactive arc-border-trace border-[var(--arc-border)] hover:border-emerald-400/35 hover:shadow-[0_0_20px_-8px_var(--nexus-glow)]",
+            ? "arc-glass-card arc-glass-card-nexus arc-glass-interactive arc-border-trace border-cyan-400/40 shadow-[0_0_24px_-6px_var(--nexus-glow)]"
+            : "arc-glass-card arc-glass-interactive arc-border-trace border-[var(--arc-border)] hover:border-cyan-400/35 hover:shadow-[0_0_20px_-8px_var(--nexus-glow)]",
         )}
       >
         <div className="flex items-start justify-between gap-2">
@@ -400,8 +400,8 @@ export function NexusTrendingFeed({
         {agent && (
           <div className="mt-1.5 space-y-0.5">
             <p className="flex items-center gap-1.5 text-[11px] text-white/55">
-              <Bot className="h-3 w-3 shrink-0 text-emerald-300/80" />
-              <span className="font-semibold text-emerald-200/95">
+              <Bot className="h-3 w-3 shrink-0 text-cyan-300/80" />
+              <span className="font-semibold text-cyan-200/95">
                 {agent.confidence}% {agent.action}
               </span>
               {token.intel?.technical && cleanFeed && (
@@ -448,7 +448,7 @@ export function NexusTrendingFeed({
             <BarChart3 className="h-3 w-3 text-violet-300/70" />
             Liq {formatCompact(token.liquidityUsd)}
           </span>
-          <span className="flex items-center gap-1 font-medium text-emerald-300">
+          <span className="flex items-center gap-1 font-medium text-cyan-300/90">
             <TrendingUp className="h-3 w-3" />
             Buys {token.txns24h?.buys ?? "—"}
           </span>

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  */
 export function ArcHudScene({ theme = "home" }: { theme?: "home" | "nexus" | "prism" }) {
   const accent =
-    theme === "nexus" ? "rgba(20, 217, 154, 0.55)" : theme === "prism" ? "rgba(245, 158, 11, 0.5)" : "rgba(56, 189, 248, 0.45)";
+    theme === "nexus" ? "rgba(34, 211, 238, 0.42)" : theme === "prism" ? "rgba(245, 158, 11, 0.5)" : "rgba(56, 189, 248, 0.45)";
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -40,10 +40,14 @@ export function ArcHudScene({ theme = "home" }: { theme?: "home" | "nexus" | "pr
 
       {/* Horizontal scan — softer on NEXUS so it does not read as text */}
       <motion.div
-        className={cn("arc-scan-line absolute left-0 right-0 h-px", theme === "nexus" && "opacity-30")}
+        className={cn("arc-scan-line absolute left-0 right-0 h-px", theme === "nexus" && "opacity-20")}
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
         animate={{ top: ["12%", "88%", "12%"] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+        transition={{
+          duration: theme === "nexus" ? 18 : 14,
+          repeat: Infinity,
+          ease: "linear",
+        }}
       />
 
       {/* Vertical data columns */}

@@ -13,7 +13,7 @@ export function ArcBackground({
 }) {
   const line =
     theme === "nexus"
-      ? "rgba(18, 232, 168, 0.12)"
+      ? "rgba(34, 211, 238, 0.1)"
       : theme === "prism"
         ? "rgba(245, 158, 11, 0.1)"
         : "rgba(168, 85, 247, 0.12)";

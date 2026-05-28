@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArcDotGlobe } from "@/components/layout/arc-dot-globe";
 
-/** Per-route ambient: home globe · NEXUS terminal grid · PRISM oracle rings */
+/** Per-route ambient: home globe · NEXUS AI terminal · PRISM oracle rings */
 export function ArcPremiumScene({
   theme = "home",
   showGlobe = false,
@@ -13,7 +12,7 @@ export function ArcPremiumScene({
 }) {
   const glow =
     theme === "nexus"
-      ? "rgba(18, 232, 168, 0.42)"
+      ? "rgba(129, 140, 248, 0.32)"
       : theme === "prism"
         ? "rgba(251, 146, 60, 0.48)"
         : "rgba(168, 85, 247, 0.55)";
@@ -27,58 +26,47 @@ export function ArcPremiumScene({
         style={{ background: `radial-gradient(ellipse at center, ${glow}, transparent 70%)` }}
       />
 
-      {theme === "home" && (
-        <>
-          {showGlobe && (
-            <div className="absolute left-1/2 top-[10%] h-[min(520px,52vh)] w-[min(520px,92vw)] -translate-x-1/2 opacity-90">
-              <ArcDotGlobe className="h-full w-full" />
-            </div>
-          )}
-        </>
+      {theme === "home" && showGlobe && (
+        <div className="absolute left-1/2 top-[10%] h-[min(520px,52vh)] w-[min(520px,92vw)] -translate-x-1/2 opacity-90">
+          <ArcDotGlobe className="h-full w-full" />
+        </div>
       )}
 
       {theme === "nexus" && (
         <>
-          <div className="arc-nexus-grid absolute inset-0 opacity-[0.35]" />
-          <motion.div
-            className="absolute bottom-[12%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"
-            animate={{ opacity: [0.2, 0.85, 0.2], scaleX: [0.6, 1, 0.6] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          <div className="arc-nexus-terminal-glow absolute inset-0" />
+          <div className="arc-nexus-grid absolute inset-0 opacity-[0.32]" />
+          <div className="arc-nexus-terminal-scanlines absolute inset-0" />
+          <div className="arc-nexus-terminal-beam absolute bottom-[14%] left-0 right-0 h-px" />
+          <div
+            className="absolute inset-y-[10%] left-[18%] w-px opacity-20"
+            style={{
+              background: "linear-gradient(to bottom, transparent, rgba(34, 211, 238, 0.35), transparent)",
+            }}
           />
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="absolute h-[40%] w-px bg-gradient-to-b from-transparent via-emerald-400/25 to-transparent"
-              style={{ left: `${22 + i * 28}%`, top: "8%" }}
-              animate={{ opacity: [0.1, 0.5, 0.1] }}
-              transition={{ duration: 3 + i, repeat: Infinity, delay: i * 0.6 }}
-            />
-          ))}
+          <div
+            className="absolute inset-y-[10%] right-[20%] w-px opacity-15"
+            style={{
+              background: "linear-gradient(to bottom, transparent, rgba(129, 140, 248, 0.3), transparent)",
+            }}
+          />
         </>
       )}
 
       {theme === "prism" && (
         <>
           {[0, 1, 2, 3].map((i) => (
-            <motion.div
+            <div
               key={i}
-              className="absolute left-1/2 top-[18%] -translate-x-1/2 rounded-full border border-amber-400/25"
+              className="absolute left-1/2 top-[18%] -translate-x-1/2 rounded-full border border-amber-400/25 arc-prism-ring-pulse"
               style={{
                 width: `${min(520, 280 + i * 90)}px`,
                 height: `${min(520, 280 + i * 90)}px`,
+                animationDelay: `${i * 0.4}s`,
               }}
-              animate={{
-                opacity: [0.12, 0.38 - i * 0.06, 0.12],
-                scale: [0.98, 1.02, 0.98],
-              }}
-              transition={{ duration: 6 + i * 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
             />
           ))}
-          <motion.div
-            className="absolute left-1/2 top-[32%] h-[min(380px,45vh)] w-px origin-bottom -translate-x-1/2 bg-gradient-to-t from-amber-400/70 via-amber-200/30 to-transparent"
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-          />
+          <div className="absolute left-1/2 top-[32%] h-[min(380px,45vh)] w-px origin-bottom -translate-x-1/2 bg-gradient-to-t from-amber-400/70 via-amber-200/30 to-transparent arc-prism-sweep" />
         </>
       )}
 
