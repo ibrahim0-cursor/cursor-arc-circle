@@ -43,6 +43,8 @@ const STABLE_SYMBOLS = new Set([
   "usd0",
   "usds",
   "musd",
+  "msusd",
+  "susd",
   "usdm",
   "wusdm",
   "mim",
@@ -128,6 +130,9 @@ const STABLE_NAME_HINTS = [
   "metamask usd",
   "mstable",
   "mezo usd",
+  "metronome",
+  "synth usd",
+  "synthetic dollar",
 ];
 
 function normalizeSymbol(symbol: string): string {
@@ -165,7 +170,7 @@ function matchesPriceHeuristic(
   if (Math.abs(change24h ?? 0) > 2.5) return false;
 
   const hint = `${sym ?? ""} ${name ?? ""}`.toLowerCase();
-  return /usd|eur|dai|tether|stable|peg|mountain/.test(hint);
+  return /usd|eur|dai|tether|stable|peg|mountain|synth|metronome/.test(hint);
 }
 
 export function isStablecoin(
