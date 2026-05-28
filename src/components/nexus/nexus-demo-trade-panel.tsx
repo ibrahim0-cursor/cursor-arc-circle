@@ -8,7 +8,7 @@ import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
-import { nexusActionGlass } from "@/lib/nexus-action-glass";
+import { nexusActionGlass, nexusGlassCta } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ type AmountMode = "usdc" | "token";
 
 const TRADE_NETWORK = "arc" as const;
 const BUY_PRESETS = [10, 25, 50, 100] as const;
-const PCT_OPTIONS = [25, 50, 75, 100] as const;
+const PCT_OPTIONS = [25, 50, 75] as const;
 
 function formatAmount(n: number) {
   if (n >= 1000) return n.toFixed(0);
@@ -268,25 +268,20 @@ export function NexusTradeHub({
           <span className="font-semibold">~${feeUsd} USDC</span>
         </div>
         {isConnected ? (
-          <Button
-            variant={side === "sell" ? "nexusSell" : "nexus"}
-            className={cn(
-              "min-h-[52px] w-full gap-2 text-base font-bold",
-              side === "buy" && "nexus-confirm-buy-bright",
-              side === "sell" && "nexus-confirm-sell-bright",
+          <button
+            type="button"
+            className={nexusGlassCta(
+              side === "sell" ? "sell" : "buy",
+              "inline-flex min-h-[52px] w-full items-center justify-center gap-2 text-base disabled:opacity-50",
             )}
             onClick={executeDemoTrade}
             disabled={loading || arcPending || amountNum <= 0}
           >
             {loading || arcPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                <NEXUS_TRADE_ICONS.confirmBuy className="h-5 w-5 shrink-0" strokeWidth={2} />
-                Confirm {side === "buy" ? "Buy" : "Sell"}
-              </>
-            )}
-          </Button>
+            ) : null}
+            Confirm {side === "buy" ? "Buy" : "Sell"}
+          </button>
         ) : (
           <p className="text-center text-sm text-white/60">Connect wallet on Arc Testnet to trade</p>
         )}
@@ -517,9 +512,16 @@ export function NexusTradeHub({
                     onClick={() => applyPct(pct)}
                     className="arc-glass-interactive min-h-[44px] rounded-xl border border-violet-400/25 bg-violet-500/10 text-sm font-bold text-violet-100 transition active:scale-95 active:bg-violet-500/25"
                   >
-                    {pct === 100 ? "MAX" : `${pct}%`}
+                    {pct}%
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => applyPct(100)}
+                  className="arc-glass-interactive min-h-[44px] rounded-xl border border-violet-400/35 bg-violet-500/20 text-sm font-bold text-violet-100 transition active:scale-95"
+                >
+                  MAX
+                </button>
               </div>
 
               {side === "sell" && amountNum > 0 && livePrice > 0 && (

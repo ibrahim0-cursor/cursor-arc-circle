@@ -1876,23 +1876,84 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
   border: 1px solid rgba(251, 113, 133, 0.4) !important;
 }
 
-.nexus-confirm-buy-bright {
-  background: var(--nexus-accent) !important;
-  color: #021a12 !important;
-  border: 1px solid rgba(110, 231, 183, 0.55) !important;
+/* Full-width glass CTAs — swap, confirm, run agent */
+.nexus-glass-cta {
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  font-weight: 700;
+  opacity: 1 !important;
   box-shadow:
-    0 0 0 1px rgba(18, 232, 168, 0.25) inset,
-    0 0 36px -4px rgba(18, 232, 168, 0.55),
-    0 14px 32px -12px rgba(0, 0, 0, 0.65) !important;
-  opacity: 1 !important;
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 14px 32px -12px rgba(0, 0, 0, 0.7);
 }
 
-.nexus-confirm-sell-bright {
-  opacity: 1 !important;
+.nexus-glass-cta--swap {
+  background: linear-gradient(
+    155deg,
+    rgba(192, 132, 252, 0.38) 0%,
+    rgba(168, 85, 247, 0.28) 45%,
+    rgba(20, 8, 28, 0.9) 100%
+  ) !important;
+  border: 1px solid rgba(216, 180, 254, 0.4) !important;
+  color: #faf5ff !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 32px -6px rgba(168, 85, 247, 0.42),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
 }
 
-.nexus-run-agent-btn {
-  opacity: 1 !important;
+.nexus-glass-cta--buy {
+  background: linear-gradient(
+    155deg,
+    rgba(18, 232, 168, 0.38) 0%,
+    rgba(16, 185, 129, 0.28) 48%,
+    rgba(4, 22, 16, 0.9) 100%
+  ) !important;
+  border: 1px solid rgba(110, 231, 183, 0.45) !important;
+  color: #ecfdf5 !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 32px -6px rgba(18, 232, 168, 0.4),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.nexus-glass-cta--sell {
+  background: linear-gradient(
+    155deg,
+    rgba(244, 63, 94, 0.4) 0%,
+    rgba(225, 29, 72, 0.3) 48%,
+    rgba(28, 6, 12, 0.92) 100%
+  ) !important;
+  border: 1px solid rgba(251, 113, 133, 0.45) !important;
+  color: #fff1f2 !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 32px -6px rgba(244, 63, 94, 0.42),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.nexus-glass-cta--autopilot {
+  background: linear-gradient(
+    155deg,
+    rgba(168, 85, 247, 0.42) 0%,
+    rgba(217, 70, 239, 0.32) 48%,
+    rgba(18, 8, 32, 0.92) 100%
+  ) !important;
+  border: 1px solid rgba(216, 180, 254, 0.45) !important;
+  color: #faf5ff !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 36px -6px rgba(168, 85, 247, 0.48),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.nexus-tx-history-fab {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 !important;
+  border-radius: 9999px !important;
 }
 
 .nexus-swap-reverse-btn:active {

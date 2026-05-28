@@ -15,6 +15,7 @@ import {
   type AutopilotInterval,
   type AutopilotLog,
 } from "@/lib/nexus-autopilot";
+import { nexusGlassCta } from "@/lib/nexus-action-glass";
 import {
   Bot,
   Calendar,
@@ -731,9 +732,12 @@ export function NexusAutopilotPanel({
           )}
 
           <div className="flex gap-2">
-            <Button
-              variant="nexusAutopilot"
-              className="nexus-run-agent-btn min-h-[48px] flex-1 gap-2"
+            <button
+              type="button"
+              className={nexusGlassCta(
+                "autopilot",
+                "inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 disabled:opacity-50",
+              )}
               disabled={!isConnected || running || arcPending || config.enabled}
               onClick={() => {
                 void (async () => {
@@ -775,7 +779,7 @@ export function NexusAutopilotPanel({
                 <Play className="h-4 w-4" />
               )}
               {config.enabled ? "Agent running…" : "Run Agent"}
-            </Button>
+            </button>
             <Button
               variant="outline"
               className="min-h-[48px] px-4"

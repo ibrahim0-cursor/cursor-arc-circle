@@ -4,10 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { CheckCircle2, ChevronDown, ExternalLink, History, Loader2 } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
-import { nexusActionGlass } from "@/lib/nexus-action-glass";
+import { nexusActionGlass, nexusGlassCta } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
@@ -21,7 +20,7 @@ import {
 import type { DemoPosition, DemoTradeRecord } from "@/lib/storage";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
-const PCT_OPTIONS = [25, 50, 75, 100] as const;
+const PCT_OPTIONS = [25, 50, 75] as const;
 
 type SwapSuccessState = {
   summary: string;
@@ -440,41 +439,29 @@ export function NexusQuickSwap({
         : undefined;
 
   return (
-    <section className="nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace space-y-3 rounded-2xl p-3">
-      <div className="flex items-center gap-2.5">
-        <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" />
-        <div>
-          <p className="text-sm font-semibold text-white">Quick swap</p>
-          <p className="text-[10px] text-white/45">
-            {sortedTokens.length} tokens + Arc USDC · icons · ~${feeUsd} fee
-          </p>
+    <section className="nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace relative space-y-3 rounded-2xl p-3">
+      <div className="relative pr-11">
+        <div className="flex items-center gap-2.5">
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" />
+          <div>
+            <p className="text-sm font-semibold text-white">Quick swap</p>
+            <p className="text-[10px] text-white/45">
+              {sortedTokens.length} tokens + Arc USDC · ~${feeUsd} fee
+            </p>
+          </div>
         </div>
-      </div>
-
-      <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setSwapView("swap")}
-          className={nexusActionGlass(
-            "swap",
-            swapView === "swap",
-            "arc-btn-pill relative z-[1] flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold",
-          )}
-        >
-          <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" className="!h-7 !w-7" />
-          Swap
-        </button>
-        <button
-          type="button"
-          onClick={() => setSwapView("history")}
+          onClick={() => setSwapView((v) => (v === "history" ? "swap" : "history"))}
           className={nexusActionGlass(
             "alpha",
             swapView === "history",
-            "arc-btn-pill relative z-[1] flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold",
+            "nexus-tx-history-fab absolute right-0 top-0 z-[2] flex items-center justify-center",
           )}
+          title={swapView === "history" ? "Back to swap" : "Transaction history"}
+          aria-label="Transaction history"
         >
           <History className="h-4 w-4 shrink-0" />
-          Tx history
         </button>
       </div>
 
@@ -629,9 +616,9 @@ export function NexusQuickSwap({
       </div>
 
       {isConnected ? (
-        <Button
-          variant="nexusSwap"
-          className="nexus-swap-btn nexus-action-glass-btn min-h-[48px] w-full gap-2"
+        <button
+          type="button"
+          className={nexusGlassCta("swap", "min-h-[48px] w-full disabled:opacity-50")}
           disabled={
             loading ||
             arcPending ||
@@ -644,13 +631,11 @@ export function NexusQuickSwap({
         >
           {loading || arcPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <NEXUS_TRADE_ICONS.swap className="h-4 w-4 shrink-0" />
-          )}
+          ) : null}
           {sameToken
             ? "Pick two different tokens"
             : `Swap ${pay?.symbol ?? "—"} → ${receive?.symbol ?? "—"}`}
-        </Button>
+        </button>
       ) : (
         <p className="text-center text-xs text-white/50">Connect wallet (top right) to swap</p>
       )}

@@ -15,3 +15,15 @@ export function nexusActionGlass(
     className,
   );
 }
+
+/** Full-width glass CTAs (swap, confirm buy/sell, run agent) */
+export function nexusGlassCta(
+  variant: "buy" | "sell" | "autopilot" | "swap",
+  className?: string,
+) {
+  return cn(
+    "arc-btn-signal nexus-glass-cta nexus-action-glass-btn",
+    `nexus-glass-cta--${variant}`,
+    className,
+  );
+}
