@@ -1,3 +1,4 @@
+import { mapWithConcurrency } from "./async-pool";
 import { WALLET_SWAP_CHAINS, SWAP_CRITERIA, checkSwappable, filterSwappableTokens, type WalletSwapChain } from "./swappable";
 import { isEvmChain } from "./swap";
 import { buildLocalTokenIntel } from "./token-intel-local";
@@ -216,24 +217,32 @@ export async function fetchTrendingMarketTokens(
     ),
   ];
 
-  for (const network of paprikaNetworksForCycle(cycle)) {
-    const paprikaTokens = await fetchDexPaprikaTopTokens(network, 20);
-    for (const t of paprikaTokens) {
-      const pair = t.pairAddress ? t : await loadPair(t.chainId, t.tokenAddress);
-      addToken(pair ?? t);
-    }
+  const paprikaBatches = await Promise.all(
+    paprikaNetworksForCycle(cycle).map((network) => fetchDexPaprikaTopTokens(network, 20)),
+  );
+  const paprikaFlat = paprikaBatches.flat();
+  for (const t of paprikaFlat) {
+    if (t.pairAddress) addToken(t);
   }
+  const paprikaNeedsPair = paprikaFlat.filter((t) => !t.pairAddress);
+  const paprikaResolved = await mapWithConcurrency(
+    paprikaNeedsPair,
+    (t) => loadPair(t.chainId, t.tokenAddress),
+    8,
+  );
+  for (const pair of paprikaResolved) addToken(pair);
 
   const results = await Promise.allSettled(fetches);
+  const boostCandidates: Array<{ chainId: string; tokenAddress: string }> = [];
 
   for (const result of results) {
     if (result.status !== "fulfilled" || !result.value.ok) continue;
     const json = await result.value.json();
 
     if (Array.isArray(json)) {
-      for (const item of json as Array<{ chainId?: string; tokenAddress?: string; url?: string }>) {
+      for (const item of json as Array<{ chainId?: string; tokenAddress?: string }>) {
         if (item.chainId && item.tokenAddress && isEvmChain(item.chainId)) {
-          addToken(await loadPair(item.chainId, item.tokenAddress));
+          boostCandidates.push({ chainId: item.chainId, tokenAddress: item.tokenAddress });
         }
       }
       continue;
@@ -246,6 +255,16 @@ export async function fetchTrendingMarketTokens(
       }
     }
   }
+
+  const uniqueBoosts = Array.from(
+    new Map(boostCandidates.map((c) => [`${c.chainId}:${c.tokenAddress}`, c])).values(),
+  ).slice(0, stable ? 24 : 40);
+  const boostPairs = await mapWithConcurrency(
+    uniqueBoosts,
+    (c) => loadPair(c.chainId, c.tokenAddress),
+    10,
+  );
+  for (const pair of boostPairs) addToken(pair);
 
   let sorted: TrendingToken[];
   if (discovery) {

@@ -73,15 +73,13 @@ export async function enrichTokensWithIcons<T extends TrendingToken>(
   tokens: T[],
   maxLookups = 12,
 ): Promise<T[]> {
-  let lookups = 0;
-  const out: T[] = [];
-  for (const t of tokens) {
-    if (t.icon || lookups >= maxLookups) {
-      out.push(t);
-      continue;
-    }
-    lookups++;
-    out.push(await enrichTokenIcon(t));
-  }
-  return out;
+  const needsIcon = tokens.filter((t) => !t.icon).slice(0, maxLookups);
+  if (needsIcon.length === 0) return tokens;
+
+  const enriched = await Promise.all(needsIcon.map((t) => enrichTokenIcon(t)));
+  const byKey = new Map(
+    needsIcon.map((t, i) => [cacheKey(t.chainId, t.tokenAddress), enriched[i]]),
+  );
+
+  return tokens.map((t) => byKey.get(cacheKey(t.chainId, t.tokenAddress)) ?? t);
 }

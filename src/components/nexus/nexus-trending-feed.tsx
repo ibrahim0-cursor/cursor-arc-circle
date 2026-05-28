@@ -55,6 +55,70 @@ export type TrendingMarketToken = {
 const REFRESH_MS = 45_000;
 const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
+const QUICK_TIMEOUT_MS = 12_000;
+const FULL_TIMEOUT_MS = 25_000;
+const FEED_SESSION_KEY = "nexus-feed-v1";
+const FEED_SESSION_TTL_MS = 90_000;
+
+type FeedSessionCache = {
+  at: number;
+  tokens: TrendingMarketToken[];
+  updatedAt?: string;
+  counts?: { buy: number; sell: number; hold: number };
+  feedCycle?: number;
+};
+
+function readFeedSession(): FeedSessionCache | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(FEED_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as FeedSessionCache;
+    if (!parsed?.tokens?.length || Date.now() - parsed.at > FEED_SESSION_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedSession(data: FeedSessionCache) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(FEED_SESSION_KEY, JSON.stringify(data));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function FeedSkeletonRows({ count = FEED_PREVIEW }: { count?: number }) {
+  return (
+    <div className="space-y-1.5" aria-hidden>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="nexus-feed-row animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3"
+        >
+          <div className="flex items-start gap-2">
+            <div className="h-10 w-10 shrink-0 rounded-full bg-white/10" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-3.5 w-24 rounded bg-white/10" />
+              <div className="h-2.5 w-32 rounded bg-white/[0.06]" />
+            </div>
+            <div className="space-y-2 text-right">
+              <div className="ml-auto h-3.5 w-16 rounded bg-white/10" />
+              <div className="ml-auto h-2.5 w-12 rounded bg-white/[0.06]" />
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((__, j) => (
+              <div key={j} className="h-2.5 rounded bg-white/[0.05]" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function chainLabel(chainId: string): string {
   const id = chainId.toLowerCase();
@@ -86,14 +150,15 @@ export function NexusTrendingFeed({
   cleanFeed?: boolean;
   className?: string;
 }) {
-  const [tokens, setTokens] = useState<TrendingMarketToken[]>([]);
-  const [loading, setLoading] = useState(true);
+  const sessionSeed = readFeedSession();
+  const [tokens, setTokens] = useState<TrendingMarketToken[]>(() => sessionSeed?.tokens ?? []);
+  const [loading, setLoading] = useState(() => !(sessionSeed?.tokens?.length));
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(() => sessionSeed?.updatedAt ?? null);
   const [secondsLeft, setSecondsLeft] = useState(REFRESH_MS / 1000);
-  const [counts, setCounts] = useState({ buy: 0, sell: 0, hold: 0 });
-  const [feedCycle, setFeedCycle] = useState(0);
+  const [counts, setCounts] = useState(() => sessionSeed?.counts ?? { buy: 0, sell: 0, hold: 0 });
+  const [feedCycle, setFeedCycle] = useState(() => sessionSeed?.feedCycle ?? 0);
   const [feedExpanded, setFeedExpanded] = useState(false);
 
   const onSelectRef = useRef(onSelect);
@@ -102,6 +167,11 @@ export function NexusTrendingFeed({
   const didInitialPick = useRef(false);
   const userPickedRef = useRef(false);
   const loadInFlightRef = useRef(false);
+  const hasTokensRef = useRef(tokens.length > 0);
+
+  useEffect(() => {
+    hasTokensRef.current = tokens.length > 0;
+  }, [tokens.length]);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -122,6 +192,13 @@ export function NexusTrendingFeed({
     setTokens((prev) => {
       const merged = mergeFeedTokensStable(prev, list, MAX_FEED);
       onRefreshRef.current?.(merged);
+      writeFeedSession({
+        at: Date.now(),
+        tokens: merged,
+        updatedAt: data.updatedAt ?? new Date().toISOString(),
+        counts: data.counts ?? { buy: 0, sell: 0, hold: 0 },
+        feedCycle: data.feedCycle ?? 0,
+      });
       return merged;
     });
     if (!userPickedRef.current && !didInitialPick.current && list[0]) {
@@ -130,14 +207,14 @@ export function NexusTrendingFeed({
     }
   }, []);
 
-  const fetchFeed = useCallback(async (quick: boolean, timeoutMs: number) => {
+  const fetchFeed = useCallback(async (quick: boolean, timeoutMs: number, bustCache = false) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const q = quick ? "&quick=1" : "";
     const lim = STABLE_FEED_LIMIT;
+    const bust = bustCache ? `&t=${Date.now()}` : "";
     try {
-      const res = await fetch(`/api/nexus/feed?limit=${lim}${q}&t=${Date.now()}`, {
-        cache: "no-store",
+      const res = await fetch(`/api/nexus/feed?limit=${lim}${q}${bust}`, {
         signal: controller.signal,
       });
       const data = await res.json();
@@ -148,19 +225,34 @@ export function NexusTrendingFeed({
     }
   }, []);
 
+  const fetchWithRetry = useCallback(
+    async (quick: boolean, timeoutMs: number, bustCache = false) => {
+      try {
+        return await fetchFeed(quick, timeoutMs, bustCache);
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return fetchFeed(quick, Math.round(timeoutMs * 1.5), bustCache);
+        }
+        throw err;
+      }
+    },
+    [fetchFeed],
+  );
+
   const load = useCallback(
-    async (silent = false) => {
+    async (silent = false, manual = false) => {
       if (loadInFlightRef.current) return;
       loadInFlightRef.current = true;
-      if (!silent) setLoading(true);
+      const hasTokens = hasTokensRef.current;
+      if (!silent && !hasTokens) setLoading(true);
       else setRefreshing(true);
       try {
-        const { list, data } = await fetchFeed(true, 30_000);
+        const { list, data } = await fetchWithRetry(true, QUICK_TIMEOUT_MS, manual);
         applyFeed(list, data);
-        if (!silent) {
+        if (!silent || manual) {
           void (async () => {
             try {
-              const full = await fetchFeed(false, 45_000);
+              const full = await fetchWithRetry(false, FULL_TIMEOUT_MS, manual);
               applyFeed(full.list, full.data);
             } catch {
               /* keep quick feed */
@@ -170,18 +262,18 @@ export function NexusTrendingFeed({
       } catch (err) {
         const msg =
           err instanceof Error && err.name === "AbortError"
-            ? "Feed timed out — tap Retry (server may be busy; not related to Supabase token)"
+            ? "Feed timed out — tap Retry (server may be busy)"
             : err instanceof Error
               ? err.message
               : "Feed load failed";
-        if (!silent) setError(msg);
+        if (!hasTokens) setError(msg);
       } finally {
         loadInFlightRef.current = false;
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [applyFeed, fetchFeed],
+    [applyFeed, fetchWithRetry],
   );
 
   useEffect(() => {
@@ -371,9 +463,12 @@ export function NexusTrendingFeed({
 
   if (loading && tokens.length === 0) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-white/50">
-        <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
-        Loading {STABLE_FEED_LIMIT} market tokens…
+      <div className="flex min-h-0 flex-col gap-3">
+        <div className="flex items-center gap-2 text-white/50">
+          <Loader2 className="h-4 w-4 animate-spin text-cyan-300" />
+          <span className="text-sm">Loading market tokens…</span>
+        </div>
+        <FeedSkeletonRows count={FEED_PREVIEW} />
       </div>
     );
   }
@@ -382,7 +477,7 @@ export function NexusTrendingFeed({
     return (
       <div className="space-y-3 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-6 text-sm text-rose-200">
         <p>{error}</p>
-        <Button variant="outline" size="sm" onClick={() => load()}>
+        <Button variant="outline" size="sm" onClick={() => load(false, true)}>
           <RefreshCw className="mr-2 h-3.5 w-3.5" />
           Retry feed
         </Button>
@@ -411,7 +506,7 @@ export function NexusTrendingFeed({
               <Badge variant="hold" className="!text-[9px]">{counts.hold} H</Badge>
             </>
           )}
-          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
+          <Button variant="outline" size="sm" onClick={() => load(false, true)} disabled={refreshing}>
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
