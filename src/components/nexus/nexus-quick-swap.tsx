@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
-import { ArrowDownUp, CheckCircle2, ChevronDown, ExternalLink, Loader2, Wallet } from "lucide-react";
+import { CheckCircle2, ChevronDown, ExternalLink, Loader2 } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
@@ -427,9 +429,9 @@ export function NexusQuickSwap({
         : undefined;
 
   return (
-    <section className="nexus-section-card space-y-3 rounded-2xl border border-violet-400/20 bg-black/25 p-3">
-      <div className="flex items-center gap-2">
-        <ArrowDownUp className="h-4 w-4 text-violet-300" />
+    <section className="nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace space-y-3 rounded-2xl p-3">
+      <div className="flex items-center gap-2.5">
+        <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" />
         <div>
           <p className="text-sm font-semibold text-white">Quick swap</p>
           <p className="text-[10px] text-white/45">
@@ -462,7 +464,7 @@ export function NexusQuickSwap({
 
       {pay && (
         <p className="flex items-center gap-1.5 text-[11px] text-white/55">
-          <Wallet className="h-3.5 w-3.5 text-cyan-300/80" />
+          <NEXUS_TRADE_ICONS.wallet className="h-3.5 w-3.5 text-cyan-300/80" />
           Available:{" "}
           <strong className="text-white">
             {payIsUsdc ? walletUsdc.toFixed(2) : balancePay.toFixed(4)}
@@ -558,7 +560,11 @@ export function NexusQuickSwap({
           }
           onClick={() => void executeSwap()}
         >
-          {loading || arcPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {loading || arcPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <NEXUS_TRADE_ICONS.swap className="h-4 w-4 shrink-0" />
+          )}
           {sameToken
             ? "Pick two different tokens"
             : `Swap ${pay?.symbol ?? "—"} → ${receive?.symbol ?? "—"}`}

@@ -1,15 +1,21 @@
 "use client";
 
-import { ArrowDownUp, LineChart, Radio, Wallet } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { cn } from "@/lib/utils";
 
 export type NexusMobilePanel = "feed" | "chart" | "trade" | "portfolio";
 
-const items: { id: NexusMobilePanel; label: string; icon: typeof Radio }[] = [
-  { id: "feed", label: "Tokens", icon: Radio },
-  { id: "chart", label: "Chart", icon: LineChart },
-  { id: "trade", label: "Trade", icon: ArrowDownUp },
-  { id: "portfolio", label: "Portfolio", icon: Wallet },
+const items: {
+  id: NexusMobilePanel;
+  label: string;
+  icon: typeof NEXUS_TRADE_ICONS.chart;
+  theme: "nexus" | "prism" | "home";
+}[] = [
+  { id: "feed", label: "Tokens", icon: NEXUS_TRADE_ICONS.holdings, theme: "nexus" },
+  { id: "chart", label: "Chart", icon: NEXUS_TRADE_ICONS.chart, theme: "nexus" },
+  { id: "trade", label: "Trade", icon: NEXUS_TRADE_ICONS.trade, theme: "nexus" },
+  { id: "portfolio", label: "Portfolio", icon: NEXUS_TRADE_ICONS.portfolio, theme: "home" },
 ];
 
 export function NexusMobileDock({
@@ -26,7 +32,7 @@ export function NexusMobileDock({
       aria-label="NEXUS panels"
     >
       <div className="flex items-stretch justify-around gap-0.5 px-1 py-1">
-        {items.map(({ id, label, icon: Icon }) => (
+        {items.map(({ id, label, icon, theme }) => (
           <button
             key={id}
             type="button"
@@ -34,11 +40,16 @@ export function NexusMobileDock({
             aria-selected={active === id}
             onClick={() => onChange(id)}
             className={cn(
-              "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[9px] font-semibold transition",
+              "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[9px] font-semibold transition",
               active === id ? "arc-nav-pill-active text-emerald-50" : "text-white/50 hover:text-white/80",
             )}
           >
-            <Icon className={cn("h-5 w-5", active === id && "text-emerald-300")} />
+            <ArcIcon3d
+              icon={icon}
+              theme={theme}
+              size="sm"
+              className={cn("!h-9 !w-9", active !== id && "opacity-75")}
+            />
             {label}
           </button>
         ))}

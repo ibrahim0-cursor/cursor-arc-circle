@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowDownUp, Radio, Sparkles } from "lucide-react";
+import { Radio, Sparkles } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { cn } from "@/lib/utils";
 
 export type NexusFeedTab = "live" | "alpha" | "swap";
@@ -49,7 +50,7 @@ export function NexusFeedTabs({
           active === "swap" ? "arc-nav-pill-active text-cyan-100" : "text-white/50",
         )}
       >
-        <ArcIcon3d icon={ArrowDownUp} theme="nexus" size="sm" delay={0.2} />
+        <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" delay={0.2} />
         Swap
       </button>
     </div>

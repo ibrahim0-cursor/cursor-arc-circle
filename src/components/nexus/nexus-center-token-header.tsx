@@ -1,6 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Maximize2 } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { cn, formatPct, formatUsd } from "@/lib/utils";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
@@ -10,16 +13,18 @@ export function NexusCenterTokenHeader({
   token,
   decision,
   actions,
+  onExpandChart,
 }: {
   token: TrendingMarketToken;
   decision?: NexusDecision | null;
   actions?: ReactNode;
+  onExpandChart?: () => void;
 }) {
   const action = decision?.action ?? token.agent?.action;
   const up = token.change24h >= 0;
 
   return (
-    <div className="nexus-center-header arc-glass-card arc-glass-card-nexus flex flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
+    <div className="nexus-center-header arc-glass-card arc-glass-card-nexus arc-border-trace flex flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <NexusTokenAvatar symbol={token.symbol} icon={token.icon} size="md" />
         <div className="min-w-0">
@@ -48,6 +53,18 @@ export function NexusCenterTokenHeader({
           >
             {action}
           </span>
+        )}
+        {onExpandChart && (
+          <button
+            type="button"
+            onClick={onExpandChart}
+            className="arc-glass-interactive inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 text-xs font-bold text-violet-100"
+            title="Fullscreen chart"
+          >
+            <ArcIcon3d icon={NEXUS_TRADE_ICONS.chart} theme="nexus" size="sm" className="!h-8 !w-8" />
+            <Maximize2 className="h-3.5 w-3.5 lg:hidden" />
+            <span className="hidden lg:inline">Chart</span>
+          </button>
         )}
         {actions}
       </div>

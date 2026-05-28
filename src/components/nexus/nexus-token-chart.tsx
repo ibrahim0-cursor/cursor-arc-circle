@@ -2,24 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, LineChart, Loader2 } from "lucide-react";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
+import { ExternalLink, Loader2, Maximize2 } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcPanel } from "@/components/ui/arc-panel";
+import { NexusChartFullscreen } from "@/components/nexus/nexus-chart-fullscreen";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { dexChartEmbedUrl } from "@/lib/dexscreener";
+import { cn } from "@/lib/utils";
 
-export function NexusTokenChart({
+export function useNexusChartPair({
   chainId,
   pairAddress,
   tokenAddress,
-  symbol,
-  compact = false,
 }: {
   chainId?: string;
   pairAddress?: string;
   tokenAddress?: string;
-  symbol?: string;
-  /** Shorter embed so reasoning + holders stay visible at 100% zoom */
-  compact?: boolean;
 }) {
   const [resolvedPair, setResolvedPair] = useState(pairAddress ?? "");
   const [dexUrl, setDexUrl] = useState<string | null>(null);
@@ -35,10 +33,10 @@ export function NexusTokenChart({
     setResolving(true);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12_000);
-    fetch(`/api/nexus/pair?chainId=${encodeURIComponent(chainId)}&address=${encodeURIComponent(tokenAddress)}`, {
-      cache: "no-store",
-      signal: controller.signal,
-    })
+    fetch(
+      `/api/nexus/pair?chainId=${encodeURIComponent(chainId)}&address=${encodeURIComponent(tokenAddress)}`,
+      { cache: "no-store", signal: controller.signal },
+    )
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
@@ -59,6 +57,38 @@ export function NexusTokenChart({
     };
   }, [chainId, tokenAddress, resolvedPair]);
 
+  return { resolvedPair, dexUrl, resolving };
+}
+
+export function NexusTokenChart({
+  chainId,
+  pairAddress,
+  tokenAddress,
+  symbol,
+  compact = false,
+  fullscreenOpen,
+  onFullscreenChange,
+  showExpand = true,
+}: {
+  chainId?: string;
+  pairAddress?: string;
+  tokenAddress?: string;
+  symbol?: string;
+  compact?: boolean;
+  fullscreenOpen?: boolean;
+  onFullscreenChange?: (open: boolean) => void;
+  showExpand?: boolean;
+}) {
+  const [internalFs, setInternalFs] = useState(false);
+  const fsOpen = fullscreenOpen ?? internalFs;
+  const setFsOpen = onFullscreenChange ?? setInternalFs;
+
+  const { resolvedPair, dexUrl, resolving } = useNexusChartPair({
+    chainId,
+    pairAddress,
+    tokenAddress,
+  });
+
   if (!chainId || (!resolvedPair && !tokenAddress)) {
     return (
       <motion.div
@@ -67,8 +97,8 @@ export function NexusTokenChart({
         className="arc-signal-panel arc-signal-panel-nexus flex h-[200px] items-center justify-center p-6 text-center sm:h-[240px]"
       >
         <div>
-          <ArcIconBadge icon={LineChart} theme="nexus" size="md" className="mx-auto mb-3" />
-          <p className="text-sm text-white/55">Select a token from the feed to load chart</p>
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.chart} theme="nexus" size="md" className="mx-auto mb-3" />
+          <p className="text-sm text-[var(--arc-text-muted)]">Select a token from the feed to load chart</p>
         </div>
       </motion.div>
     );
@@ -84,7 +114,7 @@ export function NexusTokenChart({
           </>
         ) : (
           <>
-            <LineChart className="h-8 w-8 text-cyan-300/50" />
+            <ArcIcon3d icon={NEXUS_TRADE_ICONS.chart} theme="nexus" size="sm" />
             <p className="text-center text-sm text-white/60">No chart pair found for this token.</p>
             {dexUrl && (
               <a
@@ -102,30 +132,57 @@ export function NexusTokenChart({
     );
   }
 
+  const headerAction = (
+    <div className="flex items-center gap-2">
+      <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+        Live
+      </span>
+      {showExpand && (
+        <button
+          type="button"
+          onClick={() => setFsOpen(true)}
+          className="arc-glass-interactive inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/15 px-2.5 py-1 text-[10px] font-bold text-violet-100 transition hover:border-violet-300/50"
+          aria-label="Open chart fullscreen"
+          title="Fullscreen chart"
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Fullscreen</span>
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <motion.div key={`${chainId}:${resolvedPair}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-      <ArcPanel
-        theme="nexus"
-        title={symbol ?? "Live chart"}
-        icon={LineChart}
-        action={
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-            Live
-          </span>
-        }
-        className="nexus-chart-panel overflow-hidden [&_.arc-panel-body]:!p-0"
-      >
-        <iframe
-          title={`${symbol ?? "Token"} chart`}
-          src={dexChartEmbedUrl(chainId, resolvedPair)}
-          className={
-            compact
-              ? "nexus-chart-iframe nexus-chart-iframe-compact h-[180px] w-full border-0 sm:h-[200px] lg:h-[210px] lg:max-h-[220px]"
-              : "nexus-chart-iframe h-[min(42dvh,320px)] w-full border-0 sm:h-[280px] lg:h-[min(32vh,300px)] lg:max-h-[300px]"
-          }
-          allow="clipboard-write"
-        />
-      </ArcPanel>
-    </motion.div>
+    <>
+      <motion.div key={`${chainId}:${resolvedPair}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <ArcPanel
+          theme="nexus"
+          title={symbol ?? "Live chart"}
+          icon={NEXUS_TRADE_ICONS.chart}
+          action={headerAction}
+          className="nexus-chart-panel arc-border-trace overflow-hidden [&_.arc-panel-body]:!p-0"
+        >
+          <iframe
+            title={`${symbol ?? "Token"} chart`}
+            src={dexChartEmbedUrl(chainId, resolvedPair)}
+            className={cn(
+              "nexus-chart-iframe w-full border-0",
+              compact
+                ? "nexus-chart-iframe-compact h-[180px] sm:h-[200px] lg:h-[210px] lg:max-h-[220px]"
+                : "h-[min(42dvh,320px)] sm:h-[280px] lg:h-[min(32vh,300px)] lg:max-h-[300px]",
+            )}
+            allow="clipboard-write"
+          />
+        </ArcPanel>
+      </motion.div>
+      <NexusChartFullscreen
+        open={fsOpen}
+        onClose={() => setFsOpen(false)}
+        chainId={chainId}
+        pairAddress={resolvedPair}
+        symbol={symbol}
+        dexUrl={dexUrl}
+      />
+    </>
   );
 }

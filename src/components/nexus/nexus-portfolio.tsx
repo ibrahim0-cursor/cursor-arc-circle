@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
-import { ExternalLink, Loader2, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { formatPct, formatUsd } from "@/lib/utils";
 import { arcExplorerTx } from "@/lib/arc";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
@@ -100,10 +102,10 @@ export function NexusPortfolio({
   }
 
   return (
-    <section className="nexus-section-card space-y-3 rounded-2xl border border-emerald-400/20 bg-black/25 p-3">
+    <section className="nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace space-y-3 rounded-2xl p-3">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-4 w-4 text-emerald-300" />
+        <div className="flex items-center gap-2.5">
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.portfolio} theme="nexus" size="sm" />
           <div>
             <p className="text-sm font-semibold text-white">
               Portfolio{positions.length ? ` · ${positions.length} holdings` : ""}
@@ -234,7 +236,11 @@ function PositionRow({ pos, icon }: { pos: MarkedPosition; icon?: string }) {
           <p
             className={`flex items-center justify-end gap-0.5 text-sm font-bold ${up ? "text-emerald-300" : "text-rose-300"}`}
           >
-            {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {up ? (
+              <NEXUS_TRADE_ICONS.buy className="h-3.5 w-3.5" />
+            ) : (
+              <NEXUS_TRADE_ICONS.sell className="h-3.5 w-3.5" />
+            )}
             {formatUsd(pos.unrealizedPnlUsd)}
           </p>
           <p className={`text-[10px] font-semibold ${up ? "text-emerald-300/90" : "text-rose-300/90"}`}>

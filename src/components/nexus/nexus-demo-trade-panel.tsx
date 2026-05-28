@@ -2,22 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
-import {
-  ArrowDownUp,
-  Bot,
-  Coins,
-  DollarSign,
-  ExternalLink,
-  Loader2,
-  Percent,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { Coins, DollarSign, ExternalLink, Loader2 } from "lucide-react";
 import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
 import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
@@ -278,14 +269,17 @@ export function NexusTradeHub({
         {isConnected ? (
           <Button
             variant="nexus"
-            className="min-h-[48px] w-full text-base font-semibold"
+            className="nexus-confirm-trade-btn min-h-[52px] w-full gap-2 text-base font-semibold"
             onClick={executeDemoTrade}
             disabled={loading || arcPending || amountNum <= 0}
           >
             {loading || arcPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              `Confirm ${side === "buy" ? "Buy" : "Sell"}`
+              <>
+                <NEXUS_TRADE_ICONS.confirmBuy className="h-5 w-5 shrink-0" strokeWidth={2} />
+                Confirm {side === "buy" ? "Buy" : "Sell"}
+              </>
             )}
           </Button>
         ) : (
@@ -315,7 +309,7 @@ export function NexusTradeHub({
         <div className={cn(embedded ? "shrink-0 px-1 pt-0.5" : "border-b border-white/[0.08] px-4 py-3")}>
           {!embedded && (
           <div className="nexus-trade-hub-header mb-3 flex flex-wrap items-center gap-3">
-            <ArcIconFrame icon={ArrowDownUp} variant="nexus" size="md" active />
+            <ArcIcon3d icon={NEXUS_TRADE_ICONS.trade} theme="nexus" size="md" />
             <div className="min-w-0 flex-1">
               <p className="arc-caption text-violet-300/85">Execution</p>
               <span className="text-base font-semibold text-white">Arc Trade · Agent</span>
@@ -330,11 +324,11 @@ export function NexusTradeHub({
           <div className="nexus-trade-tabs grid grid-cols-3 gap-2">
             {(
               [
-                { id: "buy" as const, label: "Buy", icon: TrendingUp, frame: "nexus" as const },
-                { id: "sell" as const, label: "Sell", icon: TrendingDown, frame: "prism" as const },
-                { id: "agent" as const, label: "Autopilot", icon: Bot, frame: "home" as const },
+                { id: "buy" as const, label: "Buy", icon: NEXUS_TRADE_ICONS.buy, theme: "nexus" as const },
+                { id: "sell" as const, label: "Sell", icon: NEXUS_TRADE_ICONS.sell, theme: "prism" as const },
+                { id: "agent" as const, label: "Autopilot", icon: NEXUS_TRADE_ICONS.autopilot, theme: "home" as const },
               ] as const
-            ).map(({ id, label, icon: Icon, frame }) => (
+            ).map(({ id, label, icon: Icon, theme: iconTheme }) => (
               <button
                 key={id}
                 type="button"
@@ -353,12 +347,12 @@ export function NexusTradeHub({
                     : "border-white/10 bg-black/30 text-white/55",
                 )}
               >
-                <ArcIconFrame
+                <ArcIcon3d
                   icon={Icon}
-                  variant={frame}
+                  theme={iconTheme}
                   size="sm"
-                  active={tradeTab === id}
-                  className="pointer-events-none scale-90"
+                  delay={id === "agent" ? 0.15 : 0}
+                  className={cn("pointer-events-none scale-90", tradeTab !== id && "opacity-70")}
                 />
                 <span className="text-[10px] font-bold">{label}</span>
               </button>
@@ -414,7 +408,11 @@ export function NexusTradeHub({
                       {position.tokenAmount.toFixed(4)} {trade.symbol}
                     </span>
                     <span className="flex items-center gap-1 font-semibold">
-                      {unrealizedPnl >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      {unrealizedPnl >= 0 ? (
+                        <NEXUS_TRADE_ICONS.buy className="h-4 w-4" />
+                      ) : (
+                        <NEXUS_TRADE_ICONS.sell className="h-4 w-4" />
+                      )}
                       {formatUsd(unrealizedPnl)}
                       {unrealizedPct != null && ` (${formatPct(unrealizedPct)})`}
                     </span>
@@ -561,7 +559,7 @@ export function NexusTradeHub({
       {embedded ? (
         shell
       ) : (
-        <div className="arc-panel arc-panel-nexus overflow-hidden">{shell}</div>
+        <div className="arc-panel arc-panel-nexus arc-border-trace arc-hover-lift overflow-hidden">{shell}</div>
       )}
     </NexusAgentWalletProvider>
   );

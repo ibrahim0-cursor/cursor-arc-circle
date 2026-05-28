@@ -1,6 +1,8 @@
 "use client";
 
-import { Coins, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { Coins } from "lucide-react";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { useAccount, useBalance } from "wagmi";
 import { ARC_TESTNET_ID } from "@/lib/arc-chain";
 import { useAgentWallet } from "@/hooks/use-agent-wallet";
@@ -32,9 +34,9 @@ export function NexusTradeBalanceBar({
 
   return (
     <div className={`grid gap-2 ${showAgentVault ? "sm:grid-cols-2" : ""}`}>
-      <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-2.5">
-        <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-200/80">
-          <Wallet className="h-3.5 w-3.5" />
+      <div className="arc-glass-card arc-glass-card-nexus rounded-xl border border-cyan-400/25 px-3 py-2.5">
+        <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-cyan-200/80">
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.wallet} theme="nexus" size="sm" className="!h-8 !w-8" />
           Your wallet (fees)
         </p>
         <p className="mt-1 text-lg font-bold text-white">{walletUsdc.toFixed(2)} USDC</p>
@@ -55,8 +57,8 @@ export function NexusTradeBalanceBar({
       )}
       {position && position.tokenAmount > 0 && symbol && (
         <div className="col-span-full rounded-xl border border-white/10 bg-black/25 px-3 py-2">
-          <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/45">
-            <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
+          <p className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/45">
+            <ArcIcon3d icon={NEXUS_TRADE_ICONS.holdings} theme="nexus" size="sm" className="!h-8 !w-8" />
             Holding {symbol}
           </p>
           <p className="text-sm font-semibold text-white">

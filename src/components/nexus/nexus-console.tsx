@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { ArrowDownUp, LineChart, Radio, Sparkles } from "lucide-react";
+import { LineChart, Radio, Sparkles } from "lucide-react";
+import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcPanel } from "@/components/ui/arc-panel";
@@ -91,6 +92,7 @@ export function NexusConsole() {
   const [rightTab, setRightTab] = useState<"trade" | "portfolio">("trade");
   const [mobilePanel, setMobilePanel] = useState<NexusMobilePanel>("feed");
   const [tradeTab, setTradeTab] = useState<"buy" | "sell" | "agent">("buy");
+  const [chartFullscreen, setChartFullscreen] = useState(false);
   const [actionBanner, setActionBanner] = useState<{
     title: string;
     message: string;
@@ -427,21 +429,24 @@ export function NexusConsole() {
         <NexusCenterTokenHeader
           token={selectedToken}
           decision={displayDecision}
+          onExpandChart={() => setChartFullscreen(true)}
           actions={
             <>
               <button
                 type="button"
                 onClick={() => openTradePanel("buy")}
-                className="arc-glass-interactive hidden min-h-[40px] rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 text-xs font-bold text-emerald-100 lg:inline-flex lg:items-center"
+                className="arc-glass-interactive hidden min-h-[40px] items-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 text-xs font-bold text-emerald-100 lg:inline-flex"
               >
-                Buy →
+                <ArcIcon3d icon={NEXUS_TRADE_ICONS.buy} theme="nexus" size="sm" className="!h-7 !w-7" />
+                Buy
               </button>
               <button
                 type="button"
                 onClick={() => openTradePanel("sell")}
-                className="arc-glass-interactive hidden min-h-[40px] rounded-xl border border-rose-400/35 bg-rose-500/15 px-3 text-xs font-bold text-rose-100 lg:inline-flex lg:items-center"
+                className="arc-glass-interactive hidden min-h-[40px] items-center gap-2 rounded-xl border border-rose-400/35 bg-rose-500/15 px-3 text-xs font-bold text-rose-100 lg:inline-flex"
               >
-                Sell →
+                <ArcIcon3d icon={NEXUS_TRADE_ICONS.sell} theme="prism" size="sm" className="!h-7 !w-7" />
+                Sell
               </button>
               <NexusTokenChatButton
                 token={selectedToken}
@@ -458,7 +463,11 @@ export function NexusConsole() {
           mobileLimit={STABLE_FEED_LIMIT}
           compact
         />
-        <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />
+        <NexusMobileTokenActions
+          token={selectedToken}
+          onTradeTab={openTradePanel}
+          onExpandChart={() => setChartFullscreen(true)}
+        />
       </div>
 
       <div className="nexus-center-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 pr-1">
@@ -469,6 +478,8 @@ export function NexusConsole() {
             pairAddress={selectedToken.pairAddress}
             tokenAddress={selectedToken.tokenAddress}
             symbol={selectedToken.symbol}
+            fullscreenOpen={chartFullscreen}
+            onFullscreenChange={setChartFullscreen}
           />
         </div>
 
@@ -528,7 +539,13 @@ export function NexusConsole() {
           onSelect={(t) => handleTokenSelect(t)}
           mobileLimit={STABLE_FEED_LIMIT}
         />
-        {selectedToken && <NexusMobileTokenActions token={selectedToken} onTradeTab={openTradePanel} />}
+        {selectedToken && (
+          <NexusMobileTokenActions
+            token={selectedToken}
+            onTradeTab={openTradePanel}
+            onExpandChart={() => setChartFullscreen(true)}
+          />
+        )}
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <NexusTradeHub
@@ -560,22 +577,24 @@ export function NexusConsole() {
           type="button"
           onClick={() => setRightTab("trade")}
           className={cn(
-            "arc-btn-pill flex-1 px-3 py-2 text-sm font-semibold",
+            "arc-btn-pill flex flex-1 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold",
             rightTab === "trade" ? "arc-nav-pill-active text-emerald-50" : "text-white/50",
           )}
         >
-          Buy · Sell · Agent
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.trade} theme="nexus" size="sm" className="!h-8 !w-8" />
+          Trade
         </button>
         <button
           type="button"
           onClick={() => setRightTab("portfolio")}
           className={cn(
-            "arc-btn-pill flex-1 px-3 py-2 text-sm font-semibold",
+            "arc-btn-pill flex flex-1 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold",
             rightTab === "portfolio"
               ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-100"
               : "text-white/50",
           )}
         >
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.portfolio} theme="nexus" size="sm" className="!h-8 !w-8" />
           Portfolio
         </button>
       </div>
@@ -689,7 +708,7 @@ export function NexusConsole() {
             <div className="arc-panel-stripe arc-panel-stripe-nexus" />
             <div className="nexus-column-head shrink-0 border-b border-white/[0.06] px-4 py-3">
               <div className="flex items-center gap-2.5">
-                <ArcIcon3d icon={ArrowDownUp} theme="nexus" size="sm" delay={0.1} />
+                <ArcIcon3d icon={NEXUS_TRADE_ICONS.trade} theme="nexus" size="sm" delay={0.1} />
                 <div>
                   <p className="arc-caption text-cyan-300/80">Wallet</p>
                   <p className="text-sm font-semibold text-white">Trade &amp; portfolio</p>
