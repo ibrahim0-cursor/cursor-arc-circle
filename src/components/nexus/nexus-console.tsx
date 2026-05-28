@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { LineChart, Radio, Sparkles } from "lucide-react";
+import { nexusActionGlass } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
@@ -435,7 +436,11 @@ export function NexusConsole() {
               <button
                 type="button"
                 onClick={() => openTradePanel("buy")}
-                className="arc-glass-interactive hidden min-h-[40px] items-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 text-xs font-bold text-emerald-100 lg:inline-flex"
+                className={nexusActionGlass(
+                  "buy",
+                  tradeTab === "buy",
+                  "relative z-[1] hidden min-h-[40px] items-center gap-2 rounded-xl px-3 text-xs font-bold lg:inline-flex",
+                )}
               >
                 <ArcIcon3d icon={NEXUS_TRADE_ICONS.buy} theme="nexus" size="sm" className="!h-7 !w-7" />
                 Buy
@@ -443,7 +448,11 @@ export function NexusConsole() {
               <button
                 type="button"
                 onClick={() => openTradePanel("sell")}
-                className="arc-glass-interactive hidden min-h-[40px] items-center gap-2 rounded-xl border border-rose-400/35 bg-rose-500/15 px-3 text-xs font-bold text-rose-100 lg:inline-flex"
+                className={nexusActionGlass(
+                  "sell",
+                  tradeTab === "sell",
+                  "relative z-[1] hidden min-h-[40px] items-center gap-2 rounded-xl px-3 text-xs font-bold lg:inline-flex",
+                )}
               >
                 <ArcIcon3d icon={NEXUS_TRADE_ICONS.sell} theme="prism" size="sm" className="!h-7 !w-7" />
                 Sell
@@ -467,6 +476,7 @@ export function NexusConsole() {
           token={selectedToken}
           onTradeTab={openTradePanel}
           onOpenAutopilot={() => openTradePanel("agent")}
+          activeTab={tradeTab}
         />
       </div>
 

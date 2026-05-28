@@ -549,7 +549,7 @@ export function NexusQuickSwap({
       {isConnected ? (
         <Button
           variant="nexusSwap"
-          className="nexus-swap-btn min-h-[48px] w-full gap-2"
+          className="nexus-swap-btn nexus-action-glass-btn min-h-[48px] w-full gap-2"
           disabled={
             loading ||
             arcPending ||

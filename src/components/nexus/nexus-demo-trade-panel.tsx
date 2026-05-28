@@ -8,6 +8,7 @@ import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { nexusActionGlass } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -271,6 +272,7 @@ export function NexusTradeHub({
             variant={side === "sell" ? "nexusSell" : "nexus"}
             className={cn(
               "min-h-[52px] w-full gap-2 text-base font-semibold",
+              "nexus-action-glass-btn",
               side === "buy" && "nexus-confirm-trade-btn",
               side === "sell" && "nexus-confirm-sell-btn",
             )}
@@ -340,19 +342,10 @@ export function NexusTradeHub({
                   e.stopPropagation();
                   setTab(id);
                 }}
-                className={cn(
-                  "nexus-trade-tab flex min-h-[52px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2 transition active:scale-[0.98]",
-                  tradeTab === id
-                    ? id === "agent"
-                      ? "border-violet-400/55 bg-violet-500/25 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
-                      : id === "buy"
-                        ? "border-emerald-400/55 bg-emerald-500/25 shadow-[0_0_20px_rgba(18,232,168,0.2)]"
-                        : "border-rose-400/55 bg-rose-500/25 shadow-[0_0_20px_rgba(244,63,94,0.2)]"
-                    : id === "agent"
-                      ? "border-violet-400/25 bg-violet-500/10 text-violet-200/75"
-                      : id === "sell"
-                        ? "border-rose-400/20 bg-rose-500/10 text-rose-200/60"
-                        : "border-white/10 bg-black/30 text-white/55",
+                className={nexusActionGlass(
+                  id === "agent" ? "autopilot" : id,
+                  tradeTab === id,
+                  "nexus-trade-tab relative z-[1] flex min-h-[52px] flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-2 active:scale-[0.98]",
                 )}
               >
                 <ArcIcon3d

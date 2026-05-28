@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { nexusActionGlass } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { cn, formatPct, formatUsd } from "@/lib/utils";
@@ -58,7 +59,11 @@ export function NexusCenterTokenHeader({
           <button
             type="button"
             onClick={onOpenAutopilot}
-            className="arc-glass-interactive inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-violet-400/50 bg-gradient-to-r from-violet-600/35 to-fuchsia-600/25 px-3 text-xs font-bold text-violet-50 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+            className={nexusActionGlass(
+              "autopilot",
+              true,
+              "relative z-[1] inline-flex min-h-[40px] items-center gap-2 rounded-xl px-3 text-xs font-bold",
+            )}
             title="Open Autopilot agent"
           >
             <ArcIcon3d icon={NEXUS_TRADE_ICONS.autopilot} theme="home" size="sm" className="!h-8 !w-8" />

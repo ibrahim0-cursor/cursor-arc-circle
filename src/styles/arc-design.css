@@ -1674,24 +1674,190 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
   min-height: calc(100dvh - 7rem);
 }
 
+/* NEXUS action chips — buy / sell / autopilot / swap glass */
+.nexus-action-glass {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.05) 38%,
+    rgba(6, 8, 16, 0.78) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 14px 32px -16px rgba(0, 0, 0, 0.72);
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.nexus-action-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 52%);
+  pointer-events: none;
+}
+
+.nexus-action-glass:hover {
+  transform: translateY(-2px);
+}
+
+.nexus-action-glass--buy {
+  color: rgba(167, 243, 208, 0.85);
+}
+.nexus-action-glass--buy.nexus-action-glass--active {
+  border-color: rgba(52, 211, 153, 0.55);
+  background: linear-gradient(
+    155deg,
+    rgba(18, 232, 168, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(4, 24, 18, 0.82) 100%
+  );
+  color: #ecfdf5;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 28px -6px rgba(18, 232, 168, 0.35),
+    0 16px 36px -18px rgba(0, 0, 0, 0.75);
+}
+
+.nexus-action-glass--sell {
+  color: rgba(254, 202, 202, 0.8);
+}
+.nexus-action-glass--sell.nexus-action-glass--active {
+  border-color: rgba(244, 63, 94, 0.55);
+  background: linear-gradient(
+    155deg,
+    rgba(244, 63, 94, 0.22) 0%,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(28, 6, 12, 0.84) 100%
+  );
+  color: #fff1f2;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 28px -6px rgba(244, 63, 94, 0.38),
+    0 16px 36px -18px rgba(0, 0, 0, 0.75);
+}
+
+.nexus-action-glass--autopilot {
+  color: rgba(216, 180, 254, 0.85);
+}
+.nexus-action-glass--autopilot.nexus-action-glass--active {
+  border-color: rgba(168, 85, 247, 0.55);
+  background: linear-gradient(
+    155deg,
+    rgba(168, 85, 247, 0.26) 0%,
+    rgba(255, 255, 255, 0.07) 42%,
+    rgba(18, 8, 32, 0.86) 100%
+  );
+  color: #f5f3ff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 32px -6px rgba(168, 85, 247, 0.4),
+    0 16px 36px -18px rgba(0, 0, 0, 0.75);
+}
+
+.nexus-action-glass--swap {
+  color: rgba(245, 208, 254, 0.85);
+}
+.nexus-action-glass--swap.nexus-action-glass--active {
+  border-color: rgba(217, 70, 239, 0.5);
+  background: linear-gradient(
+    155deg,
+    rgba(192, 132, 252, 0.24) 0%,
+    rgba(255, 255, 255, 0.07) 42%,
+    rgba(20, 8, 28, 0.86) 100%
+  );
+  color: #fdf4ff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 32px -6px rgba(192, 132, 252, 0.38),
+    0 16px 36px -18px rgba(0, 0, 0, 0.75);
+}
+
+.nexus-action-glass--live {
+  color: rgba(167, 243, 208, 0.75);
+}
+.nexus-action-glass--live.nexus-action-glass--active {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: linear-gradient(
+    155deg,
+    rgba(18, 232, 168, 0.18) 0%,
+    rgba(255, 255, 255, 0.06) 42%,
+    rgba(4, 20, 16, 0.8) 100%
+  );
+  color: #ecfdf5;
+}
+
+.nexus-action-glass--alpha {
+  color: rgba(216, 180, 254, 0.75);
+}
+.nexus-action-glass--alpha.nexus-action-glass--active {
+  border-color: rgba(139, 92, 246, 0.45);
+  background: linear-gradient(
+    155deg,
+    rgba(139, 92, 246, 0.2) 0%,
+    rgba(255, 255, 255, 0.06) 42%,
+    rgba(12, 8, 24, 0.82) 100%
+  );
+  color: #ede9fe;
+}
+
+.nexus-action-glass-btn {
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
 .nexus-trade-tab {
-  backdrop-filter: blur(12px);
-}
-
-.nexus-confirm-trade-btn {
-  box-shadow:
-    0 0 0 1px rgba(18, 232, 168, 0.2) inset,
-    0 12px 32px -8px rgba(18, 232, 168, 0.35);
-}
-
-.nexus-confirm-sell-btn {
-  box-shadow:
-    0 0 0 1px rgba(244, 63, 94, 0.25) inset,
-    0 12px 32px -8px rgba(244, 63, 94, 0.4);
+  border-width: 1px;
 }
 
 .nexus-swap-btn {
   letter-spacing: 0.01em;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  background: linear-gradient(
+    155deg,
+    rgba(192, 132, 252, 0.35) 0%,
+    rgba(168, 85, 247, 0.28) 45%,
+    rgba(20, 8, 28, 0.88) 100%
+  ) !important;
+  border: 1px solid rgba(216, 180, 254, 0.35) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 32px -6px rgba(168, 85, 247, 0.42),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.nexus-confirm-sell-btn {
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  background: linear-gradient(
+    155deg,
+    rgba(244, 63, 94, 0.4) 0%,
+    rgba(225, 29, 72, 0.32) 48%,
+    rgba(28, 6, 12, 0.9) 100%
+  ) !important;
+  border: 1px solid rgba(251, 113, 133, 0.4) !important;
+}
+
+.nexus-confirm-trade-btn {
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  background: linear-gradient(
+    155deg,
+    rgba(18, 232, 168, 0.38) 0%,
+    rgba(16, 185, 129, 0.3) 48%,
+    rgba(4, 24, 18, 0.9) 100%
+  ) !important;
+  border: 1px solid rgba(110, 231, 183, 0.35) !important;
 }
 
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {
