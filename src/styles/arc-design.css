@@ -1688,6 +1688,40 @@ html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] {
   background: linear-gradient(180deg, rgba(168, 85, 247, 0.06) 0%, transparent 100%);
 }
 
+.nexus-center-header {
+  isolation: isolate;
+}
+
+.nexus-center-header .arc-border-trace::before {
+  opacity: 0.35;
+}
+
+.nexus-center-quote {
+  position: relative;
+  z-index: 2;
+}
+
+.nexus-live-price {
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  color: #e0f2fe;
+  text-shadow: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nexus-verdict-pill {
+  position: relative;
+  z-index: 3;
+}
+
+.nexus-center-actions {
+  position: relative;
+  z-index: 1;
+}
+
 .nexus-center-intel {
   scroll-padding-bottom: 1rem;
 }

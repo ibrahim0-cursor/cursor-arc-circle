@@ -25,12 +25,20 @@ export function formatTokenPrice(value: number): string {
       maximumFractionDigits: 2,
     }).format(value);
   }
+  if (abs >= 0.1) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(value);
+  }
   if (abs >= 0.01) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 4,
-      maximumFractionDigits: 6,
+      maximumFractionDigits: 5,
     }).format(value);
   }
   const decimals = Math.min(12, Math.max(6, Math.ceil(-Math.log10(abs)) + 4));
