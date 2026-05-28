@@ -687,7 +687,7 @@ export async function runAlphaScan(
   limit = 20,
   opts?: { preferredChain?: string; focusToken?: TrendingToken; liveFeedKeys?: string[] },
 ) {
-  const { filterTradableTokens } = await import("./token-filters");
+  const { filterAlphaScanTokens, filterTradableTokens, isStablecoin } = await import("./token-filters");
   const { fetchStableMarketFeed, fetchTokenByAddress, fetchTrendingMarketTokens } =
     await import("./dexscreener");
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
@@ -697,7 +697,7 @@ export async function runAlphaScan(
   const { buildAlphaScanUniverse } = await import("./alpha-scan-engine");
   const liveKeys = new Set((opts?.liveFeedKeys ?? []).map((k) => k.toLowerCase()));
   if (liveKeys.size === 0) {
-    const live = await fetchStableMarketFeed(15);
+    const live = filterAlphaScanTokens(await fetchStableMarketFeed(15));
     for (const t of live) liveKeys.add(tokenKey(t));
   }
 
@@ -722,13 +722,13 @@ export async function runAlphaScan(
     Math.min(limit * 2, 45),
   );
   let tokens: TrendingToken[] = curateAlphaCandidates(
-    filterTradableTokens(merged),
+    filterAlphaScanTokens(merged),
     liveKeys,
     limit,
     3,
   );
   if (tokens.length < Math.min(limit, 8)) {
-    const gmgnOnly = filterTradableTokens(mergedCandidates).slice(0, limit);
+    const gmgnOnly = filterAlphaScanTokens(mergedCandidates).slice(0, limit);
     const seen = new Set(tokens.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`));
     for (const t of gmgnOnly) {
       const k = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
@@ -749,10 +749,17 @@ export async function runAlphaScan(
       ...loaded,
       intel: focus.intel ?? loaded?.intel ?? buildLocalTokenIntel(loaded ?? focus),
     };
-    tokens = [fresh, ...tokens.filter((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}` !== key)].slice(
-      0,
-      limit,
-    );
+    const focusStable = isStablecoin(fresh.symbol, fresh.name, {
+      tokenAddress: fresh.tokenAddress,
+      chainId: fresh.chainId,
+      priceUsd: fresh.priceUsd,
+      change24h: fresh.change24h,
+    });
+    tokens = (
+      focusStable
+        ? tokens.filter((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}` !== key)
+        : [fresh, ...tokens.filter((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}` !== key)]
+    ).slice(0, limit);
   }
 
   if (tokens.length === 0) {
@@ -861,6 +868,22 @@ export async function runAlphaScan(
 
   if (opportunities.length === 0) {
     throw new Error("Alpha ranking failed — could not build reports. Retry in a moment.");
+  }
+
+  const ranked = opportunities.filter(
+    (o) =>
+      !isStablecoin(o.symbol, o.name, {
+        tokenAddress: o.tokenAddress,
+        chainId: o.chainId,
+        priceUsd: o.priceUsd,
+        change24h: o.change24h,
+      }),
+  );
+  opportunities.length = 0;
+  opportunities.push(...ranked);
+
+  if (opportunities.length === 0) {
+    throw new Error("Alpha scan found only stablecoins — no tradable alts. Retry shortly.");
   }
 
   opportunities.sort((a, b) => b.alphaScore - a.alphaScore);

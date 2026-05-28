@@ -4,6 +4,7 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
+import { filterAlphaScanTokens, isStablecoin } from "./token-filters";
 import { fetchGmgnDiscoveryTokens } from "./gmgn-discovery";
 import { fetchGmgnMonitorTokens } from "./gmgn-monitor-feed";
 import { hasGmgnApiKey } from "./gmgn-client";
@@ -162,14 +163,23 @@ export async function buildAlphaScanUniverse(
   const signalHits = signalEvents.length;
 
   const lists: AlphaCandidate[] = [
-    ...tagList(gmgnMonitor.tokens, "GMGN signal"),
-    ...tagList(gmgnDiscovery.tokens, "GMGN trending"),
-    ...tagList(dexFeed, "DexScreener"),
-    ...tagList(geckoFeed, "GeckoTerminal"),
+    ...tagList(filterAlphaScanTokens(gmgnMonitor.tokens), "GMGN signal"),
+    ...tagList(filterAlphaScanTokens(gmgnDiscovery.tokens), "GMGN trending"),
+    ...tagList(filterAlphaScanTokens(dexFeed), "DexScreener"),
+    ...tagList(filterAlphaScanTokens(geckoFeed), "GeckoTerminal"),
   ];
 
   for (const ev of signalEvents.slice(0, 40)) {
     if (!ev.tokenAddress) continue;
+    const sym = ev.symbol ?? ev.tokenAddress.slice(0, 6);
+    if (
+      isStablecoin(sym, sym, {
+        tokenAddress: ev.tokenAddress,
+        chainId: "solana",
+      })
+    ) {
+      continue;
+    }
     lists.push({
       symbol: ev.symbol ?? ev.tokenAddress.slice(0, 6),
       name: ev.symbol ?? ev.tokenAddress.slice(0, 8),
@@ -202,7 +212,7 @@ export async function buildAlphaScanUniverse(
     }),
   };
 
-  return { candidates: mergeAlphaCandidates(lists), intel };
+  return { candidates: filterAlphaScanTokens(mergeAlphaCandidates(lists)), intel };
 }
 
 export function sourceTagsForToken(

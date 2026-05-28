@@ -3,6 +3,7 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
+import { isStablecoin } from "./token-filters";
 
 const BLUE_CHIP_SYMBOLS = new Set([
   "weth",
@@ -67,9 +68,20 @@ function buyPressure(t: TrendingToken): number {
   return b / Math.max(s, 1);
 }
 
+function isFeedExcluded(t: TrendingToken): boolean {
+  return (
+    isStablecoin(t.symbol, t.name, {
+      tokenAddress: t.tokenAddress,
+      chainId: t.chainId,
+      priceUsd: t.priceUsd,
+      change24h: t.change24h,
+    }) || isBlueChip(t.symbol, t.name)
+  );
+}
+
 /** Live feed: tradable alts with real movement (not mega-cap wrappers). */
 export function scoreLiveFeedToken(t: TrendingToken): number {
-  if (isBlueChip(t.symbol, t.name)) return -1000;
+  if (isFeedExcluded(t)) return -1000;
 
   let score = 0;
   const ch = Math.abs(t.change24h);
@@ -99,7 +111,7 @@ export function scoreLiveFeedToken(t: TrendingToken): number {
 
 /** Alpha: favor strong movers + signal-friendly liquidity. */
 export function scoreAlphaCandidate(t: TrendingToken): number {
-  if (isBlueChip(t.symbol, t.name)) return -1000;
+  if (isFeedExcluded(t)) return -1000;
 
   let score = scoreLiveFeedToken(t);
   const ch = t.change24h;

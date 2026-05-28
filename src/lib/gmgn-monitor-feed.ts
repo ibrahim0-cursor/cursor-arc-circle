@@ -3,6 +3,7 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
+import { filterAlphaScanTokens } from "./token-filters";
 import { gmgnChainToDexChainId } from "./gmgn-discovery";
 import {
   parseSignalEvents,
@@ -118,5 +119,5 @@ export async function fetchGmgnMonitorTokens(chain: GmgnChain = "sol"): Promise<
     }
   }
 
-  return { tokens: dedupe(tokens), sources, errors };
+  return { tokens: filterAlphaScanTokens(dedupe(tokens)), sources, errors };
 }

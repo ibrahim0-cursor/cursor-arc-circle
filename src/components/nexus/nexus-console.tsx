@@ -301,8 +301,8 @@ export function NexusConsole() {
         throw new Error(`${data.error ?? "Alpha scan failed"}${hint}`);
       }
 
-      const rows = (data.opportunities ?? []) as AlphaOpportunity[];
-      if (rows.length === 0) throw new Error("Alpha scan returned 0 tokens");
+      const rows = filterTradableTokens((data.opportunities ?? []) as AlphaOpportunity[]);
+      if (rows.length === 0) throw new Error("Alpha scan returned 0 tradable tokens (stablecoins excluded)");
 
       setAlphaOpportunities(rows);
       setAlphaScanIntel((data.scanIntel as AlphaScanIntel | undefined) ?? null);

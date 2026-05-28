@@ -4,6 +4,7 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
+import { isStablecoin } from "./token-filters";
 import { checkSwappable } from "./swappable";
 
 const BASE = "https://api.geckoterminal.com/api/v2";
@@ -132,7 +133,15 @@ export async function fetchGeckoAlphaCandidates(
       merged.push(t);
     }
   }
-  return merged;
+  return merged.filter(
+    (t) =>
+      !isStablecoin(t.symbol, t.name, {
+        tokenAddress: t.tokenAddress,
+        chainId: t.chainId,
+        priceUsd: t.priceUsd,
+        change24h: t.change24h,
+      }),
+  );
 }
 
 /** Merge Gecko discoveries into DexScreener feed; Dex data wins on duplicates. */

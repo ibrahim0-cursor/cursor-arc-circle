@@ -50,7 +50,6 @@ const STABLE_SYMBOLS = new Set([
   "gho",
   "dola",
   "alusd",
-  "usdm",
   "eusd",
   "usdx",
   "usdy",
@@ -205,3 +204,6 @@ export function filterTradableTokens<
 
 /** Server-side live feed guard — same rules as filterTradableTokens */
 export const filterLiveFeedTokens = filterTradableTokens;
+
+/** Alpha scan universe + ranked picks — same exclusion rules */
+export const filterAlphaScanTokens = filterTradableTokens;

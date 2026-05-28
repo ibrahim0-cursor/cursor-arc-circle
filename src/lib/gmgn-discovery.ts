@@ -3,6 +3,7 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
+import { filterAlphaScanTokens } from "./token-filters";
 import {
   gmgnFiveMinTrending,
   gmgnKolBoughtNew,
@@ -165,7 +166,7 @@ export async function fetchGmgnDiscoveryTokens(chain: GmgnChain = "sol"): Promis
   addTrenches("kol-bought-new", kolBought);
   addTrenches("near-graduation", nearGrad);
 
-  return { tokens: dedupeTokens(tokens), sources, errors };
+  return { tokens: filterAlphaScanTokens(dedupeTokens(tokens)), sources, errors };
 }
 
 export const GMGN_DATA_ANALYTICS_SKILLS: GmgnAnalyticsSkillId[] = [
