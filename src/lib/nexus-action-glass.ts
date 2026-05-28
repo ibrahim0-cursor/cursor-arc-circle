@@ -20,10 +20,13 @@ export function nexusActionGlass(
 export function nexusGlassCta(
   variant: "buy" | "sell" | "autopilot" | "swap",
   className?: string,
+  /** When false, CTA stays dim until user enters an amount */
+  lit = true,
 ) {
   return cn(
     "arc-btn-signal nexus-glass-cta nexus-action-glass-btn",
     `nexus-glass-cta--${variant}`,
+    !lit && "nexus-glass-cta--dim",
     className,
   );
 }

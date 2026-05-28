@@ -272,7 +272,8 @@ export function NexusTradeHub({
             type="button"
             className={nexusGlassCta(
               side === "sell" ? "sell" : "buy",
-              "inline-flex min-h-[52px] w-full items-center justify-center gap-2 text-base disabled:opacity-50",
+              "inline-flex min-h-[52px] w-full items-center justify-center gap-2 text-base",
+              amountNum > 0 && !loading && !arcPending,
             )}
             onClick={executeDemoTrade}
             disabled={loading || arcPending || amountNum <= 0}

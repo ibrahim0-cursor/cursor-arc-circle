@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { CheckCircle2, ChevronDown, ExternalLink, History, Loader2 } from "lucide-react";
-import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { nexusActionGlass, nexusGlassCta } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { cn } from "@/lib/utils";
@@ -29,23 +28,31 @@ type SwapSuccessState = {
   trades: DemoTradeRecord[];
 };
 
+function formatSwapBalance(token: TrendingMarketToken, amount: number) {
+  if (isArcNativeUsdc(token.tokenAddress)) return amount.toFixed(2);
+  if (amount >= 1000) return amount.toFixed(2);
+  if (amount >= 1) return amount.toFixed(4);
+  return amount.toFixed(6);
+}
+
 function TokenPicker({
   label,
   value,
   onChange,
   tokens,
-  balanceHint,
+  balanceOf,
 }: {
   label: string;
   value: string;
   onChange: (addr: string) => void;
   tokens: TrendingMarketToken[];
-  balanceHint?: string;
+  balanceOf: (token: TrendingMarketToken) => number;
 }) {
   const [open, setOpen] = useState(false);
   const selected = tokens.find(
     (t) => t.tokenAddress.toLowerCase() === value.toLowerCase(),
   );
+  const selectedBal = selected ? balanceOf(selected) : 0;
 
   return (
     <div className="relative">
@@ -58,36 +65,43 @@ function TokenPicker({
         <NexusTokenAvatar symbol={selected?.symbol ?? "?"} icon={selected?.icon} size="sm" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">
-            {selected ? selected.symbol : "Select token"}
+            {selected ? selected.symbol : "Select"}
           </p>
-          <p className="truncate text-[11px] text-white/50">{balanceHint ?? selected?.name ?? "—"}</p>
+          {selected && (
+            <p className="truncate font-mono text-[11px] text-cyan-200/90">
+              {formatSwapBalance(selected, selectedBal)}
+            </p>
+          )}
         </div>
         <ChevronDown className={`h-4 w-4 shrink-0 text-white/50 transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#0a1220] py-1 shadow-xl">
           {tokens.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-white/50">No tokens in roster yet.</p>
+            <p className="px-3 py-3 text-xs text-white/50">No tokens yet.</p>
           ) : (
-            tokens.map((t) => (
-              <button
-                key={`${t.chainId}:${t.tokenAddress}`}
-                type="button"
-                onClick={() => {
-                  onChange(t.tokenAddress);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-white/5"
-              >
-                <NexusTokenAvatar symbol={t.symbol} icon={t.icon} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-white">{t.symbol}</p>
-                  <p className="truncate text-[10px] text-white/45">
-                    {t.name !== t.symbol ? t.name : t.chainId}
-                  </p>
-                </div>
-              </button>
-            ))
+            tokens.map((t) => {
+              const bal = balanceOf(t);
+              return (
+                <button
+                  key={`${t.chainId}:${t.tokenAddress}`}
+                  type="button"
+                  onClick={() => {
+                    onChange(t.tokenAddress);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-white/5"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <NexusTokenAvatar symbol={t.symbol} icon={t.icon} size="sm" />
+                    <p className="text-sm font-semibold text-white">{t.symbol}</p>
+                  </div>
+                  <span className="shrink-0 font-mono text-[11px] text-white/70">
+                    {formatSwapBalance(t, bal)}
+                  </span>
+                </button>
+              );
+            })
           )}
         </div>
       )}
@@ -428,42 +442,39 @@ export function NexusQuickSwap({
     setSuccess(null);
   }
 
-  const payBalanceLabel = payIsUsdc
-    ? walletUsdc > 0
-      ? `Wallet ${walletUsdc.toFixed(2)} USDC on Arc`
-      : "No USDC — fund wallet on Arc Testnet"
-    : balancePay > 0
-      ? `Balance ${balancePay.toFixed(4)} ${pay?.symbol}`
-      : pay
-        ? `No ${pay.symbol} — buy or swap in first`
-        : undefined;
+  const tokenBalance = useCallback(
+    (token: TrendingMarketToken) => {
+      if (isArcNativeUsdc(token.tokenAddress)) return walletUsdc;
+      const pos = positions.find(
+        (p) => p.tokenAddress.toLowerCase() === token.tokenAddress.toLowerCase(),
+      );
+      return pos?.tokenAmount ?? 0;
+    },
+    [walletUsdc, positions],
+  );
+
+  const swapReady =
+    amountNum > 0 && !!pay && !!receive && !sameToken && isConnected && !loading && !arcPending;
 
   return (
-    <section className="nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace relative space-y-3 rounded-2xl p-3">
-      <div className="relative pr-11">
-        <div className="flex items-center gap-2.5">
-          <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" />
-          <div>
-            <p className="text-sm font-semibold text-white">Quick swap</p>
-            <p className="text-[10px] text-white/45">
-              {sortedTokens.length} tokens + Arc USDC · ~${feeUsd} fee
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setSwapView((v) => (v === "history" ? "swap" : "history"))}
-          className={nexusActionGlass(
-            "alpha",
-            swapView === "history",
-            "nexus-tx-history-fab absolute right-0 top-0 z-[2] flex items-center justify-center",
-          )}
-          title={swapView === "history" ? "Back to swap" : "Transaction history"}
-          aria-label="Transaction history"
-        >
-          <History className="h-4 w-4 shrink-0" />
-        </button>
-      </div>
+    <section className="nexus-quick-swap-panel nexus-section-card arc-glass-card arc-glass-card-nexus arc-border-trace relative space-y-3 rounded-2xl p-3 pt-4">
+      <button
+        type="button"
+        onClick={() => setSwapView((v) => (v === "history" ? "swap" : "history"))}
+        className={nexusActionGlass(
+          "alpha",
+          swapView === "history",
+          "nexus-tx-history-fab absolute right-2 top-2 z-[5] flex items-center justify-center",
+        )}
+        title={swapView === "history" ? "Back to swap" : "Transaction history"}
+        aria-label="Transaction history"
+      >
+        <History className="h-4 w-4 shrink-0" />
+      </button>
+
+      <p className="pr-10 text-sm font-semibold text-white">
+        {swapView === "history" ? "Tx history" : "Quick swap"}
+      </p>
 
       {swapView === "history" ? (
         <div className="max-h-52 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">
@@ -504,7 +515,7 @@ export function NexusQuickSwap({
             setSuccess(null);
           }}
           tokens={sortedTokens}
-          balanceHint={payBalanceLabel}
+          balanceOf={tokenBalance}
         />
         <button
           type="button"
@@ -528,19 +539,9 @@ export function NexusQuickSwap({
             setSuccess(null);
           }}
           tokens={receiveOptions}
+          balanceOf={tokenBalance}
         />
       </div>
-
-      {pay && (
-        <p className="flex items-center gap-1.5 text-[11px] text-white/55">
-          <NEXUS_TRADE_ICONS.wallet className="h-3.5 w-3.5 text-cyan-300/80" />
-          Available:{" "}
-          <strong className="text-white">
-            {payIsUsdc ? walletUsdc.toFixed(2) : balancePay.toFixed(4)}
-          </strong>{" "}
-          {pay.symbol}
-        </p>
-      )}
 
       <div className="rounded-xl border border-white/10 bg-black/30 p-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -581,14 +582,7 @@ export function NexusQuickSwap({
           className="w-full min-h-[44px] rounded-xl border border-white/15 bg-black/40 px-3 text-lg font-medium text-white outline-none focus:border-cyan-400/40"
         />
 
-        <div className="mt-2 grid grid-cols-5 gap-1.5">
-          <button
-            type="button"
-            onClick={() => applyPct(100)}
-            className="min-h-[36px] rounded-lg border border-violet-400/30 bg-violet-500/15 text-xs font-bold text-violet-100"
-          >
-            MAX
-          </button>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
           {PCT_OPTIONS.map((pct) => (
             <button
               key={pct}
@@ -599,6 +593,13 @@ export function NexusQuickSwap({
               {pct}%
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => applyPct(100)}
+            className="min-h-[36px] rounded-lg border border-violet-400/35 bg-violet-500/20 text-xs font-bold text-violet-100"
+          >
+            MAX
+          </button>
         </div>
 
         {pay && receive && amountNum > 0 && (
@@ -618,15 +619,8 @@ export function NexusQuickSwap({
       {isConnected ? (
         <button
           type="button"
-          className={nexusGlassCta("swap", "min-h-[48px] w-full disabled:opacity-50")}
-          disabled={
-            loading ||
-            arcPending ||
-            !pay ||
-            !receive ||
-            sameToken ||
-            balancePay <= 0
-          }
+          className={nexusGlassCta("swap", "min-h-[48px] w-full", swapReady)}
+          disabled={!swapReady}
           onClick={() => void executeSwap()}
         >
           {loading || arcPending ? (

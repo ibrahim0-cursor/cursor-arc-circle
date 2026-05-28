@@ -736,7 +736,12 @@ export function NexusAutopilotPanel({
               type="button"
               className={nexusGlassCta(
                 "autopilot",
-                "inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 disabled:opacity-50",
+                "inline-flex min-h-[48px] flex-1 items-center justify-center gap-2",
+                (config.amountMode === "custom_usdc"
+                  ? Number(config.customUsdc) > 0
+                  : config.amountMode === "custom_token"
+                    ? Number(config.customToken) > 0
+                    : config.percent > 0) && !config.enabled,
               )}
               disabled={!isConnected || running || arcPending || config.enabled}
               onClick={() => {
