@@ -14,6 +14,8 @@ const buttonVariants = cva(
           "bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-[0_0_28px_rgba(244,63,94,0.42)] border border-rose-300/50 hover:from-rose-500 hover:to-rose-400",
         nexusSwap:
           "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-violet-50 shadow-[0_0_28px_rgba(168,85,247,0.38)] border border-violet-300/45 hover:from-violet-500 hover:to-fuchsia-500",
+        nexusAutopilot:
+          "bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-600 text-white font-bold shadow-[0_0_32px_rgba(168,85,247,0.5)] border border-violet-300/55 hover:from-violet-400 hover:via-fuchsia-400 hover:to-violet-500",
         prism:
           "bg-[var(--prism-amber)] text-[#1a0c00] shadow-[0_0_28px_var(--prism-glow)] border border-amber-200/35",
         outline:

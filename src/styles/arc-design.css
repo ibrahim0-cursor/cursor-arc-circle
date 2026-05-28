@@ -1711,7 +1711,14 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
 }
 
 .nexus-action-glass--buy {
-  color: rgba(167, 243, 208, 0.85);
+  color: #a7f3d0;
+  border-color: rgba(52, 211, 153, 0.28);
+  background: linear-gradient(
+    155deg,
+    rgba(18, 232, 168, 0.14) 0%,
+    rgba(255, 255, 255, 0.08) 42%,
+    rgba(8, 18, 14, 0.62) 100%
+  );
 }
 .nexus-action-glass--buy.nexus-action-glass--active {
   border-color: rgba(52, 211, 153, 0.55);
@@ -1729,7 +1736,14 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
 }
 
 .nexus-action-glass--sell {
-  color: rgba(254, 202, 202, 0.8);
+  color: #fecaca;
+  border-color: rgba(244, 63, 94, 0.28);
+  background: linear-gradient(
+    155deg,
+    rgba(244, 63, 94, 0.12) 0%,
+    rgba(255, 255, 255, 0.07) 42%,
+    rgba(20, 8, 12, 0.62) 100%
+  );
 }
 .nexus-action-glass--sell.nexus-action-glass--active {
   border-color: rgba(244, 63, 94, 0.55);
@@ -1747,7 +1761,14 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
 }
 
 .nexus-action-glass--autopilot {
-  color: rgba(216, 180, 254, 0.85);
+  color: #e9d5ff;
+  border-color: rgba(168, 85, 247, 0.32);
+  background: linear-gradient(
+    155deg,
+    rgba(168, 85, 247, 0.16) 0%,
+    rgba(255, 255, 255, 0.08) 42%,
+    rgba(16, 8, 28, 0.62) 100%
+  );
 }
 .nexus-action-glass--autopilot.nexus-action-glass--active {
   border-color: rgba(168, 85, 247, 0.55);
@@ -1765,7 +1786,14 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
 }
 
 .nexus-action-glass--swap {
-  color: rgba(245, 208, 254, 0.85);
+  color: #f5d0fe;
+  border-color: rgba(192, 132, 252, 0.3);
+  background: linear-gradient(
+    155deg,
+    rgba(192, 132, 252, 0.14) 0%,
+    rgba(255, 255, 255, 0.08) 42%,
+    rgba(18, 8, 26, 0.62) 100%
+  );
 }
 .nexus-action-glass--swap.nexus-action-glass--active {
   border-color: rgba(217, 70, 239, 0.5);
@@ -1848,16 +1876,28 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
   border: 1px solid rgba(251, 113, 133, 0.4) !important;
 }
 
-.nexus-confirm-trade-btn {
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  background: linear-gradient(
-    155deg,
-    rgba(18, 232, 168, 0.38) 0%,
-    rgba(16, 185, 129, 0.3) 48%,
-    rgba(4, 24, 18, 0.9) 100%
-  ) !important;
-  border: 1px solid rgba(110, 231, 183, 0.35) !important;
+.nexus-confirm-buy-bright {
+  background: var(--nexus-accent) !important;
+  color: #021a12 !important;
+  border: 1px solid rgba(110, 231, 183, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(18, 232, 168, 0.25) inset,
+    0 0 36px -4px rgba(18, 232, 168, 0.55),
+    0 14px 32px -12px rgba(0, 0, 0, 0.65) !important;
+  opacity: 1 !important;
+}
+
+.nexus-confirm-sell-bright {
+  opacity: 1 !important;
+}
+
+.nexus-run-agent-btn {
+  opacity: 1 !important;
+}
+
+.nexus-swap-reverse-btn:active {
+  transform: scale(0.94) rotate(180deg);
+  transition: transform 0.35s ease;
 }
 
 html[data-arc-theme="nexus"] [data-nexus-layout="desktop"] .nexus-column-shell {

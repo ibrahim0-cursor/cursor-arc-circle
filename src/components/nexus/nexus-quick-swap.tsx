@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
-import { CheckCircle2, ChevronDown, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ExternalLink, History, Loader2 } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { nexusActionGlass } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
@@ -129,6 +131,7 @@ export function NexusQuickSwap({
   const [positions, setPositions] = useState<DemoPosition[]>([]);
   const [recentTrades, setRecentTrades] = useState<DemoTradeRecord[]>([]);
   const [success, setSuccess] = useState<SwapSuccessState | null>(null);
+  const [swapView, setSwapView] = useState<"swap" | "history">("swap");
 
   const walletUsdc = walletBalance ? Number(walletBalance.formatted) : 0;
 
@@ -140,7 +143,7 @@ export function NexusQuickSwap({
     const data = await res.json();
     if (res.ok) {
       setPositions(data.positions ?? []);
-      setRecentTrades((data.trades as DemoTradeRecord[])?.slice(0, 3) ?? []);
+      setRecentTrades((data.trades as DemoTradeRecord[])?.slice(0, 25) ?? []);
     }
   }, [address]);
 
@@ -418,6 +421,14 @@ export function NexusQuickSwap({
     }
   }
 
+  function reverseTokens() {
+    if (!payToken || !receiveToken) return;
+    const prevPay = payToken;
+    setPayToken(receiveToken);
+    setReceiveToken(prevPay);
+    setSuccess(null);
+  }
+
   const payBalanceLabel = payIsUsdc
     ? walletUsdc > 0
       ? `Wallet ${walletUsdc.toFixed(2)} USDC on Arc`
@@ -440,7 +451,64 @@ export function NexusQuickSwap({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setSwapView("swap")}
+          className={nexusActionGlass(
+            "swap",
+            swapView === "swap",
+            "arc-btn-pill relative z-[1] flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold",
+          )}
+        >
+          <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" className="!h-7 !w-7" />
+          Swap
+        </button>
+        <button
+          type="button"
+          onClick={() => setSwapView("history")}
+          className={nexusActionGlass(
+            "alpha",
+            swapView === "history",
+            "arc-btn-pill relative z-[1] flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold",
+          )}
+        >
+          <History className="h-4 w-4 shrink-0" />
+          Tx history
+        </button>
+      </div>
+
+      {swapView === "history" ? (
+        <div className="max-h-52 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2">
+          {!address ? (
+            <p className="py-4 text-center text-xs text-white/50">Connect wallet to see history.</p>
+          ) : recentTrades.length === 0 ? (
+            <p className="py-4 text-center text-xs text-white/50">No swaps yet.</p>
+          ) : (
+            recentTrades.map((t) => (
+              <div
+                key={t.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-2 text-[11px]"
+              >
+                <span className="text-white/80">
+                  {t.side === "buy" ? "Buy" : t.side === "swap_to_usdc" ? "Swap→USDC" : "Sell"}{" "}
+                  <strong className="text-white">{t.symbol}</strong> · {t.usdcAmount.toFixed(2)} USDC
+                </span>
+                <a
+                  href={arcExplorerTx(t.arcFeeTxHash)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 font-semibold text-cyan-300 hover:underline"
+                >
+                  tx
+                </a>
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
+        <>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
         <TokenPicker
           label="You pay"
           value={payToken}
@@ -451,6 +519,20 @@ export function NexusQuickSwap({
           tokens={sortedTokens}
           balanceHint={payBalanceLabel}
         />
+        <button
+          type="button"
+          onClick={reverseTokens}
+          disabled={!payToken || !receiveToken}
+          className={cn(
+            "arc-glass-interactive nexus-swap-reverse-btn relative z-[1] mb-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-violet-400/45",
+            "bg-gradient-to-br from-violet-500/35 to-fuchsia-600/25 text-violet-50 shadow-[0_0_20px_rgba(168,85,247,0.25)]",
+            "disabled:cursor-not-allowed disabled:opacity-40",
+          )}
+          title="Reverse pay and receive"
+          aria-label="Reverse tokens"
+        >
+          <NEXUS_TRADE_ICONS.swap className="h-5 w-5" strokeWidth={2.25} />
+        </button>
         <TokenPicker
           label="You receive"
           value={receiveToken}
@@ -574,56 +656,22 @@ export function NexusQuickSwap({
       )}
 
       {success && (
-        <div className="nexus-swap-success space-y-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-3 py-3">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-emerald-50">Done — swap successful</p>
-              <p className="mt-1 text-xs leading-relaxed text-emerald-100/90">{success.summary}</p>
-              <ul className="mt-2 space-y-0.5 text-[11px] text-emerald-100/80">
-                {success.legs.map((leg) => (
-                  <li key={leg}>✓ {leg}</li>
-                ))}
-              </ul>
-              <a
-                href={arcExplorerTx(success.feeTxHash)}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-cyan-200 hover:text-cyan-100"
-              >
-                View Arc fee tx <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-          {recentTrades.length > 0 && (
-            <div className="border-t border-emerald-400/25 pt-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-200/70">
-                Recent successful txs
-              </p>
-              <ul className="mt-1.5 space-y-1">
-                {recentTrades.map((t) => (
-                  <li
-                    key={t.id}
-                    className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-white/75"
-                  >
-                    <span>
-                      {t.side === "buy" ? "Buy" : t.side === "swap_to_usdc" ? "Swap→USDC" : "Sell"}{" "}
-                      {t.symbol} · {t.usdcAmount.toFixed(2)} USDC
-                    </span>
-                    <a
-                      href={arcExplorerTx(t.arcFeeTxHash)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-cyan-200/90 hover:underline"
-                    >
-                      tx
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        <p className="flex flex-wrap items-center justify-center gap-1.5 text-center text-xs text-emerald-300">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+          <span>
+            Swap successful — {success.summary}
+          </span>
+          <a
+            href={arcExplorerTx(success.feeTxHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-0.5 font-semibold text-cyan-200 hover:underline"
+          >
+            fee tx <ExternalLink className="h-3 w-3" />
+          </a>
+        </p>
+      )}
+        </>
       )}
     </section>
   );

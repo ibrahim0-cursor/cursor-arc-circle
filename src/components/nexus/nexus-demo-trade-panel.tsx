@@ -271,10 +271,9 @@ export function NexusTradeHub({
           <Button
             variant={side === "sell" ? "nexusSell" : "nexus"}
             className={cn(
-              "min-h-[52px] w-full gap-2 text-base font-semibold",
-              "nexus-action-glass-btn",
-              side === "buy" && "nexus-confirm-trade-btn",
-              side === "sell" && "nexus-confirm-sell-btn",
+              "min-h-[52px] w-full gap-2 text-base font-bold",
+              side === "buy" && "nexus-confirm-buy-bright",
+              side === "sell" && "nexus-confirm-sell-bright",
             )}
             onClick={executeDemoTrade}
             disabled={loading || arcPending || amountNum <= 0}
@@ -353,7 +352,7 @@ export function NexusTradeHub({
                   theme={id === "agent" ? "home" : iconTheme}
                   size="sm"
                   delay={id === "agent" ? 0.15 : 0}
-                  className={cn("pointer-events-none scale-90", tradeTab !== id && "opacity-70")}
+                  className="pointer-events-none scale-90"
                 />
                 <span className="text-[10px] font-bold">{label}</span>
               </button>

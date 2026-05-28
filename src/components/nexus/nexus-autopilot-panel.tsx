@@ -732,8 +732,8 @@ export function NexusAutopilotPanel({
 
           <div className="flex gap-2">
             <Button
-              variant="nexus"
-              className="min-h-[48px] flex-1 gap-2"
+              variant="nexusAutopilot"
+              className="nexus-run-agent-btn min-h-[48px] flex-1 gap-2"
               disabled={!isConnected || running || arcPending || config.enabled}
               onClick={() => {
                 void (async () => {
