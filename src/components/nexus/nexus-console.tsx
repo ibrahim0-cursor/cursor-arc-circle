@@ -43,6 +43,7 @@ import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-b
 import { NexusMobileTokenActions } from "@/components/nexus/nexus-mobile-token-actions";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { CircleAgentsFooter } from "@/components/layout/circle-agents-footer";
+import { NexusCircleAgentsTopBanner } from "@/components/nexus/nexus-circle-agents-banner";
 import { MeridianFooter } from "@/components/layout/meridian-footer";
 import { meridianClientHeaders } from "@/lib/circle-agents";
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
@@ -675,6 +676,7 @@ export function NexusConsole() {
       <ArcBackground theme="nexus" />
 
       <div className="relative mx-auto w-full max-w-[1920px] px-3 py-2 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-4 lg:py-8 lg:pb-8 xl:px-6">
+        <NexusCircleAgentsTopBanner />
         <NexusAlphaHero
           onAlphaScan={() => void runAlphaScan()}
           alphaScanning={alphaScanning}

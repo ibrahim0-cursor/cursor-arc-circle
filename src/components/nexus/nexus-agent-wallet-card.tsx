@@ -31,14 +31,8 @@ export function NexusAgentWalletCard({
     toast({ type: "success", title: "Copied", message: "Agent deposit address copied" });
   }
 
-  useEffect(() => {
-    if (!connectedWallet || !wallet?.configured) return;
-    void handleSync(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once when vault UI mounts
-  }, [connectedWallet, wallet?.address]);
-
   async function handleSync(silent = false) {
-    setSyncing(true);
+    if (!silent) setSyncing(true);
     try {
       const data = (await syncDeposits()) as {
         newDeposits?: number;

@@ -29,7 +29,12 @@ export async function GET() {
         privateKey: pk as `0x${string}`,
         rpcUrl: process.env.ARC_RPC_URL ?? process.env.NEXT_PUBLIC_ARC_RPC_URL,
       });
-      const balances = await client.getBalances();
+      const balances = await Promise.race([
+        client.getBalances(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("gateway_balance_timeout")), 6_000),
+        ),
+      ]);
       gatewayBalance = balances.gateway.formattedAvailable;
       walletBalance = balances.wallet.formatted;
     } catch {

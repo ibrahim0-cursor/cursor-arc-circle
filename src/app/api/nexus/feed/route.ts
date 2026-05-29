@@ -110,9 +110,13 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
   });
 }
 
-const QUICK_BUILD_BUDGET_MS = 10_500;
+const QUICK_BUILD_BUDGET_MS = 22_000;
 
-async function buildFeed(quick: boolean, limit: number) {
+async function buildFeed(
+  quick: boolean,
+  limit: number,
+  opts?: { birdeyeCap?: number },
+) {
   const discovery = await fetchLiveDiscoveryFeed(limit, { quick });
   let tokens = discovery.tokens.slice(0, limit);
   const feedMeta = {
@@ -128,7 +132,10 @@ async function buildFeed(quick: boolean, limit: number) {
   tokens = filterLiveFeedTokens(tokens);
 
   const analyzed = quick
-    ? await analyzeTrendingFeedQuick(tokens, { birdeyeCap: 12, skipGmgnSecurity: true })
+    ? await analyzeTrendingFeedQuick(tokens, {
+        birdeyeCap: opts?.birdeyeCap ?? 5,
+        skipGmgnSecurity: true,
+      })
     : await analyzeTrendingFeed(tokens);
 
   return buildFeedPayload(
@@ -164,11 +171,24 @@ export async function GET(request: Request) {
         setFeedCache(cacheKey, payload);
         return feedResponse(payload, quick, false);
       } catch {
-        return feedResponse(
-          { ...stale, stale: true, refreshNote: "Cached feed — Dex data refreshing" },
-          quick,
-          true,
-        );
+        if (stale) {
+          return feedResponse(
+            { ...stale, stale: true, refreshNote: "Cached feed — Dex data refreshing" },
+            quick,
+            true,
+          );
+        }
+        try {
+          const payload = await buildFeed(true, limit, { birdeyeCap: 0 });
+          setFeedCache(cacheKey, payload);
+          return feedResponse(
+            { ...payload, refreshNote: "Dex-first feed — Birdeye enriching in background" },
+            quick,
+            false,
+          );
+        } catch {
+          /* fall through to full build */
+        }
       }
     }
 

@@ -22,11 +22,13 @@ export function NexusCircleAgentCard({ compact = false }: { compact?: boolean })
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/nexus/agent/gateway");
+        const res = await fetch("/api/nexus/agent/gateway", {
+          signal: AbortSignal.timeout(8_000),
+        });
         const json = await res.json();
         if (!cancelled) setStatus(json);
       } catch {
-        if (!cancelled) setStatus(null);
+        if (!cancelled) setStatus({ sellerConfigured: true });
       }
     })();
     return () => {

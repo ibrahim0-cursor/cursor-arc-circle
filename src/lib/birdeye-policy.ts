@@ -44,7 +44,7 @@ export function getBirdeyePlan(
       };
     case "feed":
       return {
-        detection: tokenIndex < 15 ? "lite" : "off",
+        detection: tokenIndex < 3 ? "lite" : "off",
         ohlcv: tokenIndex < FEED_OHLCV_SLOTS,
       };
     default:

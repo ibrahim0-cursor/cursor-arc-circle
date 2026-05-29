@@ -61,7 +61,7 @@ export type TrendingMarketToken = {
 const REFRESH_MS = 45_000;
 const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
-const QUICK_TIMEOUT_MS = 28_000;
+const QUICK_TIMEOUT_MS = 42_000;
 const FULL_TIMEOUT_MS = 40_000;
 const FEED_SESSION_KEY = "nexus-feed-v7";
 const FEED_SESSION_TTL_MS = 90_000;
@@ -259,7 +259,7 @@ export function NexusTrendingFeed({
 
   const load = useCallback(
     async (silent = false, manual = false) => {
-      if (loadInFlightRef.current) return;
+      if (loadInFlightRef.current && !manual) return;
       loadInFlightRef.current = true;
       const hasTokens = hasTokensRef.current;
       if (!silent && !hasTokens) setLoading(true);

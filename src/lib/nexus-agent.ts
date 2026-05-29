@@ -1101,7 +1101,7 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
   const { fetchMergedTokenDetection } = await import("./token-detection");
   const plan = getBirdeyePlan("feed", rank);
   let intel = base;
-  if (plan.detection !== "off") {
+  if (plan.detection !== "off" && rank < 4) {
     const det = await fetchMergedTokenDetection(
       token.tokenAddress,
       token.chainId,

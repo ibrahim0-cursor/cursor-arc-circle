@@ -46,7 +46,7 @@ export function NexusAgentWalletProvider({ children }: { children: ReactNode }) 
     try {
       const res = await fetch(
         `/api/nexus/agent/vault?owner=${encodeURIComponent(owner)}`,
-        { cache: "no-store" },
+        { cache: "no-store", signal: AbortSignal.timeout(12_000) },
       );
       const data = await res.json();
       const next: AgentWallet = {
@@ -98,20 +98,7 @@ export function NexusAgentWalletProvider({ children }: { children: ReactNode }) 
       ownerRef.current = owner;
       setLoading(true);
     }
-    void (async () => {
-      await refreshBalance();
-      if (!owner) return;
-      try {
-        const res = await fetch("/api/nexus/agent/vault", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner, action: "sync" }),
-        });
-        if (res.ok) await refreshBalance();
-      } catch {
-        /* manual sync still available */
-      }
-    })();
+    void refreshBalance();
   }, [owner, refreshBalance]);
 
   const value = useMemo(
