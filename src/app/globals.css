@@ -80,6 +80,11 @@ body {
   [data-prism-page] p {
     max-width: 100%;
   }
+
+  [data-prism-page] .prism-scroll-panel {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
 }
 
 @media (max-width: 767px) {

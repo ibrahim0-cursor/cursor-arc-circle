@@ -66,17 +66,7 @@ export function ArcHudScene({ theme = "home" }: { theme?: "home" | "nexus" | "pr
         />
       ))}
 
-      {/* PRISM: radar sweep line (not a ball) */}
-      {theme === "prism" && (
-        <motion.div
-          className="absolute left-1/2 top-[30%] h-[min(420px,55vh)] w-px origin-bottom -translate-x-1/2"
-          style={{
-            background: `linear-gradient(to top, ${accent}, transparent)`,
-          }}
-          animate={{ rotate: [0, 360] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-        />
-      )}
+      {/* PRISM sweep: CSS-only in ArcPremiumScene (avoids duplicate Framer loop) */}
 
       {/* NEXUS: live-touch strip (no text ticker) */}
       {theme === "nexus" && <NexusHudLiveTouch />}

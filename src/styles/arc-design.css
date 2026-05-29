@@ -25,7 +25,9 @@
 
   --prism-amber: #f59e0b;
   --prism-amber-bright: #fcd34d;
+  --prism-violet: #c084fc;
   --prism-glow: rgba(245, 158, 11, 0.28);
+  --prism-plum: #05040c;
 
   --home-cyan: #22d3ee;
   --home-violet: #8b7cf8;
@@ -2177,7 +2179,86 @@ html[data-arc-theme="nexus"] .nexus-column-head {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
 }
 
+/* PRISM workspace — glass hero, CTAs, perf-friendly scroll */
+.prism-premium-hero-glow {
+  background: radial-gradient(ellipse 80% 60% at 20% 0%, rgba(245, 158, 11, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 30%, rgba(192, 132, 252, 0.1), transparent 50%);
+}
+
+.prism-workspace-title {
+  letter-spacing: -0.03em;
+}
+
+.prism-glass-cta {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  font-weight: 700;
+  opacity: 1 !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 14px 32px -12px rgba(0, 0, 0, 0.7);
+}
+
+.prism-glass-cta--forecast {
+  background: linear-gradient(
+    155deg,
+    rgba(245, 158, 11, 0.42) 0%,
+    rgba(234, 88, 12, 0.28) 42%,
+    rgba(28, 12, 4, 0.92) 100%
+  ) !important;
+  border: 1px solid rgba(252, 211, 77, 0.45) !important;
+  color: #fffbeb !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 32px -6px rgba(245, 158, 11, 0.4),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.prism-glass-cta--dim {
+  opacity: 0.35 !important;
+  filter: saturate(0.45) brightness(0.75);
+}
+
+.prism-history-enter {
+  animation: prism-history-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes prism-history-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-prism-page] .prism-scroll-panel {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 767px) {
+  html[data-arc-theme="prism"] .arc-panel,
+  html[data-prism-page] .arc-glass-card-prism {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  html[data-prism-page] .prism-workspace-intro {
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .arc-prism-ring-pulse,
+  .arc-prism-sweep,
+  .prism-history-enter {
+    animation: none !important;
+  }
+
   .arc-border-trace::before,
   .arc-icon-active,
   .arc-live-dot::before,

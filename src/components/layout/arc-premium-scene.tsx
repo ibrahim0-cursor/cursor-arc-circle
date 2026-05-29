@@ -14,7 +14,7 @@ export function ArcPremiumScene({
     theme === "nexus"
       ? "rgba(129, 140, 248, 0.32)"
       : theme === "prism"
-        ? "rgba(251, 146, 60, 0.48)"
+        ? "rgba(192, 132, 252, 0.32)"
         : "rgba(168, 85, 247, 0.55)";
 
   return (
@@ -22,7 +22,7 @@ export function ArcPremiumScene({
       <div className="arc-starfield absolute inset-0" />
 
       <div
-        className="arc-ambient-bloom absolute left-1/2 top-[6%] h-[min(780px,75vh)] w-[min(960px,98vw)] -translate-x-1/2 rounded-full blur-[130px]"
+        className={`arc-ambient-bloom absolute left-1/2 top-[6%] -translate-x-1/2 rounded-full ${theme === "prism" ? "h-[min(640px,65vh)] w-[min(820px,92vw)] blur-[90px] md:blur-[110px]" : "h-[min(780px,75vh)] w-[min(960px,98vw)] blur-[130px]"}`}
         style={{ background: `radial-gradient(ellipse at center, ${glow}, transparent 70%)` }}
       />
 
@@ -55,18 +55,18 @@ export function ArcPremiumScene({
 
       {theme === "prism" && (
         <>
-          {[0, 1, 2, 3].map((i) => (
+          {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="absolute left-1/2 top-[18%] -translate-x-1/2 rounded-full border border-amber-400/25 arc-prism-ring-pulse"
+              className={`absolute left-1/2 top-[18%] -translate-x-1/2 rounded-full border border-amber-400/20 arc-prism-ring-pulse ${i >= 2 ? "hidden md:block" : ""}`}
               style={{
-                width: `${min(520, 280 + i * 90)}px`,
-                height: `${min(520, 280 + i * 90)}px`,
-                animationDelay: `${i * 0.4}s`,
+                width: `${min(520, 260 + i * 100)}px`,
+                height: `${min(520, 260 + i * 100)}px`,
+                animationDelay: `${i * 0.5}s`,
               }}
             />
           ))}
-          <div className="absolute left-1/2 top-[32%] h-[min(380px,45vh)] w-px origin-bottom -translate-x-1/2 bg-gradient-to-t from-amber-400/70 via-amber-200/30 to-transparent arc-prism-sweep" />
+          <div className="arc-prism-sweep absolute left-1/2 top-[32%] hidden h-[min(380px,45vh)] w-px origin-bottom -translate-x-1/2 bg-gradient-to-t from-amber-400/60 via-violet-300/25 to-transparent md:block" />
         </>
       )}
 
