@@ -35,15 +35,23 @@ function pct(token: TrendingToken) {
   };
 }
 
+/** Large-cap / liquid names (e.g. VIRTUAL) — swing 2x desk, not microcap hunter only */
+function isEstablishedDesk(token: TrendingToken): boolean {
+  const mc = token.marketCap ?? token.fdv ?? 0;
+  return mc >= 80_000_000 || token.liquidityUsd >= 500_000;
+}
+
 function buildChecks(input: {
   token: TrendingToken;
   intel: TokenIntel;
   edge: number;
   macro?: MacroRegime | null;
   security?: TokenSecurityReport;
+  established?: boolean;
 }): CheckDef[] {
   const { token, intel, edge, macro, security } = input;
-  const { m5, h1, h24 } = pct(token);
+  const established = input.established ?? isEstablishedDesk(token);
+  const { m5, h1, h6, h24 } = pct(token);
   const ta = intel.technical;
   const taScore = ta?.score ?? 50;
   const rsi = ta?.rsi ?? 50;
@@ -54,10 +62,20 @@ function buildChecks(input: {
   const snipers = intel.sniperCount ?? 0;
   const grade = security?.grade ?? "C";
 
-  const momentumBand =
-    h24 >= 8 && h24 <= 88 && !(h24 > 45 && (m5 < -6 || h1 < -10));
-  const intradayOk = h24 <= 0 || (m5 >= -10 && h1 >= -14);
-  const macroOk = macro?.label !== "risk-off" || edge >= 40;
+  const buys24 = token.txns24h?.buys ?? intel.buy24h ?? 0;
+  const momentumBand = established
+    ? h1 >= 4 ||
+      (h24 >= -12 && h24 <= 42 && flowRatio >= 1.06) ||
+      (flowRatio >= 1.14 && buys24 >= 5_000)
+    : h24 >= 8 && h24 <= 88 && !(h24 > 45 && (m5 < -6 || h1 < -10));
+  const intradayOk = established
+    ? !(m5 <= -18 && h1 <= -22)
+    : h24 <= 0 || (m5 >= -10 && h1 >= -14);
+  const macroOk = macro?.label !== "risk-off" || edge >= (established ? 32 : 40);
+  const taPass = established
+    ? taScore >= 55 && rsi <= 82 && rsi >= 18
+    : taScore >= 62 && rsi <= 78 && rsi >= 22;
+  const turnoverMax = established ? 25 : 18;
 
   return [
     {
@@ -74,19 +92,19 @@ function buildChecks(input: {
     },
     {
       id: "ta",
-      label: "TA score ≥ 62, RSI not extreme",
+      label: established ? "TA score ≥ 55, RSI not extreme" : "TA score ≥ 62, RSI not extreme",
       weight: 12,
-      pass: taScore >= 62 && rsi <= 78 && rsi >= 22,
+      pass: taPass,
     },
     {
       id: "edge",
-      label: "Factor edge ≥ +30",
+      label: established ? "Factor edge ≥ +22" : "Factor edge ≥ +30",
       weight: 15,
-      pass: edge >= 30,
+      pass: edge >= (established ? 22 : 30),
     },
     {
       id: "momentum",
-      label: "24h momentum in 8–88% band",
+      label: established ? "1h/24h swing momentum or strong flow" : "24h momentum in 8–88% band",
       weight: 10,
       pass: momentumBand,
     },
@@ -98,9 +116,9 @@ function buildChecks(input: {
     },
     {
       id: "turnover",
-      label: "Turnover sane (0.35–18×)",
+      label: established ? "Turnover sane (0.35–25×)" : "Turnover sane (0.35–18×)",
       weight: 8,
-      pass: turnover >= 0.35 && turnover <= 18,
+      pass: turnover >= 0.35 && turnover <= turnoverMax,
     },
     {
       id: "holders",
@@ -150,6 +168,7 @@ export function evaluateTradeSetup(input: {
   scam?: ScamAssessment;
 }): TradeSetupEvaluation {
   const { token, intel, edge, macro, security, scam } = input;
+  const established = isEstablishedDesk(token);
   const { m5, h1, h24 } = pct(token);
   const taScore = intel.technical?.score ?? 50;
   const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
@@ -174,14 +193,19 @@ export function evaluateTradeSetup(input: {
     };
   }
 
-  const checks = buildChecks({ token, intel, edge, macro, security });
+  const checks = buildChecks({ token, intel, edge, macro, security, established });
   const agreement = weightedAgreement(checks);
   const passed = checks.filter((c) => c.pass).length;
   const gaps = checks.filter((c) => !c.pass).map((c) => c.label);
 
   let tier: SetupTier = "watch";
-  if (agreement >= 0.78 && edge >= 36 && passed >= 8) tier = "a-plus";
-  else if (agreement >= 0.62 && edge >= 28 && passed >= 6) tier = "a";
+  if (established) {
+    if (agreement >= 0.72 && edge >= 28 && passed >= 7) tier = "a-plus";
+    else if (agreement >= 0.52 && edge >= 22 && passed >= 5) tier = "a";
+  } else {
+    if (agreement >= 0.78 && edge >= 36 && passed >= 8) tier = "a-plus";
+    else if (agreement >= 0.62 && edge >= 28 && passed >= 6) tier = "a";
+  }
 
   let action: AgentSignal["action"] = "HOLD";
   if (tier === "a-plus") action = "BUY";

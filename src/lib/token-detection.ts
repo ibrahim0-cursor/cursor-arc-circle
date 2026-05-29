@@ -84,7 +84,7 @@ export async function fetchMergedTokenDetection(
     summary: {
       ...birdeye.summary,
       ...(paprikaIntel ?? {}),
-      holderCount: bs.holderCount ?? paprikaToken?.summary?.pools,
+      holderCount: bs.holderCount,
       buy24h: bs.buy24h ?? paprikaIntel?.buy24h ?? dexFallback?.buys,
       sell24h: bs.sell24h ?? paprikaIntel?.sell24h ?? dexFallback?.sells,
       birdeyeLive: mergedLive,

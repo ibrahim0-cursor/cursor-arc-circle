@@ -16,7 +16,7 @@ import {
   normalizePriceChanges,
   type TechnicalAnalysis,
 } from "./technical-analysis";
-import type { AgentSignal, TokenIntel, TokenWhale } from "./storage";
+import type { AgentSignal, TechnicalSnapshot, TokenIntel, TokenWhale } from "./storage";
 import type { NexusResearchReport } from "./nexus-research";
 import { buildTokenAgentNarrative } from "./nexus-token-narrative";
 import { filterReasoningFactorsForDisplay } from "./reasoning-factors";
@@ -180,6 +180,63 @@ function taBlockFromDex(token: TrendingToken, timeframe: "15m" | "1h"): TaTimefr
     macd: ta.macd,
     macdSignal: ta.macdSignal as TaSignalBadge,
     source: "dexscreener",
+  };
+}
+
+/** Map dossier TA blocks → intel snapshot so UI is not stuck on "Computing…" */
+export function technicalSnapshotFromBlocks(
+  blocks: TaTimeframeBlock[],
+  token: TrendingToken,
+): TechnicalSnapshot {
+  const base = computeTechnicalAnalysis(
+    token.priceUsd,
+    normalizePriceChanges(token.priceChange, token.change24h),
+    token.volume24h,
+    token.liquidityUsd,
+  );
+  const h1 = blocks.find((b) => b.timeframe === "1h") ?? blocks[0];
+  if (!h1) {
+    return {
+      rsi: base.rsi,
+      rsiSignal: base.rsiSignal,
+      macd: base.macd,
+      macdSignal: base.macdSignal,
+      trend: base.trend,
+      trendLine: base.trendLine,
+      score: base.score,
+      taSource: "dexscreener",
+    };
+  }
+  const rsiSignal =
+    h1.rsi14 > 70 ? "overbought" : h1.rsi14 < 30 ? "oversold" : "neutral";
+  let score = base.score;
+  if (h1.rsiSignal === "bullish") score += 6;
+  if (h1.rsiSignal === "bearish") score -= 6;
+  if (h1.macdSignal === "bullish") score += 5;
+  if (h1.macdSignal === "bearish") score -= 5;
+  const h1pct = token.priceChange?.h1 ?? 0;
+  if (h1pct > 8) score += 4;
+  if (h1pct < -10) score -= 6;
+  score = Math.min(88, Math.max(35, Math.round(score)));
+  const trend =
+    h1pct > 12 && h1.macdSignal === "bullish"
+      ? "strong_up"
+      : h1pct < -12 && h1.macdSignal === "bearish"
+        ? "strong_down"
+        : h1pct > 4
+          ? "up"
+          : h1pct < -4
+            ? "down"
+            : base.trend;
+  return {
+    rsi: h1.rsi14,
+    rsiSignal,
+    macd: h1.macd,
+    macdSignal: h1.macdSignal,
+    trend,
+    trendLine: `${h1.timeframe} · ${h1.source === "birdeye_ohlcv" ? "Birdeye OHLCV" : "Dex est."}: RSI ${h1.rsi14} · MACD ${h1.macdSignal}`,
+    score,
+    taSource: h1.source,
   };
 }
 
@@ -525,14 +582,17 @@ export async function buildTokenDossierPayload(
   const dataNotes: string[] = [];
 
   const detectionPromise =
-    tier === "feed"
-      ? Promise.resolve(null)
-      : (opts?.detection ??
-        fetchMergedTokenDetection(token.tokenAddress, token.chainId, {
-          buys: token.txns24h?.buys ?? 0,
-          sells: token.txns24h?.sells ?? 0,
-          volume: token.volume24h,
-        }));
+    opts?.detection ??
+    fetchMergedTokenDetection(
+      token.tokenAddress,
+      token.chainId,
+      {
+        buys: token.txns24h?.buys ?? 0,
+        sells: token.txns24h?.sells ?? 0,
+        volume: token.volume24h,
+      },
+      { birdeyeMode: tier === "feed" ? "lite" : "full" },
+    );
 
   const [detection, technicalBlocks, gmgnHolders, gmgnSmart] = await Promise.all([
     detectionPromise,
@@ -712,13 +772,23 @@ export async function buildTokenDossierPayload(
   });
   dossier.atAGlance = liveReasoning.narrative.slice(0, 280);
 
+  const detSummary = detection?.summary as { holderCount?: number } | undefined;
+  const mergedIntel: TokenIntel = {
+    ...intel,
+    ...(detSummary?.holderCount != null && detSummary.holderCount > 0
+      ? { holderCount: detSummary.holderCount }
+      : {}),
+  };
+  const technical =
+    mergedIntel.technical ?? technicalSnapshotFromBlocks(technicalBlocks, token);
+
   return {
     dossier,
     topHolders,
     topTraders,
     liveReasoning,
     agent: opts?.agent,
-    technical: intel.technical,
+    technical,
     fetchedAt: new Date().toISOString(),
   };
 }

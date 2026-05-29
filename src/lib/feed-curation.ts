@@ -127,11 +127,16 @@ export function scoreDiscoveryHunterToken(t: TrendingToken): number {
   if (abs >= 8 && abs < 20) score += 8;
 
   const mc = t.marketCap ?? t.fdv ?? 0;
+  const h1 = t.priceChange?.h1 ?? 0;
+  const bp = buyPressure(t);
   if (mc >= 30_000 && mc <= 15_000_000) score += 22;
   else if (mc > 0 && mc < 30_000) score += 10;
-  else if (mc > 80_000_000) score -= 18;
+  else if (mc > 80_000_000) {
+    if (h1 >= 5 && bp > 1.1 && t.liquidityUsd >= 400_000) score += 14;
+    else if (h1 >= 3 && bp > 1.05) score += 4;
+    else score -= 6;
+  }
 
-  const h1 = t.priceChange?.h1 ?? 0;
   if (h1 > 12 && ch > 0) score += 14;
   if (h1 > 25) score += 8;
 

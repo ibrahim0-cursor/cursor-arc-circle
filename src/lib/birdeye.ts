@@ -419,8 +419,12 @@ export async function fetchTokenDetection(
   if (mode === "full") {
     trades = await fetchBirdeyeTrades(address, sourceChain);
     if (!trades.length) errors.push("trades empty or rate-limited");
+  }
+  if (mode === "full" || mode === "lite") {
     overview = await fetchBirdeyeOverview(address, sourceChain);
-    if (!overview) errors.push("overview skipped (rate limit OK if traders+txs loaded)");
+    if (!overview && mode === "full") {
+      errors.push("overview skipped (rate limit OK if traders+txs loaded)");
+    }
   }
 
   let security: BirdeyeSecurity | null = null;

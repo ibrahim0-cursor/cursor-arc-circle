@@ -27,7 +27,7 @@ function DataTable({
   if (rows.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-white/12 px-3 py-4 text-center text-xs text-white/55">
-        No rows yet — live data loads from Birdeye / GMGN when keys are set.
+        No wallet rows yet — refreshing Birdeye / GMGN / DexPaprika for this pair.
       </p>
     );
   }

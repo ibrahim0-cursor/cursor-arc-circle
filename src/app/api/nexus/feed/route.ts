@@ -128,7 +128,7 @@ async function buildFeed(quick: boolean, limit: number) {
   tokens = filterLiveFeedTokens(tokens);
 
   const analyzed = quick
-    ? await analyzeTrendingFeedQuick(tokens, { birdeyeCap: 3, skipGmgnSecurity: true })
+    ? await analyzeTrendingFeedQuick(tokens, { birdeyeCap: 12, skipGmgnSecurity: true })
     : await analyzeTrendingFeed(tokens);
 
   return buildFeedPayload(

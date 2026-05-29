@@ -1098,10 +1098,28 @@ function finalizeFeedSignal(
 async function intelForFeedRank(token: TrendingToken, rank: number): Promise<TokenIntel> {
   const base = token.intel ?? buildLocalTokenIntel(token);
   const { getBirdeyePlan } = await import("./birdeye-policy");
+  const { fetchMergedTokenDetection } = await import("./token-detection");
   const plan = getBirdeyePlan("feed", rank);
-  if (!plan.ohlcv) return base;
+  let intel = base;
+  if (plan.detection !== "off") {
+    const det = await fetchMergedTokenDetection(
+      token.tokenAddress,
+      token.chainId,
+      {
+        buys: token.txns24h?.buys ?? 0,
+        sells: token.txns24h?.sells ?? 0,
+        volume: token.volume24h,
+      },
+      { birdeyeMode: plan.detection },
+    );
+    const hc = (det.summary as { holderCount?: number }).holderCount;
+    if (hc != null && hc > 0) intel = { ...intel, holderCount: hc };
+    if (det.summary.buy24h != null) intel = { ...intel, buy24h: det.summary.buy24h };
+    if (det.summary.sell24h != null) intel = { ...intel, sell24h: det.summary.sell24h };
+  }
+  if (!plan.ohlcv) return intel;
   const ta = await resolveTokenTechnical(token, { allowBirdeyeOhlcv: true });
-  return { ...base, technical: technicalToIntel(ta) };
+  return { ...intel, technical: technicalToIntel(ta) };
 }
 
 export type FeedQuickAnalyzeOptions = {
