@@ -9,7 +9,18 @@ import {
   dexpaprikaNetwork,
 } from "./dexpaprika";
 import { fetchTokenByAddress } from "./dexscreener";
-import type { TokenTx } from "./storage";
+import type { TokenTx, TokenWhale } from "./storage";
+
+/** Real wallet addresses only — exclude DexPaprika flow aggregates. */
+function isRealWalletAddress(addr: string): boolean {
+  const a = addr.trim();
+  if (!a || a.includes("aggregate") || a.startsWith("flow-") || a.startsWith("dex-")) return false;
+  return /^0x[a-fA-F0-9]{40}$/.test(a) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a);
+}
+
+function filterRealWhales(rows: TokenWhale[]): TokenWhale[] {
+  return rows.filter((w) => isRealWalletAddress(w.address));
+}
 
 export async function fetchMergedTokenDetection(
   address: string,
@@ -63,7 +74,7 @@ export async function fetchMergedTokenDetection(
   const holders =
     birdeye.holders.length > 0
       ? birdeye.holders
-      : whales.slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 }));
+      : filterRealWhales(whales).slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 }));
 
   const hasPaprika = Boolean(paprikaToken?.summary?.price_usd);
   const bs = birdeye.summary as {

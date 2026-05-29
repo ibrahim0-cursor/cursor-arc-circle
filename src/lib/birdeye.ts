@@ -338,10 +338,8 @@ export async function fetchBirdeyeWhales(
   if (!hasBirdeyeKey()) return [];
 
   const chain = birdeyeChainFor(sourceChain);
-  if (isSolanaChain(sourceChain)) {
-    const holders = await fetchBirdeyeHolders(address, chain, limit);
-    if (holders.length) return holders;
-  }
+  const holders = await fetchBirdeyeHolders(address, chain, limit);
+  if (holders.length) return holders;
 
   return fetchBirdeyeTopTraders(address, chain, limit);
 }
@@ -412,7 +410,14 @@ export async function fetchTokenDetection(
   const errors: string[] = [];
 
   const whales = await fetchBirdeyeWhales(address, sourceChain, mode === "lite" ? 8 : 12);
-  if (!whales.length) errors.push("whales/traders empty or rate-limited");
+  const holderSource: "holders" | "top_traders" = whales.some((w) =>
+    /trader/i.test(w.label ?? ""),
+  )
+    ? "top_traders"
+    : whales.length > 0
+      ? "holders"
+      : "holders";
+  if (!whales.length) errors.push("holders/traders empty or rate-limited");
 
   let trades: TokenTx[] = [];
   let overview: BirdeyeTokenOverview | null = null;
@@ -441,7 +446,7 @@ export async function fetchTokenDetection(
 
   const insiderList = buildInsiders(whales, snipers, security?.top10HolderPercent);
   const birdeyeLive = whales.length > 0 || trades.length > 0 || Boolean(overview) || snipers.length > 0;
-  const holderSource = isSolanaChain(sourceChain) ? "holders" : "top_traders";
+  const holdersForTable = whales.slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 }));
 
   const result = {
     chain,
@@ -449,7 +454,7 @@ export async function fetchTokenDetection(
     whales,
     snipers,
     insiders: insiderList,
-    holders: whales.slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 })),
+    holders: holdersForTable,
     walletScores: buildWalletScores(whales, snipers, security),
     summary: {
       sniperCount: security?.sniperCount ?? (snipers.length || undefined),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
@@ -100,21 +100,25 @@ export function NexusTokenDetectPanel({
   const [loading, setLoading] = useState(false);
   const { status: integrations } = useIntegrationsStatus();
 
+  const dexRef = useRef({ buys: txns24h?.buys ?? 0, sells: txns24h?.sells ?? 0, volume: volume24h ?? 0 });
+  dexRef.current = { buys: txns24h?.buys ?? 0, sells: txns24h?.sells ?? 0, volume: volume24h ?? 0 };
+
   useEffect(() => {
     if (!chainId || !tokenAddress) return;
     let cancelled = false;
 
     async function load() {
+      if (typeof document !== "undefined" && document.hidden) return;
       setLoading(true);
       try {
         const params = new URLSearchParams({
           chainId: chainId!,
           address: tokenAddress!,
-          buys: String(txns24h?.buys ?? 0),
-          sells: String(txns24h?.sells ?? 0),
-          volume: String(volume24h ?? 0),
+          buys: String(dexRef.current.buys),
+          sells: String(dexRef.current.sells),
+          volume: String(dexRef.current.volume),
         });
-        const res = await fetch(`/api/nexus/token/detect?${params}&t=${Date.now()}`);
+        const res = await fetch(`/api/nexus/token/detect?${params}&full=1&t=${Date.now()}`);
         const json = await res.json();
         if (!cancelled && res.ok) {
           setData(json);
@@ -140,11 +144,16 @@ export function NexusTokenDetectPanel({
 
     load();
     const interval = setInterval(load, 45_000);
+    const onVis = () => {
+      if (!document.hidden) void load();
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
     };
-  }, [chainId, tokenAddress, txns24h?.buys, txns24h?.sells, volume24h, onIntelUpdate]);
+  }, [chainId, tokenAddress, onIntelUpdate]);
 
   if (!chainId || !tokenAddress) return null;
 

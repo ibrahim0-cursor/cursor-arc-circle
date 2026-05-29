@@ -102,6 +102,7 @@ export type TokenDossierPayload = {
   liveReasoning: LiveReasoningPayload;
   agent?: AgentSignal;
   technical?: TokenIntel["technical"];
+  community?: CommunityPulse | null;
   fetchedAt: string;
 };
 
@@ -366,7 +367,7 @@ export function tradersFromWhalesAndTrades(
   }
 
   const fromTrades = [...volByTrader.entries()]
-    .filter(([a]) => a !== "dex-aggregate")
+    .filter(([a]) => a !== "dex-aggregate" && !a.includes("aggregate") && !a.startsWith("flow-"))
     .sort((a, b) => b[1].vol - a[1].vol)
     .slice(0, 8)
     .map(([address, v], i) => ({
@@ -379,13 +380,21 @@ export function tradersFromWhalesAndTrades(
 
   if (fromTrades.length >= 3) return fromTrades;
 
-  return whales.slice(0, 8).map((w, i) => ({
-    rank: i + 1,
-    address: w.address,
-    pnlOrVolume: `${w.pct.toFixed(1)}% supply`,
-    label: w.label,
-    source: "whale" as const,
-  }));
+  return whales
+    .filter((w) => {
+      const a = w.address.trim();
+      return a.length > 8 && !a.includes("aggregate") && !a.startsWith("flow-");
+    })
+    .slice(0, 8)
+    .map((w, i) => ({
+      rank: i + 1,
+      address: w.address,
+      pnlOrVolume: /trader/i.test(w.label ?? "")
+        ? `${w.pct.toFixed(1)}% 24h vol`
+        : `${w.pct.toFixed(1)}% supply`,
+      label: w.label,
+      source: "whale" as const,
+    }));
 }
 
 function buildSocialNews(
@@ -591,7 +600,7 @@ export async function buildTokenDossierPayload(
         sells: token.txns24h?.sells ?? 0,
         volume: token.volume24h,
       },
-      { birdeyeMode: tier === "feed" ? "lite" : "full" },
+      { birdeyeMode: "full" },
     );
 
   const [detection, technicalBlocks, gmgnHolders, gmgnSmart] = await Promise.all([
@@ -789,6 +798,7 @@ export async function buildTokenDossierPayload(
     liveReasoning,
     agent: opts?.agent,
     technical,
+    community: opts?.community ?? null,
     fetchedAt: new Date().toISOString(),
   };
 }

@@ -4,6 +4,7 @@
  */
 
 import { fetch6551, resolve6551Token, resolve6551TokenSource } from "./6551-client";
+import { dedupeHeadlines } from "./intel-headline-quality";
 
 export type OpenNewsItem = {
   title: string;
@@ -95,16 +96,7 @@ export async function fetchOpenNewsForSymbol(symbol: string, name?: string, limi
     searchOpenNews({ q, limit }),
   ]);
 
-  const seen = new Set<string>();
-  const out: OpenNewsItem[] = [];
-  for (const item of [...byCoin, ...byQuery]) {
-    const k = item.title.toLowerCase();
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(item);
-    if (out.length >= limit) break;
-  }
-  return out;
+  return dedupeHeadlines([...byCoin, ...byQuery]).slice(0, limit);
 }
 
 export async function fetchOpenNewsMacro(query: string, limit = 8): Promise<OpenNewsItem[]> {

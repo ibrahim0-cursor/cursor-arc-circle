@@ -18,6 +18,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ pairAddress: null, url: null });
     }
     return NextResponse.json({
+      symbol: pair.symbol,
+      name: pair.name,
+      icon: pair.icon,
       pairAddress: pair.pairAddress,
       url: pair.url,
       priceUsd: pair.priceUsd,

@@ -41,11 +41,10 @@ import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { NexusAgentProvider, type NexusAgentRuntime } from "@/components/nexus/nexus-agent-context";
 import { NexusCircleAgentCard } from "@/components/nexus/nexus-circle-agent-card";
 import { NexusExecutionPanel } from "@/components/nexus/nexus-execution-panel";
+import { NexusTokenSearchPicker } from "@/components/nexus/nexus-token-search-picker";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
 const PCT_OPTIONS = [25, 50, 75, 100] as const;
-const CHAINS = ["base", "ethereum", "arbitrum", "bsc", "polygon"] as const;
-
 const INTERVAL_KEYS = [
   "1m",
   "5m",
@@ -72,11 +71,14 @@ const defaultRuntime: NexusAgentRuntime = {
 
 export function NexusAutopilotPanel({
   token,
+  catalogTokens = [],
   onTradeComplete,
   embedded = false,
   onAgentLiveChange,
 }: {
   token: TrendingMarketToken | null;
+  /** Live feed tokens for unified name/CA search */
+  catalogTokens?: TrendingMarketToken[];
   onTradeComplete?: () => void;
   embedded?: boolean;
   /** Only reports enabled state — avoids re-rendering Buy/Sell every second */
@@ -141,24 +143,44 @@ export function NexusAutopilotPanel({
     let cancelled = false;
     (async () => {
       const chain = config.customTokenChain || "base";
-      const pairRes = await fetch(
-        `/api/nexus/pair?chainId=${chain}&address=${encodeURIComponent(ca)}`,
-        { cache: "no-store" },
-      );
-      const pair = await pairRes.json();
-      if (cancelled) return;
-      setResolvedToken({
-        symbol: config.customTokenSymbol.trim() || "TOKEN",
-        name: config.customTokenSymbol.trim() || "Custom token",
-        tokenAddress: ca,
-        chainId: chain,
-        pairAddress: pair.pairAddress ?? "",
-        priceUsd: pair.priceUsd ?? 0,
-        change24h: 0,
-        volume24h: 0,
-        liquidityUsd: 0,
-        url: pair.url ?? "",
-      });
+      try {
+        const pairRes = await fetch(
+          `/api/nexus/pair?chainId=${chain}&address=${encodeURIComponent(ca)}`,
+          { cache: "no-store", signal: AbortSignal.timeout(10_000) },
+        );
+        const pair = await pairRes.json();
+        if (cancelled) return;
+        const sym = config.customTokenSymbol.trim() || pair.symbol || "TOKEN";
+        setResolvedToken({
+          symbol: sym,
+          name: pair.name ?? sym,
+          tokenAddress: ca,
+          chainId: chain,
+          pairAddress: pair.pairAddress ?? "",
+          priceUsd: pair.priceUsd ?? 0,
+          change24h: pair.change24h ?? 0,
+          volume24h: pair.volume24h ?? 0,
+          liquidityUsd: pair.liquidityUsd ?? 0,
+          url: pair.url ?? "",
+          icon: pair.icon,
+        });
+      } catch {
+        if (!cancelled) {
+          const sym = config.customTokenSymbol.trim() || "TOKEN";
+          setResolvedToken({
+            symbol: sym,
+            name: sym,
+            tokenAddress: ca,
+            chainId: chain,
+            pairAddress: "",
+            priceUsd: 0,
+            change24h: 0,
+            volume24h: 0,
+            liquidityUsd: 0,
+            url: "",
+          });
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -615,29 +637,19 @@ export function NexusAutopilotPanel({
 
           {config.amountMode === "custom_token" && (
             <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3">
-              <p className="text-xs font-semibold text-white/80">Token contract (CA) or symbol</p>
-              <select
-                value={config.customTokenChain}
-                onChange={(e) => persist({ ...config, customTokenChain: e.target.value })}
-                className="w-full min-h-[40px] rounded-lg border border-white/15 bg-black/40 px-2 text-sm text-white"
-              >
-                {CHAINS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={config.customTokenAddress}
-                onChange={(e) => persist({ ...config, customTokenAddress: e.target.value })}
-                placeholder="0x… contract address"
-                className="w-full min-h-[44px] rounded-xl border border-white/15 bg-black/30 px-3 text-xs text-white"
-              />
-              <input
-                value={config.customTokenSymbol}
-                onChange={(e) => persist({ ...config, customTokenSymbol: e.target.value })}
-                placeholder="Symbol (optional) e.g. PEPE"
-                className="w-full min-h-[40px] rounded-xl border border-white/15 bg-black/30 px-3 text-white"
+              <NexusTokenSearchPicker
+                chainId={config.customTokenChain || "base"}
+                onChainChange={(chain) => persist({ ...config, customTokenChain: chain })}
+                address={config.customTokenAddress}
+                catalog={catalogTokens}
+                onResolved={(pick) =>
+                  persist({
+                    ...config,
+                    customTokenAddress: pick.tokenAddress,
+                    customTokenSymbol: pick.symbol,
+                    customTokenChain: pick.chainId,
+                  })
+                }
               />
               <div className="grid grid-cols-2 gap-2">
                 <button

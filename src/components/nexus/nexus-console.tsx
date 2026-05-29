@@ -163,6 +163,15 @@ export function NexusConsole() {
     });
   }, [tokenDossier.payload?.fetchedAt, selectedToken?.tokenAddress, selectedToken?.chainId]);
 
+  useEffect(() => {
+    const pulse = tokenDossier.payload?.community;
+    if (pulse?.items?.length) {
+      setCommunityPulse(pulse);
+    } else if (!tokenDossier.loading && selectedToken) {
+      setCommunityPulse(null);
+    }
+  }, [tokenDossier.payload?.community, tokenDossier.loading, selectedToken?.tokenAddress]);
+
   const scrollToMobileContent = useCallback(() => {
     requestAnimationFrame(() => {
       document.getElementById("nexus-mobile-content")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -560,15 +569,13 @@ export function NexusConsole() {
           loading={tokenDossier.loading}
           reasoningInStrip
         />
-        {intelTier === "alpha" && (
-          <NexusResearchDossierLive
-            token={selectedToken}
-            payload={tokenDossier.payload}
-            loading={tokenDossier.loading}
-            error={tokenDossier.error}
-            holdersOnly
-          />
-        )}
+        <NexusResearchDossierLive
+          token={selectedToken}
+          payload={tokenDossier.payload}
+          loading={tokenDossier.loading}
+          error={tokenDossier.error}
+          holdersOnly
+        />
         <NexusResearchDossierDeep dossier={tokenDossier.payload?.dossier} loading={tokenDossier.loading} />
         <NexusTokenDetectPanel
           chainId={selectedToken.chainId}
@@ -617,6 +624,7 @@ export function NexusConsole() {
         <NexusTradeHub
           embedded
           token={selectedToken}
+          catalogTokens={feedTokens}
           activeTab={tradeTab}
           onTabChange={setTradeTab}
           onTradeComplete={() => setPortfolioKey((k) => k + 1)}
@@ -683,7 +691,9 @@ export function NexusConsole() {
           alphaCount={alphaOpportunities.length}
           disabled={arcFeePending}
         />
-        <NexusPremiumHero stableCount={STABLE_FEED_LIMIT} />
+        <div className="hidden lg:block">
+          <NexusPremiumHero stableCount={STABLE_FEED_LIMIT} />
+        </div>
 
         <NexusMobileContextBar
           selectedToken={selectedToken}

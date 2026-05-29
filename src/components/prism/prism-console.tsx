@@ -30,7 +30,7 @@ type EventOption = {
   category: "macro" | "geopolitical" | "markets";
 };
 
-const INTEL_PREVIEW = 3;
+const INTEL_PREVIEW = 6;
 
 type IntelFeedRow = {
   source: string;
@@ -314,9 +314,55 @@ export function PrismConsole() {
                       </p>
                     )}
                     {latestEngine?.invalidation && (
-                      <p className="break-words text-xs text-white/55">{latestEngine.invalidation}</p>
+                      <p className="break-words text-xs text-white/55">
+                        <span className="font-semibold text-amber-200/90">Invalidation: </span>
+                        {latestEngine.invalidation}
+                      </p>
                     )}
-                    <p className="break-words text-sm leading-relaxed text-white/70">{latest.reasoning}</p>
+                    {latestEngine?.memoryNote && (
+                      <p className="break-words text-xs text-violet-200/75">{latestEngine.memoryNote}</p>
+                    )}
+                    {latestEngine && Object.keys(latestEngine.weights).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(latestEngine.weights)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 5)
+                          .map(([k, w]) => (
+                            <span
+                              key={k}
+                              className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/65"
+                            >
+                              {k} {Math.round(w * 100)}%
+                            </span>
+                          ))}
+                      </div>
+                    )}
+                    {latestEngine?.weakCausalityRejected && latestEngine.weakCausalityRejected.length > 0 && (
+                      <p className="break-words text-[11px] text-white/45">
+                        Filtered weak signals: {latestEngine.weakCausalityRejected.slice(0, 3).join(" · ")}
+                      </p>
+                    )}
+                    <p className="break-words text-sm leading-relaxed text-white/70">
+                      <span className="font-semibold text-amber-200/90">Agent reasoning: </span>
+                      {latest.reasoning}
+                    </p>
+                    {latestEngine?.scoredHeadlines && latestEngine.scoredHeadlines.length > 0 && (
+                      <div className="rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3">
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-200/80">
+                          Top scored headlines
+                        </p>
+                        <ul className="space-y-1.5">
+                          {latestEngine.scoredHeadlines.slice(0, 4).map((h, i) => (
+                            <li key={`${h.source}-${i}`} className="text-xs text-white/75">
+                              <span className="text-amber-200/90">{h.impact}</span>
+                              {" · "}
+                              {Math.round(h.cryptoRelevance * 100)}% crypto · {h.title.slice(0, 120)}
+                              {h.title.length > 120 ? "…" : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {latest.arcTxHash && (
                       <p className="text-xs text-white/45">Arc · {truncateHash(latest.arcTxHash, 10, 8)}</p>
                     )}

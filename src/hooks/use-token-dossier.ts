@@ -15,6 +15,7 @@ export function useTokenDossier(token: TrendingMarketToken | null, tier: "feed" 
       setPayload(null);
       return;
     }
+
     const snap = {
       chainId: token.chainId,
       address: token.tokenAddress,
@@ -31,6 +32,7 @@ export function useTokenDossier(token: TrendingMarketToken | null, tier: "feed" 
     let cancelled = false;
 
     async function load() {
+      setPayload(null);
       setLoading(true);
       setError(null);
       try {
@@ -38,6 +40,7 @@ export function useTokenDossier(token: TrendingMarketToken | null, tier: "feed" 
         params.set("tier", tier);
         const res = await fetch(`/api/nexus/token/dossier?${params}`, {
           headers: meridianClientHeaders(),
+          signal: AbortSignal.timeout(55_000),
         });
         const json = await res.json();
         if (!cancelled) {
@@ -55,20 +58,7 @@ export function useTokenDossier(token: TrendingMarketToken | null, tier: "feed" 
     return () => {
       cancelled = true;
     };
-  }, [
-    token?.chainId,
-    token?.tokenAddress,
-    token?.symbol,
-    token?.name,
-    token?.pairAddress,
-    token?.priceUsd,
-    token?.change24h,
-    token?.volume24h,
-    token?.liquidityUsd,
-    token?.txns24h?.buys,
-    token?.txns24h?.sells,
-    tier,
-  ]);
+  }, [token?.chainId, token?.tokenAddress, tier]);
 
   return { payload, loading, error };
 }

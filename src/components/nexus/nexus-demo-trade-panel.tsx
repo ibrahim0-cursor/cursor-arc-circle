@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { Coins, DollarSign, ExternalLink, Loader2 } from "lucide-react";
 import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
+import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import { NexusTradeBalanceBar } from "@/components/nexus/nexus-trade-balance-bar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
@@ -18,7 +19,6 @@ import { buildDemoQuote } from "@/lib/demo-trading";
 import { arcExplorerAddress, arcExplorerTx } from "@/lib/arc";
 import { ARC_TESTNET_ID } from "@/lib/arc-chain";
 import { formatPct, formatTokenPrice, formatUsd, truncateHash } from "@/lib/utils";
-import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import type { NexusDecision, DemoPosition } from "@/lib/storage";
 
 type TradeToken = TrendingMarketToken | NexusDecision | null;
@@ -51,12 +51,15 @@ type TradeTab = "buy" | "sell" | "agent";
 
 export function NexusTradeHub({
   token,
+  catalogTokens = [],
   onTradeComplete,
   activeTab,
   onTabChange,
   embedded = false,
 }: {
   token: TradeToken;
+  /** Live feed catalog for Autopilot token search */
+  catalogTokens?: TrendingMarketToken[];
   onTradeComplete?: () => void;
   activeTab?: TradeTab;
   onTabChange?: (tab: TradeTab) => void;
@@ -373,6 +376,7 @@ export function NexusTradeHub({
               )}
               <NexusAutopilotPanel
                 token={marketToken}
+                catalogTokens={catalogTokens}
                 onTradeComplete={onTradeComplete}
                 embedded
                 onAgentLiveChange={setAgentLive}

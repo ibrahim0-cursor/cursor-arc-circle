@@ -18,6 +18,7 @@ import {
   matchPerceptionForSymbol,
 } from "./perception";
 import { fetchOpenNewsForSymbol, fetchOpenNewsMacro, hasOpenNewsToken } from "./opennews-6551";
+import { isQualityHeadline } from "./intel-headline-quality";
 import { titleMatchesToken } from "./token-social-news";
 import {
   fetchOpenTwitterForToken,
@@ -66,6 +67,7 @@ export type CommunityPulse = {
 function dedupeItems(items: CommunityPulseItem[]): CommunityPulseItem[] {
   const seen = new Set<string>();
   return items.filter((item) => {
+    if (!isQualityHeadline(item.title)) return false;
     const key = `${item.kind}:${item.title.toLowerCase()}`;
     if (seen.has(key)) return false;
     seen.add(key);

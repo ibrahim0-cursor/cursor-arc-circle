@@ -979,6 +979,20 @@ export async function analyzeTokenSignal(
   return applyScamAndSecurity(token, enriched, raw, security, scam);
 }
 
+/** Live Feed / Alpha desk signal — macro regime + signal gate + security (matches feed badges). */
+export async function buildDeskAgentSignal(
+  token: TrendingToken,
+  intel: TokenIntel,
+): Promise<AgentSignal> {
+  const { scoreTokenSecurity } = await import("./token-security");
+  const security = scoreTokenSecurity(token, intel);
+  const scam = assessTokenScam(token, intel, security);
+  const macro = await getMacroRegime();
+  let signal = heuristicDecision(token, intel, macro, { security, scam });
+  signal = enforceSignalGate(token, intel, signal, { macro, security, scam });
+  return applyScamAndSecurity(token, intel, signal, security, scam);
+}
+
 async function aiFeedBatch(
   batch: { token: TrendingToken; intel: TokenIntel }[],
 ): Promise<Map<string, AgentSignal>> {

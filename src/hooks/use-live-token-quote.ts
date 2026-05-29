@@ -54,11 +54,20 @@ export function useLiveTokenQuote(
       }
     }
 
-    void refresh();
-    const timer = setInterval(refresh, REFRESH_MS);
+    const schedule = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      void refresh();
+    };
+    schedule();
+    const timer = setInterval(schedule, REFRESH_MS);
+    const onVis = () => {
+      if (!document.hidden) void refresh();
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [token?.chainId, token?.tokenAddress]);
 }

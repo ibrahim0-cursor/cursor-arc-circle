@@ -1,5 +1,7 @@
 /** Score headlines against the active PRISM event (post–Generate Forecast). */
 
+import { dedupeHeadlines, isQualityHeadline } from "./intel-headline-quality";
+
 export type IntelItem = { title: string; source: string };
 
 const STOP = new Set([
@@ -31,7 +33,9 @@ export function filterIntelForEvent(
   minScore = 0.28,
 ): Array<IntelItem & { relevancePct: number }> {
   const eventTerms = [...new Set([...tokens(eventLabel), ...tokens(extraQuery ?? "")])];
-  return items
+  return dedupeHeadlines(
+    items.filter((item) => isQualityHeadline(item.title)),
+  )
     .map((item) => ({
       ...item,
       relevancePct: Math.round(relevanceScore(item.title, eventTerms) * 100),
@@ -50,7 +54,7 @@ export function mergeIntelSources(intel: {
   for (const list of [intel.gdelt, intel.news, intel.eventRegistry]) {
     for (const item of list ?? []) {
       const key = item.title.slice(0, 80).toLowerCase();
-      if (seen.has(key)) continue;
+      if (seen.has(key) || !isQualityHeadline(item.title)) continue;
       seen.add(key);
       out.push(item);
     }

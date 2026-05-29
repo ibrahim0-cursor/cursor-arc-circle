@@ -73,7 +73,7 @@ export async function fetchLiveDiscoveryFeed(
   let gmgnSkillsRefreshed: string[] | undefined;
 
   const gmgnBudgetMs = options?.quick ? 6_000 : 20_000;
-  if (hasGmgnApiKey() && !options?.quick) {
+  if (hasGmgnApiKey()) {
     try {
       const gmgn = await Promise.race([
         fetchGmgnDiscoveryTokens("sol", { forceFull: false }),

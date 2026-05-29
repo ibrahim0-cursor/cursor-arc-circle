@@ -4,7 +4,7 @@ import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { withX402Guard } from "@/lib/x402-seller";
 import { buildResearchReport } from "@/lib/nexus-research";
 import { buildTokenDossierPayload } from "@/lib/nexus-research-dossier";
-import { analyzeTokenSignal } from "@/lib/nexus-agent";
+import { buildDeskAgentSignal } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
 import { fetchMergedTokenDetection } from "@/lib/token-detection";
 
@@ -69,7 +69,7 @@ async function handleTokenDossier(request: Request) {
       fetchMergedTokenDetection(token.tokenAddress, token.chainId, dexStats),
     ]);
 
-    const agent = await analyzeTokenSignal(token, bundle.intel, tier === "alpha");
+    const agent = await buildDeskAgentSignal(token, bundle.intel);
     const research = buildResearchReport({
       token,
       agent,
