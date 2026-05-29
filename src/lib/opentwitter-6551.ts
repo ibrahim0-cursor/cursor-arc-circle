@@ -107,7 +107,7 @@ export async function probeOpenTwitter(): Promise<{
   const tokenSource = resolve6551TokenSource("twitter") ?? undefined;
   const res = await fetch6551<unknown>("/open/twitter_search", t, {
     keywords: "bitcoin",
-    maxResults: 3,
+    maxResults: 1,
     minLikes: 0,
     product: "Latest",
   });

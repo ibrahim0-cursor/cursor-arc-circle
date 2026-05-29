@@ -123,7 +123,7 @@ export async function probeOpenNews(): Promise<{
   const t = token();
   if (!t) return { ok: false, configured: false, error: "6551 key not set" };
   const tokenSource = resolve6551TokenSource("opennews") ?? undefined;
-  const res = await fetch6551<unknown>("/open/news_search", t, { q: "bitcoin", limit: 3, page: 1 });
+  const res = await fetch6551<unknown>("/open/news_search", t, { q: "bitcoin", limit: 1, page: 1 });
   if (!res.ok) {
     return { ok: false, configured: true, tokenSource, error: res.error ?? `HTTP ${res.status}` };
   }

@@ -72,7 +72,7 @@ export function NexusIntegrationsBanner() {
       news6551Rotated
         ? `6551: API token was rotated — paste the NEW key from 6551.io into Vercel API_KEY_6551${sourceHint}, then redeploy`
         : news6551Quota
-          ? `6551: daily quota used (key OK) — news/X resumes after 6551.io reset or upgrade`
+          ? `6551: quota limit (key OK) — check points + 3,000 msgs/mo on 6551.io → Open API`
           : `6551 news/X: ${status.opennewsProbe?.error ?? "not returning headlines"}${sourceHint}`,
     );
   }
@@ -212,10 +212,10 @@ export function NexusIntegrationsBanner() {
           <div className="space-y-1 text-sm">
             {birdeyeKeyMissing ? (
               <>
-                <p className="font-semibold text-amber-50">Birdeye API key not detected on server</p>
+                <p className="font-semibold text-amber-50">Birdeye not on Production</p>
                 <p className="leading-relaxed text-amber-100/85">
                   Add <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-xs text-amber-50">BIRDEYE_API_KEY</code> in{" "}
-                  <strong>Vercel → Settings → Environment Variables</strong> (or <code className="rounded bg-black/30 px-1 font-mono text-xs">.env.local</code> for local dev), then <strong>redeploy</strong>.
+                  <strong>Vercel → Environment Variables → Production</strong> (not Development only), then <strong>Redeploy Production</strong>.
                 </p>
                 <p className="nexus-muted text-amber-100/70">
                   Get a free key at{" "}
