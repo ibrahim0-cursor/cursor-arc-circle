@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { MeridianFooter } from "@/components/layout/meridian-footer";
 import { cn, truncateHash } from "@/lib/utils";
+import type { PrismMacroSnapshot } from "@/lib/prism-macro-snapshot";
 import type { PrismPrediction } from "@/lib/storage";
 import type { CommunityPulse } from "@/lib/community-pulse";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
@@ -26,15 +27,6 @@ type EventOption = {
   category: "macro" | "geopolitical" | "markets";
 };
 
-type GlobalMarket = {
-  btcPrice: number;
-  btcChange24h: number;
-  ethPrice: number;
-  ethChange24h: number;
-  totalMarketCapUsd: number;
-  marketCapChange24h: number;
-};
-
 export function PrismConsole() {
   const toast = useToast();
   const [events, setEvents] = useState<EventOption[]>([]);
@@ -43,28 +35,42 @@ export function PrismConsole() {
   const [predictions, setPredictions] = useState<PrismPrediction[]>([]);
   const [loading, setLoading] = useState(false);
   const [enterId, setEnterId] = useState<string | null>(null);
-  const [market, setMarket] = useState<GlobalMarket | null>(null);
+  const [macroSnap, setMacroSnap] = useState<PrismMacroSnapshot | null>(null);
   const [latestIntel, setLatestIntel] = useState<{
     gdelt: Array<{ title: string; source: string }>;
     news: Array<{ title: string; source: string }>;
+    eventRegistry?: Array<{ title: string; source: string }>;
     community?: CommunityPulse;
+    macro?: PrismMacroSnapshot;
   } | null>(null);
 
+  const loadMacro = useCallback(async (eventId: string) => {
+    try {
+      const res = await fetch(`/api/prism/macro?eventId=${encodeURIComponent(eventId)}`, {
+        cache: "no-store",
+      });
+      if (res.ok) setMacroSnap(await res.json());
+    } catch {
+      setMacroSnap(null);
+    }
+  }, []);
+
   const load = useCallback(async () => {
-    const [predRes, eventsRes, marketRes] = await Promise.all([
+    const [predRes, eventsRes] = await Promise.all([
       fetch("/api/prism/predictions"),
       fetch("/api/prism/events"),
-      fetch("/api/market/global"),
     ]);
     setPredictions(await predRes.json());
     setEvents(await eventsRes.json());
-    const m = await marketRes.json();
-    if (m.btcPrice) setMarket(m);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    loadMacro(selected);
+  }, [selected, loadMacro]);
 
   async function analyze() {
     setLoading(true);
@@ -106,19 +112,49 @@ export function PrismConsole() {
       <div className="relative mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 sm:pb-12">
         <PrismPremiumHero loading={loading} onAnalyze={analyze} />
 
-        {market && (
+        {macroSnap?.market && (
           <div className="prism-macro-strip mb-4 sm:mb-6">
-            <div className="grid grid-cols-3 gap-2">
-              <MacroChip label="BTC" price={market.btcPrice} change={market.btcChange24h} />
-              <MacroChip label="ETH" price={market.ethPrice} change={market.ethChange24h} />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <MacroChip
-                label="Mkt cap"
-                price={market.totalMarketCapUsd}
-                change={market.marketCapChange24h}
-                compact
+                label="BTC"
+                price={macroSnap.market.btcPrice}
+                change={macroSnap.market.btcChange24h}
               />
+              <MacroChip
+                label="ETH"
+                price={macroSnap.market.ethPrice}
+                change={macroSnap.market.ethChange24h}
+              />
+              {macroSnap.market.totalMarketCapUsd > 0 && (
+                <MacroChip
+                  label="Mkt cap"
+                  price={macroSnap.market.totalMarketCapUsd}
+                  change={macroSnap.market.marketCapChange24h}
+                  compact
+                />
+              )}
+              {macroSnap.defi && (
+                <MacroChip
+                  label="DeFi TVL"
+                  price={macroSnap.defi.totalTvlUsd}
+                  change={macroSnap.defi.change7dPct ?? 0}
+                  compact
+                />
+              )}
             </div>
-            <p className="mt-2 text-center text-[10px] text-amber-200/60">CoinGecko · live</p>
+            {macroSnap.fred && (
+              <p className="mt-2 rounded-lg border border-amber-400/20 bg-amber-500/8 px-3 py-2 text-center text-[11px] text-amber-100/90">
+                FRED · {macroSnap.fred.label}: {macroSnap.fred.latest.value}
+                {macroSnap.fred.changePct != null
+                  ? ` (${macroSnap.fred.changePct >= 0 ? "+" : ""}${macroSnap.fred.changePct.toFixed(2)}%)`
+                  : ""}
+              </p>
+            )}
+            <p className="mt-2 text-center text-[10px] text-amber-200/55">
+              Binance + CoinGecko
+              {macroSnap.defi ? " · DefiLlama" : ""}
+              {macroSnap.fred ? " · FRED" : ""}
+            </p>
           </div>
         )}
 
@@ -221,6 +257,9 @@ export function PrismConsole() {
                 {(latestIntel?.news ?? []).slice(0, 3).map((item, index) => (
                   <IntelRow key={`n-${index}`} source={item.source} title={item.title} />
                 ))}
+                {(latestIntel?.eventRegistry ?? []).slice(0, 4).map((item, index) => (
+                  <IntelRow key={`er-${index}`} source={item.source} title={item.title} />
+                ))}
                 {latestIntel?.community && latestIntel.community.items.length > 0 && (
                   <div className="mt-3 border-t border-white/10 pt-3">
                     <CommunityPulsePanel pulse={latestIntel.community} title="Crypto community" compact />
@@ -228,8 +267,8 @@ export function PrismConsole() {
                 )}
                 {!latestIntel && (
                   <p className="py-4 text-center text-sm text-white/55">
-                    Tap <strong className="text-amber-200">Generate Forecast</strong> for GDELT, news, and community
-                    pulse.
+                    Tap <strong className="text-amber-200">Generate Forecast</strong> for Binance/FRED/DeFi macro plus
+                    GDELT, NewsAPI, Event Registry, and community pulse.
                   </p>
                 )}
               </CardContent>

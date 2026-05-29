@@ -4,6 +4,12 @@ import { randomUUID } from "crypto";
 import { fetchMacroCommunityPulse } from "./community-pulse";
 import { fetchGdeltArticles, MACRO_EVENTS } from "./gdelt";
 import { fetchNewsArticles } from "./newsapi";
+import { fetchEventRegistryArticles } from "./eventregistry-client";
+import {
+  buildPrismMacroSnapshot,
+  macroProbabilityAdjust,
+  type PrismMacroSnapshot,
+} from "./prism-macro-snapshot";
 import { anchorDecisionPayload } from "./arc";
 import { addPrismPrediction, type PrismPrediction } from "./storage";
 
@@ -22,22 +28,28 @@ function heuristicPrediction(input: {
   event: string;
   category: PrismPrediction["category"];
   headlines: string[];
+  macro: PrismMacroSnapshot;
 }): Omit<PrismPrediction, "id" | "timestamp" | "arcTxHash"> {
   const toneBoost = input.headlines.length > 4 ? 8 : 0;
   const base =
     input.category === "geopolitical" ? 42 : input.category === "macro" ? 48 : 55;
+  const probability = macroProbabilityAdjust(base + toneBoost, input.category, input.macro);
+
+  const macroLine =
+    input.macro.factors.length > 0
+      ? input.macro.factors.slice(0, 3).join("; ")
+      : "Limited quantitative macro feeds";
 
   return {
     event: input.event,
     category: input.category,
-    probability: Math.min(92, base + toneBoost),
-    confidence: 63,
+    probability,
+    confidence: input.macro.fred ? 68 : input.macro.market ? 65 : 58,
     kellyFraction: 0.08,
     horizon: "14 days",
-    summary: `PRISM sees elevated narrative velocity around "${input.event}" with mixed but actionable signals.`,
-    reasoning:
-      "Headline density is rising across GDELT and news wires. Base rate adjusted for recent macro volatility and geopolitical risk premium.",
-    sources: input.headlines.slice(0, 5),
+    summary: `PRISM calibrated "${input.event}" using live market, DeFi, and headline signals.`,
+    reasoning: `${macroLine}. Narrative scan across GDELT, news wires, and structured feeds; probability adjusted for current risk regime.`,
+    sources: [...input.macro.factors.slice(0, 2), ...input.headlines.slice(0, 3)],
   };
 }
 
@@ -69,13 +81,16 @@ async function aiPrediction(input: {
   category: PrismPrediction["category"];
   gdelt: Awaited<ReturnType<typeof fetchGdeltArticles>>;
   news: Awaited<ReturnType<typeof fetchNewsArticles>>;
+  eventRegistry: Awaited<ReturnType<typeof fetchEventRegistryArticles>>;
   communityHeadlines: string[];
+  macro: PrismMacroSnapshot;
 }) {
   const anthropic = getAnthropic();
   const openai = getAiClient();
   const headlines = [
     ...input.gdelt.map((item) => item.title),
     ...input.news.map((item) => item.title),
+    ...input.eventRegistry.map((item) => item.title),
     ...input.communityHeadlines,
   ];
 
@@ -83,18 +98,31 @@ async function aiPrediction(input: {
     event: input.event,
     category: input.category,
     headlines,
+    macro: input.macro,
   });
 
   const payload = JSON.stringify({
     event: input.event,
     category: input.category,
+    macroFactors: input.macro.factors,
+    macro: {
+      market: input.macro.market,
+      defi: input.macro.defi
+        ? {
+            totalTvlUsd: input.macro.defi.totalTvlUsd,
+            change7dPct: input.macro.defi.change7dPct,
+          }
+        : null,
+      fred: input.macro.fred,
+    },
     gdelt: input.gdelt.slice(0, 6),
     news: input.news.slice(0, 6),
+    eventRegistry: input.eventRegistry.slice(0, 6),
     community: input.communityHeadlines.slice(0, 8),
   });
 
   const systemPrompt =
-    "You are PRISM, a macro and geopolitical forecasting agent. Return strict JSON with keys: probability (0-100), confidence (0-100), kellyFraction (0-1), horizon (string), summary (1 sentence), reasoning (2 sentences), sources (array of short strings).";
+    "You are PRISM, a macro and geopolitical forecasting agent. Use macroFactors (Binance spot, CoinGecko cap, DefiLlama TVL, FRED series) as primary quantitative evidence; headlines are secondary. Return strict JSON with keys: probability (0-100), confidence (0-100), kellyFraction (0-1), horizon (string), summary (1 sentence), reasoning (2 sentences citing numbers when available), sources (array of short strings).";
 
   if (openai) {
     try {
@@ -154,10 +182,14 @@ export async function runPrismAnalysis(input: EventInput) {
   const category = preset?.category ?? "macro";
   const query = preset?.query ?? event;
 
-  const [gdelt, news, community] = await Promise.all([
+  const eventKey = input.eventId ?? preset?.id ?? "fed-cut-june";
+
+  const [gdelt, news, eventRegistry, community, macro] = await Promise.all([
     fetchGdeltArticles(query, 8),
     fetchNewsArticles(query, 6),
+    fetchEventRegistryArticles(query, 6),
     fetchMacroCommunityPulse(event, query),
+    buildPrismMacroSnapshot(eventKey),
   ]);
 
   const core = await aiPrediction({
@@ -165,7 +197,9 @@ export async function runPrismAnalysis(input: EventInput) {
     category,
     gdelt,
     news,
+    eventRegistry,
     communityHeadlines: community.headlines,
+    macro,
   });
   const payload = JSON.stringify({ product: "PRISM", ...core, at: new Date().toISOString() });
   const anchor = await anchorDecisionPayload(payload);
@@ -181,7 +215,7 @@ export async function runPrismAnalysis(input: EventInput) {
 
   return {
     prediction,
-    intelligence: { gdelt, news, community },
+    intelligence: { gdelt, news, eventRegistry, community, macro },
     events: MACRO_EVENTS,
   };
 }
