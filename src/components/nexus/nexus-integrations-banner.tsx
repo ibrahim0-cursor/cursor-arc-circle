@@ -30,6 +30,28 @@ export function NexusIntegrationsBanner() {
   const news6551Live = Boolean(status.opennews && status.opennewsProbe?.ok);
   const news6551KeyOnly = Boolean(status.opennews && status.opennewsProbe?.configured && !status.opennewsProbe?.ok);
   const news6551Rotated = /refreshed|new token/i.test(status.opennewsProbe?.error ?? "");
+  const news6551Quota = /insufficient quota|quota exceeded|daily quota/i.test(
+    status.opennewsProbe?.error ?? "",
+  );
+  const gmgnRateLimited = /rate limit|rate limited|429/i.test(status.gmgnProbe?.error ?? "");
+  const keysConfigured =
+    Boolean(status.gmgn) &&
+    news6551Ok &&
+    (birdeyeKeyMissing || birdeyeKeyBad || gmgnKeyOnly || news6551KeyOnly);
+  const limitsOnly =
+    keysConfigured &&
+    (news6551Quota || gmgnRateLimited || birdeyeQuota) &&
+    !news6551Rotated &&
+    !/invalid|expired|rejected|rotated/i.test(
+      [
+        status.birdeyeProbe?.error,
+        status.opennewsProbe?.error,
+        status.gmgnProbe?.error,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+
   const partialWarnings: string[] = [];
   if (birdeyeKeyBad) {
     partialWarnings.push(
@@ -49,7 +71,16 @@ export function NexusIntegrationsBanner() {
     partialWarnings.push(
       news6551Rotated
         ? `6551: API token was rotated — paste the NEW key from 6551.io into Vercel API_KEY_6551${sourceHint}, then redeploy`
-        : `6551 news/X: ${status.opennewsProbe?.error ?? "not returning headlines"}${sourceHint}`,
+        : news6551Quota
+          ? `6551: daily quota used (key OK) — news/X resumes after 6551.io reset or upgrade`
+          : `6551 news/X: ${status.opennewsProbe?.error ?? "not returning headlines"}${sourceHint}`,
+    );
+  }
+  if (gmgnKeyOnly) {
+    partialWarnings.push(
+      gmgnRateLimited
+        ? `GMGN: rate limit (key OK) — Live Feed still uses Dex; GMGN refreshes when limit clears`
+        : `GMGN: ${status.gmgnProbe?.error ?? "pending"}`,
     );
   }
 
@@ -99,21 +130,57 @@ export function NexusIntegrationsBanner() {
     );
   }
 
+  if (limitsOnly) {
+    return (
+      <div className="mb-3 space-y-2">
+        <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/[0.08] px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-cyan-50">
+              <strong>API keys connected on Vercel</strong>
+              <span className="text-cyan-100/85">
+                {" "}
+                — some providers hit daily or rate limits. NEXUS still runs on Dex, Gecko, and agent logic.
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={() => refresh()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-black/25 px-2.5 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Recheck
+            </button>
+          </div>
+          {partialWarnings.length > 0 && (
+            <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-cyan-100/80">
+              {partialWarnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (gmgnKeyOnly || news6551KeyOnly || (status.gmgn && status.birdeye)) {
     return (
       <div className="mb-3 rounded-xl border border-amber-400/35 bg-amber-500/[0.1] px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-amber-50">
-            <strong>API keys saved on Vercel</strong>
+            <strong>{news6551Rotated || /invalid|expired/i.test(status.birdeyeProbe?.error ?? "") ? "Fix API keys on Vercel" : "API keys saved on Vercel"}</strong>
             <span className="text-amber-100/85">
-              {gmgnKeyOnly ? ` — GMGN probe: ${status.gmgnProbe?.error ?? "pending"}` : ""}
-              {news6551KeyOnly
+              {gmgnKeyOnly && !partialWarnings.some((w) => w.startsWith("GMGN")) ? ` — GMGN: ${status.gmgnProbe?.error ?? "pending"}` : ""}
+              {news6551KeyOnly && !partialWarnings.some((w) => w.startsWith("6551"))
                 ? ` — 6551: ${status.opennewsProbe?.error ?? "no rows yet"}${news6551Source ? ` [${news6551Source}]` : ""}`
                 : ""}
-              {!gmgnKeyOnly && !news6551KeyOnly ? " — finishing handshake" : ""}
+              {birdeyeKeyBad ? ` — Birdeye: ${status.birdeyeProbe?.error ?? "check key"}` : ""}
+              {!gmgnKeyOnly && !news6551KeyOnly && !birdeyeKeyBad ? " — finishing handshake" : ""}
             </span>
             <span className="mt-1 block text-xs text-amber-100/70">
-              After adding env vars you must <strong>Redeploy → Production</strong> (not only Save). Then hard-refresh /nexus.
+              {news6551Rotated || /invalid|expired/i.test(status.birdeyeProbe?.error ?? "")
+                ? "Update the key on 6551.io or bds.birdeye.so, save in Vercel Production, then Redeploy → Production and hard-refresh /nexus."
+                : "If you just changed keys: Redeploy → Production (not only Save), then hard-refresh /nexus."}
             </span>
           </p>
           <button

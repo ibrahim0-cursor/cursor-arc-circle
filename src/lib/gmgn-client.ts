@@ -203,7 +203,45 @@ export async function probeGmgn(): Promise<{
   if (!hasGmgnApiKey()) {
     return { ok: false, configured: false, error: "GMGN_API_KEY not set" };
   }
-  const rows = await fetchGmgnMarketRank("sol", "1h", 3);
-  if (rows.length > 0) return { ok: true, configured: true, trendingCount: rows.length };
-  return { ok: false, configured: true, error: "market rank empty or rate limited" };
+  const res = await gmgnApiRequest<{ rank?: RankRow[] }>("GET", "/v1/market/rank", {
+    chain: "sol",
+    interval: "1h",
+    limit: 3,
+  });
+  if (res.ok && res.data) {
+    const rank = res.data.rank ?? [];
+    if (Array.isArray(rank) && rank.length > 0) {
+      return { ok: true, configured: true, trendingCount: rank.length };
+    }
+  }
+  const fiveM = await gmgnApiRequest<{ rank?: RankRow[] }>("GET", "/v1/market/rank", {
+    chain: "sol",
+    interval: "5m",
+    limit: 3,
+  });
+  if (fiveM.ok && fiveM.data?.rank?.length) {
+    return { ok: true, configured: true, trendingCount: fiveM.data.rank.length };
+  }
+  const detail = res.error ?? fiveM.error;
+  if (/rate|limit|429|quota/i.test(detail ?? "")) {
+    return {
+      ok: false,
+      configured: true,
+      error: "GMGN rate limit — key is set; wait a few minutes or check plan at gmgn.ai",
+    };
+  }
+  if (/401|403|invalid|unauthorized/i.test(detail ?? "")) {
+    return {
+      ok: false,
+      configured: true,
+      error: "GMGN key rejected — verify GMGN_API_KEY + Ed25519 public key on gmgn.ai",
+    };
+  }
+  return {
+    ok: false,
+    configured: true,
+    error: detail
+      ? `GMGN: ${detail.slice(0, 120)}`
+      : "market rank empty — GMGN may be rate limited; Dex feed still runs",
+  };
 }
