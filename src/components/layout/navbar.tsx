@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Droplets, Home, Radar, Zap } from "lucide-react";
+import { Box, Droplets, Home, Radar, Zap } from "lucide-react";
 import { ArcLogoMark } from "@/components/layout/arc-logo-mark";
 import { arcNavIconTheme } from "@/components/layout/arc-theme-sync";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
@@ -15,6 +15,7 @@ const links = [
   { href: "/", label: "Home", icon: Home },
   { href: "/nexus", label: "NEXUS", icon: Zap },
   { href: "/prism", label: "PRISM", icon: Radar },
+  { href: "/arc", label: "Arc", icon: Box },
   { href: "https://faucet.circle.com/", label: "Faucet", icon: Droplets, external: true },
 ] as const;
 

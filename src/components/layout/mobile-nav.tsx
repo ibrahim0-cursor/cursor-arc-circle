@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Droplets, Home, LineChart, Menu, Sparkles, X, Zap } from "lucide-react";
+import { Box, Droplets, Home, LineChart, Menu, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const links = [
   { href: "/", label: "Home", icon: Home, desc: "Overview" },
   { href: "/prism", label: "PRISM", icon: LineChart, desc: "Macro forecasts" },
   { href: "/nexus", label: "NEXUS", icon: Zap, desc: "AI trading agent" },
+  { href: "/arc", label: "Arc Counter", icon: Box, desc: "On-chain Foundry demo" },
   { href: "https://faucet.circle.com/", label: "USDC Faucet", icon: Droplets, desc: "Arc testnet funds", external: true },
 ] as const;
 
