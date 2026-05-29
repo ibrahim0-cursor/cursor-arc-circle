@@ -39,6 +39,13 @@ export type NewsClass =
   | "cybersecurity"
   | "general";
 
+function headlineAgeDays(item: IntelItem): number | null {
+  if (!item.publishedAt) return null;
+  const t = Date.parse(item.publishedAt);
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 86_400_000));
+}
+
 export type ScoredHeadline = IntelItem & {
   newsClass: NewsClass;
   cryptoRelevance: number;
@@ -280,9 +287,16 @@ function scoreHeadlineRow(
 ): ScoredHeadline {
   const newsClass = classifyNews(item.title);
   const eventMatchPct = eventMatchScore(item.title, eventLabel, query);
-  const cryptoRelevance = Math.round(
+  let cryptoRelevance = Math.round(
     cryptoRelevanceForClass(newsClass, category) * 0.55 + eventMatchPct * 0.45,
   );
+  const age = headlineAgeDays(item);
+  if (age != null) {
+    if (age <= 2) cryptoRelevance += 8;
+    else if (age > 10) cryptoRelevance -= 15;
+    else if (age > 5) cryptoRelevance -= 6;
+  }
+  cryptoRelevance = Math.min(100, Math.max(0, cryptoRelevance));
   const impact = impactFromTitle(item.title, macro);
   return {
     ...item,
@@ -306,7 +320,8 @@ function passesStrictFilter(
   if (isOffTopicForEvent(h.title, eventLabel, category)) return false;
   if (!categoryAllowsClass(category, h.newsClass)) return false;
   if (category === "macro" && sourceTrustTier(h.source) === 0) return false;
-  return h.cryptoRelevance >= 42 && h.eventMatchPct >= 18;
+  const minMatch = /fed|fomc|cpi|inflation/i.test(eventLabel) ? 28 : 18;
+  return h.cryptoRelevance >= 44 && h.eventMatchPct >= minMatch;
 }
 
 function passesRelaxedFilter(
@@ -401,8 +416,17 @@ export function buildPrismEngineContext(
 
   const weights = { ...CATEGORY_WEIGHTS[category], ...(REGIME_WEIGHTS[regime] ?? {}) };
 
-  const top = scoredHeadlines[0];
-  const transmissionChain = top?.transmission ?? buildTransmission("macro", "neutral", macro);
+  const top =
+    scoredHeadlines.find((h) => h.newsClass === "monetary-policy") ??
+    scoredHeadlines.find((h) => sourceTrustTier(h.source) >= 2) ??
+    scoredHeadlines[0];
+  const transmissionChain =
+    top?.transmission ??
+    buildTransmission(
+      /fed|fomc|rate/i.test(event) ? "monetary-policy" : "macro",
+      top?.impact ?? "neutral",
+      macro,
+    );
 
   const sectorImpact =
     category === "geopolitical"
@@ -549,10 +573,12 @@ Before assigning any probability, complete this internal desk workflow (reflect 
 
 Hard rules:
 - Output event probability forecasts ONLY — never BUY, SELL, HOLD, or trade instructions.
-- Cite at least 2 headlines by [source] in reasoning when topHeadlines exist; name macro feeds used.
-- Reject misinfo: price-action-only narratives, unverified "insider" claims, meme hype without macro transmission.
-- Do NOT default to ~50% or ~62%. Calibrate from regime, bullish/bearish headline balance, FRED, signalAgreement.
-- probability reflects likelihood the EVENT occurs / thesis holds — not generic "crypto goes up".
+- Prefer headlines ≤72h old; stale listicles (savings/CD rates) are invalid intel for Fed/CPI events.
+- Cite at least 3 headlines by [source] with why each supports or contradicts the thesis.
+- Reject misinfo: price-action-only narratives, unverified claims, meme hype without macro transmission.
+- probability MUST stay within ±8 of dataAnchoredProbability when intelQuality ≥ 70; never invent 50%/62% defaults.
+- probability = likelihood the EVENT occurs (e.g. Fed cut), grounded in FRED + headline consensus — not generic crypto direction.
+- confidence tracks intelQuality: high-quality multi-wire corroboration → up to 85; thin/conflicting tape → cap at 58.
 - Invalidation must be testable (yield move, CPI band, oil %, headline reversal, TVL shift).
 - sources: ≥2 named feeds when data exists (GDELT, NewsAPI, 6551, FRED, DeFiLlama, etc.).
 

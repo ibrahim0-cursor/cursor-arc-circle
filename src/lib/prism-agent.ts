@@ -26,8 +26,11 @@ import {
 import {
   buildEventIntelQueries,
   computeDataAnchoredProbability,
+  computeIntelQualityScore,
   fetchExpandedEventIntel,
   filterResearchIntel,
+  finalizePrismConfidence,
+  finalizePrismProbability,
   formatPublicAgentReasoning,
   formatPublicSummary,
 } from "./prism-research-pipeline";
@@ -124,8 +127,10 @@ async function aiPrediction(input: {
       transmission: h.transmission,
     })),
     headlineCount: input.engine.scoredHeadlines.length,
+    intelQuality: computeIntelQualityScore(input.engine),
+    asOfUtc: new Date().toISOString(),
     instruction:
-      "Professional macro desk: complete 5-step research internally. Probability MUST stay within ±12 of dataAnchoredProbability unless ≥3 trusted wire headlines disagree. Cite [source] titles. No BUY/SELL/HOLD.",
+      "Institutional desk: use only topHeadlines + macroFactors. Probability within ±8 of dataAnchoredProbability when intelQuality≥70. Cite ≥3 [source] headlines with dates. No BUY/SELL/HOLD.",
   });
 
   if (openai) {
@@ -251,10 +256,17 @@ export async function runPrismAnalysis(input: EventInput) {
   const dataProbability = computeDataAnchoredProbability(event, category, macro, engine);
   const raw = await aiPrediction({ event, category, engine, macro, dataProbability });
   const calibrated = calibratePrismForecast(raw, macro, engine, memory.maxAllowedConfidence);
+  const probability = finalizePrismProbability(
+    dataProbability,
+    calibrated.probability,
+    engine,
+  );
+  const confidence = finalizePrismConfidence(calibrated.confidence, engine, macro);
+  const merged = { ...calibrated, probability, confidence };
   const core = {
-    ...calibrated,
-    summary: formatPublicSummary(event, calibrated.probability, engine, macro),
-    reasoning: formatPublicAgentReasoning(event, engine, macro, calibrated),
+    ...merged,
+    summary: formatPublicSummary(event, probability, engine, macro),
+    reasoning: formatPublicAgentReasoning(event, engine, macro, merged),
   };
 
   const payload = JSON.stringify({

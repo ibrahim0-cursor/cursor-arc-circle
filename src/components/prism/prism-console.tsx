@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
-import { History, Radar, Target, X } from "lucide-react";
+import { Brain, History, Radar, Target, X } from "lucide-react";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { PRISM_FORECAST_FEE_USD } from "@/lib/arc-chain";
 import { arcExplorerTx } from "@/lib/arc";
@@ -383,29 +383,37 @@ export function PrismConsole() {
                           ))}
                       </div>
                     )}
-                    <div className="break-words text-sm leading-relaxed text-white/70">
-                      <span className="font-semibold text-amber-200/90">Agent reasoning</span>
-                      <pre className="mt-2 whitespace-pre-wrap font-sans text-xs leading-relaxed text-white/75">
+                    <PrismCollapsible
+                      key={latest.id}
+                      label="Agent reasoning"
+                      hint="Verified sources · macro cross-check · probability thesis"
+                      icon={Brain}
+                      defaultOpen={false}
+                      className="border-amber-400/15"
+                      bodyClassName="max-h-[min(52vh,420px)] overflow-y-auto"
+                    >
+                      <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-white/80">
                         {latest.reasoning}
                       </pre>
-                    </div>
-                    {latestEngine?.scoredHeadlines && latestEngine.scoredHeadlines.length > 0 && (
-                      <div className="rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3">
-                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-200/80">
-                          Top scored headlines
-                        </p>
-                        <ul className="space-y-1.5">
-                          {latestEngine.scoredHeadlines.slice(0, 4).map((h, i) => (
-                            <li key={`${h.source}-${i}`} className="text-xs text-white/75">
-                              <span className="text-amber-200/90">{h.impact}</span>
-                              {" · "}
-                              {h.cryptoRelevance}% crypto · {h.title.slice(0, 120)}
-                              {h.title.length > 120 ? "…" : ""}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                      {latestEngine?.scoredHeadlines && latestEngine.scoredHeadlines.length > 0 && (
+                        <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3">
+                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-200/80">
+                            Top verified headlines
+                          </p>
+                          <ul className="space-y-1.5">
+                            {latestEngine.scoredHeadlines.slice(0, 6).map((h, i) => (
+                              <li key={`${h.source}-${i}`} className="text-xs text-white/75">
+                                <span className="text-amber-200/90">{h.impact}</span>
+                                {" · "}
+                                {h.cryptoRelevance}% relevance · {h.eventMatchPct}% match ·{" "}
+                                {h.title.slice(0, 120)}
+                                {h.title.length > 120 ? "…" : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </PrismCollapsible>
                     {latest.arcTxHash && (
                       <p className="text-xs text-white/45">Arc · {truncateHash(latest.arcTxHash, 10, 8)}</p>
                     )}

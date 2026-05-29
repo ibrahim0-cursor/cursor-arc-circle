@@ -65,13 +65,28 @@ export async function fetchExpandedEventIntel(queries: string[]): Promise<{
   const registryBatches = await Promise.all(queries.map((q) => fetchEventRegistryArticles(q, 5)));
 
   const gdelt = dedupeHeadlines(
-    gdeltBatches.flat().map((a) => ({ title: a.title, source: a.source, url: a.url })),
+    gdeltBatches.flat().map((a) => ({
+      title: a.title,
+      source: a.source,
+      url: a.url,
+      publishedAt: a.date,
+    })),
   );
   const news = dedupeHeadlines(
-    newsFlat.map((a) => ({ title: a.title, source: a.source, url: a.url })),
+    newsFlat.map((a) => ({
+      title: a.title,
+      source: a.source,
+      url: a.url,
+      publishedAt: a.publishedAt,
+    })),
   );
   const eventRegistry = dedupeHeadlines(
-    registryBatches.flat().map((a) => ({ title: a.title, source: a.source, url: a.url })),
+    registryBatches.flat().map((a) => ({
+      title: a.title,
+      source: a.source,
+      url: a.url,
+      publishedAt: a.date,
+    })),
   );
 
   return { gdelt, news, eventRegistry };
@@ -115,6 +130,60 @@ export function computeDataAnchoredProbability(
   return macroProbabilityAdjust(base, category, macro);
 }
 
+/** 0–100 desk data quality — drives how much we trust data vs LLM narrative. */
+export function computeIntelQualityScore(engine: PrismEngineContext): number {
+  const h = engine.scoredHeadlines;
+  if (h.length === 0) return 22;
+  const trusted = h.filter((row) => sourceTrustTier(row.source) >= 2).length;
+  const fresh = h.filter((row) => headlineAgeDays(row) != null && headlineAgeDays(row)! <= 3).length;
+  const strongMatch = h.filter((row) => row.eventMatchPct >= 35).length;
+  let score = 30 + trusted * 12 + fresh * 6 + strongMatch * 8;
+  score += Math.round(engine.signalAgreement * 18);
+  if (engine.scoredHeadlines.length >= 5) score += 8;
+  return Math.min(95, Math.max(15, score));
+}
+
+function headlineAgeDays(item: { publishedAt?: string }): number | null {
+  if (!item.publishedAt) return null;
+  const t = Date.parse(item.publishedAt);
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 86_400_000));
+}
+
+/** Blend model output with live macro/headline anchor — higher quality → more weight on data. */
+export function finalizePrismProbability(
+  dataProbability: number,
+  modelProbability: number,
+  engine: PrismEngineContext,
+): number {
+  const quality = computeIntelQualityScore(engine);
+  const trusted = engine.scoredHeadlines.filter((h) => sourceTrustTier(h.source) >= 2).length;
+  const dataWeight = quality >= 72 ? 0.82 : quality >= 50 ? 0.72 : 0.6;
+  let p = Math.round(dataProbability * dataWeight + modelProbability * (1 - dataWeight));
+  if (trusted >= 4 && engine.signalAgreement >= 0.5) {
+    p = Math.round(p * 0.35 + dataProbability * 0.65);
+  }
+  const maxDelta = quality >= 60 ? 8 : 12;
+  p = Math.max(dataProbability - maxDelta, Math.min(dataProbability + maxDelta, p));
+  return Math.min(90, Math.max(8, p));
+}
+
+export function finalizePrismConfidence(
+  baseConfidence: number,
+  engine: PrismEngineContext,
+  macro: PrismMacroSnapshot,
+): number {
+  const quality = computeIntelQualityScore(engine);
+  const trusted = engine.scoredHeadlines.filter((h) => sourceTrustTier(h.source) >= 2).length;
+  let c = baseConfidence;
+  c += Math.round(quality * 0.12);
+  c += trusted >= 3 ? 6 : 0;
+  c += macro.fred ? 5 : 0;
+  if (quality < 40) c = Math.min(c, 58);
+  if (quality >= 75 && trusted >= 4) c = Math.min(88, c + 6);
+  return Math.min(88, Math.max(34, Math.round(c)));
+}
+
 export function formatPublicSummary(
   event: string,
   probability: number,
@@ -133,9 +202,15 @@ export function formatPublicAgentReasoning(
   macro: PrismMacroSnapshot,
   core: Pick<PrismPrediction, "probability" | "confidence" | "reasoning" | "sources">,
 ): string {
-  const headlines = engine.scoredHeadlines.slice(0, 5);
+  const quality = computeIntelQualityScore(engine);
+  const asOf = new Date().toISOString().slice(0, 16).replace("T", " UTC ");
+  const headlines = engine.scoredHeadlines.slice(0, 6);
   const cited = headlines
-    .map((h) => `• [${h.source}] ${h.title.slice(0, 100)} (${h.impact}, ${h.eventMatchPct}% match)`)
+    .map((h) => {
+      const age = headlineAgeDays(h);
+      const fresh = age != null ? (age <= 1 ? "today" : `${age}d ago`) : "recent";
+      return `• [${h.source}] ${h.title.slice(0, 100)} (${h.impact}, ${h.eventMatchPct}% match, ${fresh})`;
+    })
     .join("\n");
 
   const bullish = headlines.filter((h) => h.impact === "bullish").length;
@@ -156,6 +231,7 @@ export function formatPublicAgentReasoning(
 
   return [
     `## Research brief: ${event}`,
+    `*As of ${asOf} · Intel quality ${quality}/100 (wire sources, recency, event match)*`,
     "",
     "### 1. Verified headline scan",
     headlines.length > 0
