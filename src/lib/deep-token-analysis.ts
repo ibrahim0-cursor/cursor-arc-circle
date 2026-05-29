@@ -5,8 +5,8 @@ import { fetchDexPaprikaToken, paprikaIntelFromToken } from "./dexpaprika";
 import { fetchMergedTokenDetection } from "./token-detection";
 import type { CryptoNewsItem } from "./crypto-news";
 import {
-  fetchCommunityPulse,
   fetchCommunityPulseLite,
+  fetchTokenCommunityPulse,
   type CommunityPulse,
 } from "./community-pulse";
 import { fetchMoralisTokenMeta, hasMoralisKey } from "./moralis";
@@ -69,7 +69,7 @@ export async function buildDeepTokenIntel(
     ),
     opts?.scanKind === "alpha"
       ? fetchCommunityPulseLite(token.symbol, token.name)
-      : fetchCommunityPulse(token.symbol, token.name),
+      : fetchTokenCommunityPulse(token.symbol, token.name),
   ]);
 
   const social = community.social ?? {

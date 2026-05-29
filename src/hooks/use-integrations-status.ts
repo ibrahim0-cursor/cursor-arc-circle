@@ -31,9 +31,9 @@ export type IntegrationsStatus = {
   gmgn?: boolean;
   gmgnProbe?: { ok: boolean; error?: string };
   opennews?: boolean;
-  opennewsProbe?: { ok: boolean; configured?: boolean; error?: string };
+  opennewsProbe?: { ok: boolean; configured?: boolean; tokenSource?: string; error?: string };
   opentwitter?: boolean;
-  opentwitterProbe?: { ok: boolean; configured?: boolean; error?: string };
+  opentwitterProbe?: { ok: boolean; configured?: boolean; tokenSource?: string; error?: string };
   stocktwits?: boolean;
   stocktwitsProbe?: { ok: boolean; configured?: boolean; error?: string };
   rapidApiTwitter?: boolean;

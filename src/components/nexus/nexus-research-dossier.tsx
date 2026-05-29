@@ -5,7 +5,6 @@ import {
   BarChart3,
   BookOpen,
   ExternalLink,
-  Link2,
   Loader2,
   Newspaper,
   Shield,
@@ -110,30 +109,6 @@ export function NexusResearchDossierDeep({
       </NexusCollapsible>
 
       <NexusCollapsible
-        label="Team & links"
-        hint={dossier.teamLinks.map((l) => l.label).join(" · ")}
-        variant="default"
-        icon={Link2}
-        defaultOpen={false}
-        showCollapseHint
-      >
-        <div className="flex flex-wrap gap-2">
-          {dossier.teamLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="arc-glass-interactive inline-flex items-center gap-1.5 rounded-xl border border-white/12 px-3 py-2 text-xs font-semibold text-cyan-100"
-            >
-              {link.label}
-              <ExternalLink className="h-3 w-3 opacity-70" />
-            </a>
-          ))}
-        </div>
-      </NexusCollapsible>
-
-      <NexusCollapsible
         label="Creator & rug check"
         hint={dossier.creatorRisk.scamLabel ?? `${dossier.creatorRisk.verdict} · Bubblemaps`}
         variant="intel"
@@ -182,28 +157,44 @@ export function NexusResearchDossierDeep({
 
       <NexusCollapsible
         label="Copy-trade wallets"
-        hint={`${dossier.copyTradeWallets.length} wallets to watch`}
+        hint={
+          dossier.copyTradeStatus ??
+          (dossier.copyTradeWallets.length > 0
+            ? `${dossier.copyTradeWallets.length} GMGN smart-money / KOL`
+            : "GMGN · smart-degen / KOL")
+        }
         variant="intel"
         icon={Wallet}
         defaultOpen={false}
         showCollapseHint
       >
-        <ul className="space-y-2">
-          {dossier.copyTradeWallets.map((w) => (
-            <li
-              key={w.address}
-              className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs"
-            >
-              <span className="font-mono text-white/90">{truncateHash(w.address, 8, 6)}</span>
-              <span className="truncate text-white/55">{w.note}</span>
-            </li>
-          ))}
-        </ul>
+        {dossier.copyTradeWallets.length > 0 ? (
+          <ul className="space-y-2">
+            {dossier.copyTradeWallets.map((w) => (
+              <li
+                key={w.address}
+                className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs"
+              >
+                <span className="font-mono text-white/90">{truncateHash(w.address, 8, 6)}</span>
+                <span className="truncate text-white/55">{w.note}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs leading-relaxed text-white/60">
+            {dossier.copyTradeStatus ??
+              "No GMGN smart-money / KOL wallets for this pair. Keys must be on Vercel Production + redeploy after saving."}
+          </p>
+        )}
       </NexusCollapsible>
 
       <NexusCollapsible
-        label="Socials & news"
-        hint="6551 OpenNews / Twitter · community sweep"
+        label="Token news & social"
+        hint={
+          dossier.socialNews[0]?.startsWith("No verified")
+            ? "6551 / X — symbol match"
+            : `${dossier.socialNews.length} symbol-matched · 6551 OpenNews`
+        }
         variant="default"
         icon={Newspaper}
         defaultOpen={false}

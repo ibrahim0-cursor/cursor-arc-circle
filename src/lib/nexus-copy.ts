@@ -98,7 +98,7 @@ export const FEED_INTEL_LABEL = "Live feed";
 export const ALPHA_INTEL_LABEL = "Alpha deep intel";
 
 export const REASONING_HEADLINE =
-  "Read before buy / sell / hold — Chat is optional for Q&A.";
+  "Expand for thesis and signals — stats above are Dex-verified; agent only cites actionable edges.";
 
 export const FEED_ROW_HINT =
   "Dex-verified price & flow · light agent pass (not a paid deep scan)";

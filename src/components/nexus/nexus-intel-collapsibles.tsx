@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { TokenDossierPayload, LiveReasoningFactor, TaTimeframeBlock } from "@/lib/nexus-research-dossier";
 import type { AgentSignal, TechnicalSnapshot } from "@/lib/storage";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
+import { filterReasoningFactorsForDisplay } from "@/lib/reasoning-factors";
 
 function FactorRow({ factor }: { factor: LiveReasoningFactor }) {
   const Icon =
@@ -100,14 +101,14 @@ function mergeFactors(
   agent: AgentSignal | undefined,
   live: TokenDossierPayload["liveReasoning"] | undefined,
 ): LiveReasoningFactor[] {
-  if (agent?.reasoningFactors?.length) {
-    return agent.reasoningFactors.map((f) => ({
-      label: f.label,
-      detail: f.detail,
-      impact: f.impact,
-    }));
-  }
-  return live?.factors ?? [];
+  const raw = agent?.reasoningFactors?.length
+    ? agent.reasoningFactors.map((f) => ({
+        label: f.label,
+        detail: f.detail,
+        impact: f.impact,
+      }))
+    : (live?.factors ?? []);
+  return filterReasoningFactorsForDisplay(raw, 8);
 }
 
 function mergeNarrative(

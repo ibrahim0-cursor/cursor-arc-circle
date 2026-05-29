@@ -26,6 +26,7 @@ import { mergeFeedTokensStable } from "@/lib/token-security";
 import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { agentVerdictLine, FEED_ROW_HINT } from "@/lib/nexus-copy";
+import { filterReasoningFactorsForDisplay } from "@/lib/reasoning-factors";
 import { cn } from "@/lib/utils";
 import type { TokenIntel } from "@/lib/storage";
 import type { AgentSignal } from "@/lib/storage";
@@ -60,7 +61,7 @@ const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
 const QUICK_TIMEOUT_MS = 12_000;
 const FULL_TIMEOUT_MS = 25_000;
-const FEED_SESSION_KEY = "nexus-feed-v2";
+const FEED_SESSION_KEY = "nexus-feed-v5";
 const FEED_SESSION_TTL_MS = 90_000;
 
 function isFeedExcluded(t: TrendingMarketToken): boolean {
@@ -434,7 +435,7 @@ export function NexusTrendingFeed({
             )}
             {cleanFeed && agent.reasoningFactors && agent.reasoningFactors.length > 0 && (
               <p className="line-clamp-1 text-[9px] text-white/40">
-                {agent.reasoningFactors
+                {filterReasoningFactorsForDisplay(agent.reasoningFactors, 3)
                   .slice(0, 2)
                   .map((f) => f.label)
                   .join(" · ")}

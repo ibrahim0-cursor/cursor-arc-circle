@@ -10,6 +10,7 @@ import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NexusWalletMenu } from "@/components/nexus/nexus-wallet-menu";
+import { MERIDIAN_BUILT_FOR, MERIDIAN_MODULES, MERIDIAN_NAME, MERIDIAN_TAGLINE } from "@/lib/meridian-brand";
 
 const links = [
   { href: "/", label: "Home", icon: Home },
@@ -37,8 +38,11 @@ export function Navbar() {
         <Link href="/" className="group flex items-center gap-2.5">
           <ArcLogoMark className="h-10 w-10" />
           <div className="hidden sm:block">
-            <p className="text-sm font-bold tracking-[0.12em] text-white">ARC CIRCLE</p>
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/45">Intelligence OS</p>
+            <p className="text-sm font-bold tracking-[0.12em] text-white">{MERIDIAN_NAME}</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/45">
+              {MERIDIAN_TAGLINE} · {MERIDIAN_MODULES}
+            </p>
+            <p className="hidden text-[9px] text-white/30 lg:block">{MERIDIAN_BUILT_FOR}</p>
           </div>
         </Link>
 

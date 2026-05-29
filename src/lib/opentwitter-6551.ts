@@ -3,7 +3,7 @@
  * CLI/MCP: npx skills add 6551Team/opentwitter-mcp · Env: TWITTER_TOKEN
  */
 
-import { fetch6551, resolve6551Token } from "./6551-client";
+import { fetch6551, resolve6551Token, resolve6551TokenSource } from "./6551-client";
 
 export type OpenTwitterHit = {
   text: string;
@@ -93,12 +93,18 @@ export async function fetchOpenTwitterForToken(symbol: string, name?: string, li
   return searchOpenTwitter({ keywords, minLikes: 5, maxResults: limit, product: "Latest" });
 }
 
-export async function probeOpenTwitter(): Promise<{ ok: boolean; configured: boolean; error?: string }> {
+export async function probeOpenTwitter(): Promise<{
+  ok: boolean;
+  configured: boolean;
+  tokenSource?: string;
+  error?: string;
+}> {
   if (!hasOpenTwitterToken()) {
     return { ok: false, configured: false, error: "6551 key not set (API_KEY_6551 or TWITTER_TOKEN)" };
   }
   const t = token();
   if (!t) return { ok: false, configured: false, error: "6551 key not set" };
+  const tokenSource = resolve6551TokenSource("twitter") ?? undefined;
   const res = await fetch6551<unknown>("/open/twitter_search", t, {
     keywords: "bitcoin",
     maxResults: 3,
@@ -106,9 +112,14 @@ export async function probeOpenTwitter(): Promise<{ ok: boolean; configured: boo
     product: "Latest",
   });
   if (!res.ok) {
-    return { ok: false, configured: true, error: res.error ?? `HTTP ${res.status}` };
+    return { ok: false, configured: true, tokenSource, error: res.error ?? `HTTP ${res.status}` };
   }
   const parsed = mapOpenTwitterRows(normalizeTweets(res.data));
-  if (parsed.length > 0) return { ok: true, configured: true };
-  return { ok: false, configured: true, error: "twitter_search returned no rows (check 6551 plan / OpenTwitter access)" };
+  if (parsed.length > 0) return { ok: true, configured: true, tokenSource };
+  return {
+    ok: false,
+    configured: true,
+    tokenSource,
+    error: "twitter_search returned no rows (check 6551 plan / OpenTwitter access)",
+  };
 }

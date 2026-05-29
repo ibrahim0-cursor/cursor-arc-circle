@@ -4,6 +4,8 @@ import { hasBirdeyeKey } from "./birdeye-client";
 import type { AgentSignal, TokenIntel } from "./storage";
 import type { LiveReasoningFactor } from "./nexus-research-dossier";
 import { formatCompact, formatTokenPrice } from "./utils";
+import { filterReasoningFactorsForDisplay } from "./reasoning-factors";
+import { isTokenQuoteReliable, unreliableQuoteMessage } from "./token-quote";
 
 export type NarrativeTier = "feed" | "alpha";
 
@@ -107,10 +109,10 @@ export function buildTokenAgentNarrative(
 
   const flowLine =
     flow === "buy"
-      ? `swap flow favors buyers (${token.txns24h?.buys ?? "?"} buys vs ${token.txns24h?.sells ?? "?"} sells)`
+      ? "order flow skews buy-heavy on 24h swaps"
       : flow === "sell"
-        ? `sellers dominate 24h tx count`
-        : `flow is two-sided — no clear aggressor`;
+        ? "order flow skews sell-heavy on 24h swaps"
+        : "swap flow is balanced — no clear aggressor";
 
   const concLine =
     top10 != null
@@ -123,25 +125,46 @@ export function buildTokenAgentNarrative(
 
   const structLine = opts?.patternLabel ? `structure: ${opts.patternLabel}` : null;
 
-  let core = "";
-  if (action === "SELL" && ch < -8) {
-    core = `${token.symbol} at ${fmtUsd(token.priceUsd)} is under distribution pressure (${ch.toFixed(1)}% 24h) on ${fmtUsd(liq)} liquidity. ${flowLine}; ${t.toFixed(1)}x vol/liq.`;
-  } else if (action === "BUY" && ch > 4 && t < 14) {
-    core = `${token.symbol} (${fmtUsd(token.priceUsd)}, +${ch.toFixed(1)}% 24h) shows active tape with ${fmtUsd(vol)} volume and ${flowLine}. Turnover ${t.toFixed(1)}x — meme momentum phase if holders cooperate.`;
-  } else if (action === "HOLD" && Math.abs(ch) < 4) {
-    core = `${token.symbol} is chopping near ${fmtUsd(token.priceUsd)} (${ch >= 0 ? "+" : ""}${ch.toFixed(1)}% 24h) with ${fmtUsd(liq)} pool — ${flowLine}. Edge is mixed; patience beats forcing entries.`;
-  } else if (ch > 15) {
-    core = `${token.symbol} extended +${ch.toFixed(1)}% — late longs face exhaustion risk unless liquidity keeps expanding (now ${fmtUsd(liq)}).`;
-  } else {
-    core = `${token.symbol} @ ${fmtUsd(token.priceUsd)}: ${ch >= 0 ? "+" : ""}${ch.toFixed(1)}% 24h, ${fmtUsd(vol)} vol, ${t.toFixed(1)}x turnover vs liq — ${flowLine}.`;
+  if (!isTokenQuoteReliable(token)) {
+    return {
+      narrative: unreliableQuoteMessage(token.symbol),
+      coachLines: ["Wait for Dex pool sync before sizing — stats row updates first."],
+      gmgnNotes,
+      playbook: "Quote pending",
+    };
   }
 
-  const verdict = `Agent ${action} ${conf}% (risk ${risk}/100)`;
-  const taPart = ta ? ` TA: ${ta}.` : "";
+  const tapeTone =
+    ch < -8
+      ? "distribution / sell pressure on the tape"
+      : ch > 8
+        ? "momentum extension — watch exhaustion vs holder support"
+        : Math.abs(ch) < 3
+          ? "choppy, low-conviction range"
+          : "directional but not extreme";
+
+  const turnoverNote =
+    t > 8 ? "hyper-active turnover — size down, slippage risk elevated" : t > 2 ? "healthy activity vs pool depth" : "thin tape relative to liquidity";
+
+  let core = "";
+  if (action === "SELL" && ch < -8) {
+    core = `${token.symbol}: ${tapeTone}. ${flowLine}. ${turnoverNote}.`;
+  } else if (action === "BUY" && ch > 4) {
+    core = `${token.symbol}: ${tapeTone} with ${flowLine}. ${turnoverNote} — only add size if holders and contract checks pass.`;
+  } else if (action === "HOLD") {
+    core = `${token.symbol}: ${tapeTone}; ${flowLine}. Edge is mixed — ${turnoverNote}. Patience beats forcing entries.`;
+  } else if (ch > 15) {
+    core = `${token.symbol}: extended move — late longs face exhaustion unless flow and holders confirm continuation.`;
+  } else {
+    core = `${token.symbol}: ${tapeTone}; ${flowLine}. ${turnoverNote}.`;
+  }
+
+  const verdict = `Agent ${action} ${conf}% confidence · risk ${risk}/100`;
+  const taPart = ta ? ` Chart: ${ta}.` : "";
   const extra = [concLine, structLine].filter(Boolean).join(" ");
   const research =
     tier === "alpha" && opts?.researchThesis
-      ? ` Thesis: ${opts.researchThesis.slice(0, 220)}`
+      ? ` Alpha thesis: ${opts.researchThesis.slice(0, 220)}`
       : "";
 
   const narrative = `${verdict}. ${core}${taPart}${extra ? ` ${extra}.` : ""}${research}`.replace(/\s+/g, " ").trim();
@@ -176,9 +199,12 @@ export function narrativeToWhyAction(bundle: TokenNarrativeBundle, maxLen = 200)
 
 export function factorsFromAgent(agent?: AgentSignal): LiveReasoningFactor[] {
   if (!agent?.reasoningFactors?.length) return [];
-  return agent.reasoningFactors.map((f) => ({
-    label: f.label,
-    detail: f.detail,
-    impact: f.impact,
-  }));
+  return filterReasoningFactorsForDisplay(
+    agent.reasoningFactors.map((f) => ({
+      label: f.label,
+      detail: f.detail,
+      impact: f.impact,
+    })),
+    8,
+  );
 }

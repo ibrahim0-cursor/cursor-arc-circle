@@ -25,34 +25,106 @@ export function NexusIntegrationsBanner() {
     /quota|compute units|usage limit|rate limit/i.test(status.birdeyeProbe.error ?? "");
 
   const gmgnOk = Boolean(status.gmgn && status.gmgnProbe?.ok);
+  const gmgnKeyOnly = Boolean(status.gmgn && !status.gmgnProbe?.ok);
   const news6551Ok = Boolean(status.opennews && status.opennewsProbe?.configured);
   const news6551Live = Boolean(status.opennews && status.opennewsProbe?.ok);
+  const news6551KeyOnly = Boolean(status.opennews && status.opennewsProbe?.configured && !status.opennewsProbe?.ok);
+  const news6551Rotated = /refreshed|new token/i.test(status.opennewsProbe?.error ?? "");
+  const partialWarnings: string[] = [];
+  if (birdeyeKeyBad) {
+    partialWarnings.push(
+      birdeyeQuota
+        ? "Birdeye: quota reached — snipers / whale OHLCV paused until reset"
+        : `Birdeye: ${status.birdeyeProbe?.error ?? "unavailable"}`,
+    );
+  }
+  const news6551Source = status.opennewsProbe?.tokenSource;
+  if (news6551KeyOnly) {
+    const sourceHint =
+      news6551Source && news6551Source !== "API_KEY_6551"
+        ? ` (production is using ${news6551Source} — delete it or set to the new key)`
+        : news6551Source === "API_KEY_6551"
+          ? " (using API_KEY_6551)"
+          : "";
+    partialWarnings.push(
+      news6551Rotated
+        ? `6551: API token was rotated — paste the NEW key from 6551.io into Vercel API_KEY_6551${sourceHint}, then redeploy`
+        : `6551 news/X: ${status.opennewsProbe?.error ?? "not returning headlines"}${sourceHint}`,
+    );
+  }
 
-  if (birdeyeOk || gmgnOk || news6551Ok) {
+  if (birdeyeOk || gmgnOk || news6551Live) {
     return (
-      <div className="arc-glass-card arc-glass-card-nexus mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
-        <div className="flex items-center gap-2 text-sm text-emerald-100">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
-          <span>
-            <strong className="font-semibold">Live intel connected</strong>
-            <span className="text-emerald-200/80">
-              {birdeyeOk && gmgnOk && news6551Live
-                ? " — Birdeye · GMGN · 6551 news"
-                : birdeyeOk && gmgnOk
-                  ? " — Birdeye whales & OHLCV · GMGN holders & smart money"
-                  : birdeyeOk
-                    ? " — Birdeye holders, whales & swaps"
-                    : gmgnOk
-                      ? " — GMGN top holders & smart-money tags"
-                      : news6551Ok
-                        ? news6551Live
-                          ? " — 6551 OpenNews connected"
-                          : " — 6551 key set (quota empty — add credits at 6551.io)"
-                        : ""}
+      <div className="mb-3 space-y-2">
+        <div className="arc-glass-card arc-glass-card-nexus flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
+          <div className="flex items-center gap-2 text-sm text-emerald-100">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
+            <span>
+              <strong className="font-semibold">Live intel connected</strong>
+              <span className="text-emerald-200/80">
+                {birdeyeOk && gmgnOk && news6551Live
+                  ? " — Birdeye · GMGN · 6551 news"
+                  : birdeyeOk && gmgnOk
+                    ? " — Birdeye · GMGN"
+                    : gmgnOk && news6551Live
+                      ? " — GMGN · 6551 news"
+                      : gmgnOk
+                        ? " — GMGN copy-trade & smart-money (working)"
+                        : birdeyeOk
+                          ? " — Birdeye"
+                          : " — 6551 OpenNews"}
+              </span>
             </span>
-          </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-black/25 px-2.5 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Recheck
+          </button>
         </div>
-        <span className="nexus-caption text-emerald-200/60">Agent mode: {status.mode}</span>
+        {partialWarnings.length > 0 && (
+          <div className="rounded-xl border border-amber-400/35 bg-amber-500/[0.1] px-3 py-2.5 text-xs leading-relaxed text-amber-100/90">
+            <p className="font-semibold text-amber-50">Also needs attention</p>
+            <ul className="mt-1.5 list-inside list-disc space-y-1">
+              {partialWarnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (gmgnKeyOnly || news6551KeyOnly || (status.gmgn && status.birdeye)) {
+    return (
+      <div className="mb-3 rounded-xl border border-amber-400/35 bg-amber-500/[0.1] px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-amber-50">
+            <strong>API keys saved on Vercel</strong>
+            <span className="text-amber-100/85">
+              {gmgnKeyOnly ? ` — GMGN probe: ${status.gmgnProbe?.error ?? "pending"}` : ""}
+              {news6551KeyOnly
+                ? ` — 6551: ${status.opennewsProbe?.error ?? "no rows yet"}${news6551Source ? ` [${news6551Source}]` : ""}`
+                : ""}
+              {!gmgnKeyOnly && !news6551KeyOnly ? " — finishing handshake" : ""}
+            </span>
+            <span className="mt-1 block text-xs text-amber-100/70">
+              After adding env vars you must <strong>Redeploy → Production</strong> (not only Save). Then hard-refresh /nexus.
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-black/25 px-2.5 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Recheck
+          </button>
+        </div>
       </div>
     );
   }

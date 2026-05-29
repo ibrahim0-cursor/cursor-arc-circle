@@ -3,7 +3,7 @@
  * CLI/MCP: npx skills add 6551Team/opennews-mcp · Env: OPENNEWS_TOKEN
  */
 
-import { fetch6551, resolve6551Token } from "./6551-client";
+import { fetch6551, resolve6551Token, resolve6551TokenSource } from "./6551-client";
 
 export type OpenNewsItem = {
   title: string;
@@ -111,17 +111,28 @@ export async function fetchOpenNewsMacro(query: string, limit = 8): Promise<Open
   return searchOpenNews({ q: query, limit });
 }
 
-export async function probeOpenNews(): Promise<{ ok: boolean; configured: boolean; error?: string }> {
+export async function probeOpenNews(): Promise<{
+  ok: boolean;
+  configured: boolean;
+  tokenSource?: string;
+  error?: string;
+}> {
   if (!hasOpenNewsToken()) {
     return { ok: false, configured: false, error: "6551 key not set (API_KEY_6551 or OPENNEWS_TOKEN)" };
   }
   const t = token();
   if (!t) return { ok: false, configured: false, error: "6551 key not set" };
+  const tokenSource = resolve6551TokenSource("opennews") ?? undefined;
   const res = await fetch6551<unknown>("/open/news_search", t, { q: "bitcoin", limit: 3, page: 1 });
   if (!res.ok) {
-    return { ok: false, configured: true, error: res.error ?? `HTTP ${res.status}` };
+    return { ok: false, configured: true, tokenSource, error: res.error ?? `HTTP ${res.status}` };
   }
   const rows = mapOpenNewsRows(normalizeRows(res.data));
-  if (rows.length > 0) return { ok: true, configured: true };
-  return { ok: false, configured: true, error: "news_search returned no rows (check 6551 plan / OpenNews access)" };
+  if (rows.length > 0) return { ok: true, configured: true, tokenSource };
+  return {
+    ok: false,
+    configured: true,
+    tokenSource,
+    error: "news_search returned no rows (check 6551 plan / OpenNews access)",
+  };
 }

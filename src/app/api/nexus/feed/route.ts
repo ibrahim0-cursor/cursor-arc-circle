@@ -14,6 +14,7 @@ import { analyzeTrendingFeed, analyzeTrendingFeedQuick } from "@/lib/nexus-agent
 import { trendingToDemoToken } from "@/lib/demo-trading";
 import { enrichTokensWithIcons } from "@/lib/token-icons";
 import { mapWithConcurrency } from "@/lib/async-pool";
+import { sanitizeAgentReasoningFactors } from "@/lib/reasoning-factors";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,7 +49,12 @@ function buildFeedPayload(analyzed: Awaited<ReturnType<typeof analyzeTrendingFee
     analyzed.map(({ token, intel, signal, security }) => ({
       ...trendingToDemoToken(token),
       intel,
-      agent: signal,
+      agent: signal
+        ? {
+            ...signal,
+            reasoningFactors: sanitizeAgentReasoningFactors(signal.reasoningFactors, 6),
+          }
+        : signal,
       security,
       updatedAt: new Date().toISOString(),
     })),

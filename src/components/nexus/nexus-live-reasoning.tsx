@@ -3,6 +3,7 @@
 import { Activity, Brain, TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LiveReasoningPayload, LiveReasoningFactor } from "@/lib/nexus-research-dossier";
+import { filterReasoningFactorsForDisplay } from "@/lib/reasoning-factors";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
 function actionStyles(action: string) {
@@ -46,11 +47,14 @@ function fallbackFromToken(token: TrendingMarketToken): LiveReasoningPayload | n
     riskScore: a.riskScore,
     headline: `${a.action} ${a.confidence}% · risk ${a.riskScore}/100`,
     narrative: a.whyAction || a.reasoning,
-    factors: (a.reasoningFactors ?? []).map((f) => ({
-      label: f.label,
-      detail: f.detail,
-      impact: f.impact,
-    })),
+    factors: filterReasoningFactorsForDisplay(
+      (a.reasoningFactors ?? []).map((f) => ({
+        label: f.label,
+        detail: f.detail,
+        impact: f.impact,
+      })),
+      6,
+    ),
     taHeadline: token.intel?.technical
       ? `RSI ${token.intel.technical.rsi?.toFixed?.(0) ?? "—"} · MACD ${token.intel.technical.macdSignal ?? "—"}`
       : "TA loads with dossier…",

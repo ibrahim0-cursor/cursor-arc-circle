@@ -37,6 +37,17 @@ export function regimeFromGlobal(g: GlobalMarket): MacroRegime {
   };
 }
 
+/** Actionable PRISM regime copy — no repeated BTC/mcap tickers (shown in macro panels). */
+export function macroRegimeGuidance(regime: MacroRegime): string {
+  if (regime.label === "risk-on") {
+    return "Risk-on regime — selective momentum longs OK when this token’s liquidity supports clean exits.";
+  }
+  if (regime.label === "risk-off") {
+    return "Risk-off regime — defensive sizing; favor holder quality and exit liquidity over hype entries.";
+  }
+  return "Neutral macro — token structure, flow skew, and contract risk drive this setup more than index drift.";
+}
+
 export async function getMacroRegime(): Promise<MacroRegime | null> {
   if (Date.now() - cache.at < TTL_MS) return cache.value;
   const g = await fetchGlobalMarket();

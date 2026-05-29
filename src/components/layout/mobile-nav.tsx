@@ -103,7 +103,7 @@ export function MobileNav() {
           </nav>
 
           <p className="border-t border-white/10 px-5 py-4 text-center text-[11px] text-white/40">
-            ARC CIRCLE · Agent Intelligence Suite
+            MERIDIAN · NEXUS + PRISM · Built for ARC Circle
           </p>
         </div>
       )}

@@ -95,7 +95,7 @@ export function NexusTokenDetectPanel({
   }) => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
-  const [tab, setTab] = useState<"txs" | "whales" | "snipers">("txs");
+  const [tab, setTab] = useState<"txs" | "whales" | "snipers" | "insiders">("txs");
   const [data, setData] = useState<Detection | null>(null);
   const [loading, setLoading] = useState(false);
   const { status: integrations } = useIntegrationsStatus();
@@ -183,6 +183,7 @@ export function NexusTokenDetectPanel({
     { id: "txs" as const, label: "Swaps", icon: Target },
     { id: "whales" as const, label: "Whales", icon: Fish },
     { id: "snipers" as const, label: "Snipers", icon: Crosshair },
+    { id: "insiders" as const, label: "Insiders", icon: UserX },
   ];
 
   return (
@@ -232,10 +233,26 @@ export function NexusTokenDetectPanel({
 
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
-              { icon: Zap, label: "24h Buys", value: formatCompact(buys) },
-              { icon: Target, label: "24h Sells", value: formatCompact(sells) },
-              { icon: Fish, label: "Whales", value: String(s?.whaleCount ?? data?.whales.length ?? "—") },
-              { icon: Users, label: "Snipers", value: String(s?.sniperCount ?? data?.snipers.length ?? "—") },
+              {
+                icon: Users,
+                label: "Holders",
+                value: isLive ? String(s?.holderCount ?? "—") : "—",
+              },
+              {
+                icon: Crosshair,
+                label: "Snipers",
+                value: isLive ? String(s?.sniperCount ?? data?.snipers.length ?? 0) : "—",
+              },
+              {
+                icon: UserX,
+                label: "Insiders",
+                value: isLive ? String(s?.insiderCount ?? data?.insiders.length ?? 0) : "—",
+              },
+              {
+                icon: Fish,
+                label: "Whales",
+                value: isLive ? String(s?.whaleCount ?? data?.whales.length ?? 0) : "—",
+              },
             ].map((m) => (
               <div
                 key={m.label}
@@ -348,7 +365,36 @@ export function NexusTokenDetectPanel({
                       />
                     ))
                   ) : (
-                    <Empty text="No sniper flags (common on EVM — we use flow + traders instead)." />
+                    <Empty
+                      text={
+                        isLive
+                          ? "No sniper wallets flagged for this mint (good sign on many pairs)."
+                          : "Snipers load when on-chain scan connects."
+                      }
+                    />
+                  ))}
+
+                {tab === "insiders" &&
+                  (data?.insiders.length ? (
+                    data.insiders.map((ins, i) => (
+                      <Row
+                        key={ins.address + i}
+                        left={
+                          <span>
+                            {ins.label} · {truncateHash(ins.address, 6, 4)}
+                          </span>
+                        }
+                        right={<span>{ins.pct.toFixed(1)}% supply</span>}
+                      />
+                    ))
+                  ) : (
+                    <Empty
+                      text={
+                        isLive
+                          ? "No insider/deployer cluster flagged — still check Creator & rug check."
+                          : "Insider rows load when Birdeye / DexPaprika connects."
+                      }
+                    />
                   ))}
               </div>
             </motion.div>

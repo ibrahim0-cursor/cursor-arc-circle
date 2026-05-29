@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
+import { MeridianFooter } from "@/components/layout/meridian-footer";
 import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
 import { cn, formatCompact, formatPct, truncateHash } from "@/lib/utils";
 import type { PrismPrediction } from "@/lib/storage";
@@ -295,6 +296,7 @@ export function PrismConsole() {
             )}
           </div>
         </div>
+        <MeridianFooter className="mt-6 pb-4" />
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ export function ArcEcosystemHero() {
         >
           <div className="mb-5 flex items-center gap-3 sm:justify-start">
             <ArcIcon3d icon={Sparkles} theme="home" size="sm" />
-            <p className="arc-caption text-violet-300/85">ARC CIRCLE · Intelligence OS</p>
+            <p className="arc-caption text-violet-300/85">MERIDIAN · Agent Intelligence OS</p>
           </div>
 
           <h1 className="arc-display text-left text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
@@ -219,8 +219,8 @@ export function ArcHomeFooter() {
         <div className="flex items-center gap-4">
           <ArcIcon3d icon={Sparkles} theme="home" size="md" />
           <div>
-            <p className="font-mono text-sm font-semibold tracking-[0.18em] text-white">ARC CIRCLE</p>
-            <p className="arc-caption mt-1">NEXUS + PRISM · Arc Testnet</p>
+            <p className="font-mono text-sm font-semibold tracking-[0.18em] text-white">MERIDIAN</p>
+            <p className="arc-caption mt-1">NEXUS + PRISM · Built for ARC Circle · Arc Testnet</p>
           </div>
         </div>
         <nav className="flex flex-wrap gap-6 font-mono text-xs uppercase tracking-widest text-white/50">

@@ -27,7 +27,6 @@ import { NexusTrendingFeed, type TrendingMarketToken } from "@/components/nexus/
 import { NexusAgentWalletProvider } from "@/components/nexus/nexus-agent-wallet-provider";
 import { NexusTradeHub } from "@/components/nexus/nexus-demo-trade-panel";
 import { NexusPortfolio } from "@/components/nexus/nexus-portfolio";
-import { NexusTokenMetrics } from "@/components/nexus/nexus-token-metrics";
 import { NexusTokenDetectPanel } from "@/components/nexus/nexus-token-detect-panel";
 import {
   NexusResearchDossierDeep,
@@ -43,6 +42,7 @@ import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus
 import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-bar";
 import { NexusMobileTokenActions } from "@/components/nexus/nexus-mobile-token-actions";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { MeridianFooter } from "@/components/layout/meridian-footer";
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
 import { NexusCenterTokenHeader } from "@/components/nexus/nexus-center-token-header";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
@@ -551,7 +551,6 @@ export function NexusConsole() {
             {tokenDossier.error}
           </p>
         )}
-        <NexusTokenMetrics token={selectedToken} compact />
         <NexusIntelCollapsibles
           token={selectedToken}
           payload={tokenDossier.payload}
@@ -578,9 +577,16 @@ export function NexusConsole() {
           onIntelUpdate={handleBirdeyeIntel}
         />
         {communityPulse && communityPulse.items.length > 0 && (
-          <ArcPanel theme="nexus" title={`Community · ${communityPulse.topic}`} icon={Radio}>
+          <NexusCollapsible
+            label={`Community · ${communityPulse.topic}`}
+            hint={`${communityPulse.items.length} pulse items`}
+            variant="intel"
+            icon={Radio}
+            defaultOpen={false}
+            showCollapseHint
+          >
             <CommunityPulsePanel pulse={communityPulse} compact />
-          </ArcPanel>
+          </NexusCollapsible>
         )}
       </div>
     </div>
@@ -779,6 +785,7 @@ export function NexusConsole() {
         </div>
 
         <NexusMobileDock active={mobilePanel} onChange={handleMobilePanel} />
+        <MeridianFooter className="hidden pb-3 pt-2 lg:block" />
       </div>
     </div>
     </NexusAgentWalletProvider>

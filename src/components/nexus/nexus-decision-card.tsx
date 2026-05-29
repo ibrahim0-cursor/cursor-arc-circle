@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatCompact, formatPct, formatUsd, truncateHash } from "@/lib/utils";
 import type { NexusDecision } from "@/lib/storage";
+import { filterReasoningFactorsForDisplay } from "@/lib/reasoning-factors";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 
 export function NexusDecisionCard({
@@ -204,7 +205,7 @@ export function NexusTokenDetail({ decision }: { decision: NexusDecision | null 
     );
   }
 
-  const factors = decision.reasoningFactors ?? [];
+  const factors = filterReasoningFactorsForDisplay(decision.reasoningFactors ?? [], 6);
   const bullish = factors.filter((f) => f.impact === "bullish").length;
   const bearish = factors.filter((f) => f.impact === "bearish").length;
   const summaryHint = `${decision.action} · ${decision.confidence}% conf · risk ${decision.riskScore} · ${bullish}↑ ${bearish}↓`;

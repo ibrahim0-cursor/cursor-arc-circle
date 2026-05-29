@@ -19,6 +19,11 @@ import {
 import type { AgentSignal, TokenIntel, TokenWhale } from "./storage";
 import type { NexusResearchReport } from "./nexus-research";
 import { buildTokenAgentNarrative } from "./nexus-token-narrative";
+import { filterReasoningFactorsForDisplay } from "./reasoning-factors";
+import { buildTokenOnlySocialNews } from "./token-social-news";
+import { buildProfitableCopyTradeWallets } from "./gmgn-copy-trade";
+import { is6551TokenRotated } from "./6551-errors";
+import { hasOpenNewsToken, probeOpenNews } from "./opennews-6551";
 
 export type HolderTableRow = {
   rank: number;
@@ -62,7 +67,8 @@ export type TokenResearchDossier = {
     scamLabel?: string;
     verdict: "low" | "medium" | "high" | "critical";
   };
-  copyTradeWallets: Array<{ address: string; note: string; source: string }>; // source: birdeye | gmgn | demo | whale | dexpaprika
+  copyTradeWallets: Array<{ address: string; note: string; source: string }>;
+  copyTradeStatus?: string;
   technical: TaTimeframeBlock[];
   pattern: { label: string; detail: string };
   socialNews: string[];
@@ -326,28 +332,12 @@ export function tradersFromWhalesAndTrades(
 }
 
 function buildSocialNews(
+  symbol: string,
+  name: string | undefined,
   community?: CommunityPulse | null,
   news: CryptoNewsItem[] = [],
 ): string[] {
-  const lines: string[] = [];
-  for (const n of news.slice(0, 3)) {
-    lines.push(`${n.title}${n.source ? ` · ${n.source}` : ""}`);
-  }
-  if (community?.items?.length) {
-    for (const item of community.items.slice(0, 4)) {
-      if (item.kind === "opennews" || item.kind === "twitter" || item.kind === "meme") {
-        lines.push(
-          `[${item.kind}] ${item.title}${item.score != null ? ` · score ${item.score}` : ""}`,
-        );
-      }
-    }
-  }
-  if (community?.opennewsBuzz) lines.unshift(`OpenNews: ${community.opennewsBuzz}`);
-  if (community?.twitterBuzz) lines.unshift(`Twitter scan: ${community.twitterBuzz}`);
-  if (lines.length === 0) {
-    lines.push("No symbol-specific headlines — set API_KEY_6551 (or OPENNEWS_TOKEN) on Vercel for 6551 news");
-  }
-  return lines.slice(0, 6);
+  return buildTokenOnlySocialNews(symbol, name, community, news);
 }
 
 export function buildDossierGlance(
@@ -368,32 +358,24 @@ function synthesizeFactors(
   const factors: LiveReasoningFactor[] = [];
   const h1 = technical.find((t) => t.timeframe === "1h");
   const m15 = technical.find((t) => t.timeframe === "15m");
-  const buys = token.txns24h?.buys ?? intel.buy24h ?? 0;
-  const sells = token.txns24h?.sells ?? intel.sell24h ?? 0;
-  const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
-
-  factors.push({
-    label: "24h tape",
-    detail: `${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% · $${Math.round(token.volume24h).toLocaleString()} vol · ${turnover.toFixed(1)}x turnover`,
-    impact: token.change24h > 3 ? "bullish" : token.change24h < -5 ? "bearish" : "neutral",
-  });
-  factors.push({
-    label: "Flow",
-    detail: `${buys} buys vs ${sells} sells on 24h swaps`,
-    impact: buys > sells * 1.15 ? "bullish" : sells > buys * 1.15 ? "bearish" : "neutral",
-  });
-  if (h1) {
-    factors.push({
-      label: `TA 1h (${h1.source === "birdeye_ohlcv" ? "Birdeye" : "Dex"})`,
-      detail: `RSI ${h1.rsi14} · MACD ${h1.macdSignal} · MA20 ${h1.ma20 != null ? formatMa(h1.ma20) : "—"}`,
-      impact: h1.macdSignal,
-    });
-  }
+  const taParts: string[] = [];
   if (m15) {
+    taParts.push(`15m RSI ${m15.rsi14} (${m15.rsiSignal}) · MACD ${m15.macdSignal}`);
+  }
+  if (h1) {
+    taParts.push(
+      `1h RSI ${h1.rsi14} · MACD ${h1.macdSignal}${h1.ma20 != null ? ` · MA20 ${formatMa(h1.ma20)}` : ""} (${h1.source === "birdeye_ohlcv" ? "Birdeye" : "Dex"})`,
+    );
+  }
+  if (taParts.length > 0) {
+    const bear =
+      (h1?.macdSignal === "bearish" ? 1 : 0) + (m15?.rsiSignal === "bearish" ? 1 : 0);
+    const bull =
+      (h1?.macdSignal === "bullish" ? 1 : 0) + (m15?.rsiSignal === "bullish" ? 1 : 0);
     factors.push({
-      label: "TA 15m",
-      detail: `RSI ${m15.rsi14} (${m15.rsiSignal}) · MACD ${m15.macdSignal}`,
-      impact: m15.rsiSignal,
+      label: "Technical setup",
+      detail: taParts.join(" · "),
+      impact: bear > bull ? "bearish" : bull > bear ? "bullish" : "neutral",
     });
   }
   factors.push({
@@ -496,7 +478,7 @@ export function buildLiveReasoning(
   if (!narrative) {
     narrative = custom.narrative;
   }
-  const factors =
+  const rawFactors =
     agent?.reasoningFactors?.length && agent.reasoningFactors.length > 0
       ? agent.reasoningFactors.map((f) => ({
           label: f.label,
@@ -504,6 +486,7 @@ export function buildLiveReasoning(
           impact: f.impact,
         }))
       : synthesizeFactors(token, intel, technical, pattern);
+  const factors = filterReasoningFactorsForDisplay(rawFactors, tier === "alpha" ? 8 : 6);
 
   const headline = scam.isScam
     ? `AVOID · ${scam.label}`
@@ -537,7 +520,7 @@ export async function buildTokenDossierPayload(
   },
 ): Promise<TokenDossierPayload> {
   const tier = opts?.tier ?? "feed";
-  const useGmgn = tier === "alpha" && hasGmgnApiKey();
+  const useGmgn = hasGmgnApiKey();
   const intel = opts?.intel ?? token.intel ?? {};
   const dataNotes: string[] = [];
 
@@ -636,37 +619,32 @@ export async function buildTokenDossierPayload(
   }
   if (fundamentals.length === 0) fundamentals.push("Alt memecoin — verify narrative on Dex + social before size");
 
-  const teamLinks: { label: string; href: string }[] = [
-    { label: "DexScreener", href: token.url },
-  ];
-  if (token.chainId.toLowerCase().includes("sol")) {
-    teamLinks.push({
-      label: "Solscan",
-      href: `https://solscan.io/token/${token.tokenAddress}`,
-    });
-  } else {
-    teamLinks.push({
-      label: "Explorer",
-      href: `https://dexscreener.com/${token.chainId}/${token.pairAddress}`,
-    });
-  }
+  const teamLinks: { label: string; href: string }[] = [];
 
-  const copyTradeWallets: TokenResearchDossier["copyTradeWallets"] = topTraders
-    .filter((t) => t.source !== "demo")
-    .slice(0, 5)
-    .map((t) => ({
-      address: t.address,
-      note: t.label ?? t.pnlOrVolume,
-      source: t.source,
-    }));
-  if (copyTradeWallets.length === 0) {
-    topHolders.slice(0, 3).forEach((h) => {
-      copyTradeWallets.push({
-        address: h.address,
-        note: `${h.pctSupply.toFixed(1)}% supply`,
-        source: h.source,
-      });
-    });
+  const copyTradeResult = await buildProfitableCopyTradeWallets(
+    token.chainId,
+    token.tokenAddress,
+    6,
+  );
+  const copyTradeWallets: TokenResearchDossier["copyTradeWallets"] = copyTradeResult.wallets;
+  dataNotes.push(`Copy-trade: ${copyTradeResult.statusNote}`);
+  const openNewsCount =
+    opts?.community?.items?.filter((i) => i.kind === "opennews").length ?? 0;
+  if (hasOpenNewsToken()) {
+    const probe = await probeOpenNews();
+    if (!probe.ok && is6551TokenRotated(probe.error)) {
+      dataNotes.push(`6551: ${probe.error ?? "token rotated — update API_KEY_6551 on Vercel and redeploy"}`);
+    } else if (!probe.ok) {
+      dataNotes.push(`6551: ${probe.error ?? "OpenNews unavailable"}`);
+    } else {
+      dataNotes.push(
+        openNewsCount > 0
+          ? `6551 OpenNews: ${openNewsCount} headline${openNewsCount > 1 ? "s" : ""} for ${token.symbol}`
+          : `6551: connected but no headlines matched ${token.symbol} yet`,
+      );
+    }
+  } else {
+    dataNotes.push("6551: API_KEY_6551 / OPENNEWS_TOKEN not on server — redeploy Production env");
   }
 
   const ta1h = technicalBlocks.find((t) => t.timeframe === "1h");
@@ -721,9 +699,10 @@ export async function buildTokenDossierPayload(
             : "low",
     },
     copyTradeWallets,
+    copyTradeStatus: copyTradeResult.statusNote,
     technical: technicalBlocks,
     pattern,
-    socialNews: buildSocialNews(opts?.community, opts?.news),
+    socialNews: buildSocialNews(token.symbol, token.name, opts?.community, opts?.news),
     dataNotes,
   };
 

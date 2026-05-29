@@ -20,7 +20,7 @@ export function NexusPremiumHero({ stableCount }: { stableCount: number }) {
         <div className="flex min-w-0 items-start gap-3">
           <ArcIcon3d icon={Zap} theme="nexus" size="md" delay={0} />
           <div className="min-w-0">
-            <p className="arc-caption text-violet-300/85">ARC CIRCLE · NEXUS</p>
+            <p className="arc-caption text-violet-300/85">MERIDIAN · NEXUS</p>
             <h2 className="nexus-workspace-title mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Financial <span className="arc-gradient-text">command terminal</span>
             </h2>

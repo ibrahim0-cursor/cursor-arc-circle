@@ -18,6 +18,7 @@ import {
   matchPerceptionForSymbol,
 } from "./perception";
 import { fetchOpenNewsForSymbol, fetchOpenNewsMacro, hasOpenNewsToken } from "./opennews-6551";
+import { titleMatchesToken } from "./token-social-news";
 import {
   fetchOpenTwitterForToken,
   hasOpenTwitterToken,
@@ -79,6 +80,64 @@ function newsToItems(articles: CryptoNewsItem[], kind: "news" | "meme"): Communi
     source: a.source,
     link: a.link,
   }));
+}
+
+/** Symbol-tagged pulse only — no generic crypto news or duplicate meme sweep. */
+export async function fetchTokenCommunityPulse(topic: string, name?: string): Promise<CommunityPulse> {
+  const key = topic.replace(/^\$/, "").trim() || "TOKEN";
+  const twitterPromise = hasOpenTwitterToken()
+    ? fetchOpenTwitterForToken(key, name, 6).then((rows) =>
+        rows.map((r) => ({ id: r.url ?? r.text, text: r.text, author: r.author, url: r.url })),
+      )
+    : hasSocialDataKey()
+      ? searchSocialDataTweets(key, 5)
+      : Promise.resolve([]);
+
+  const [social, opennews, twitter] = await Promise.all([
+    fetchTokenSocialIntel(key, name),
+    hasOpenNewsToken() ? fetchOpenNewsForSymbol(key, name, 8) : Promise.resolve([]),
+    twitterPromise,
+  ]);
+
+  const reddit = social.reddit.filter(
+    (p) => titleMatchesToken(p.title, key, name) || p.title.toLowerCase().includes(key.toLowerCase()),
+  );
+
+  const items = dedupeItems([
+    ...opennews.map((n) => ({
+      kind: "opennews" as const,
+      title: n.signal ? `${n.title} [${n.signal}]` : n.title,
+      source: n.source,
+      link: n.link,
+      score: n.aiScore,
+    })),
+    ...twitter
+      .filter((tw) => titleMatchesToken(tw.text, key, name))
+      .map((tw) => ({
+        kind: "twitter" as const,
+        title: tw.text,
+        source: tw.author ? `X @${tw.author}` : "X",
+        link: tw.url,
+      })),
+    ...reddit.map((p) => ({
+      kind: "reddit" as const,
+      title: p.title,
+      source: `r/${p.subreddit}`,
+      link: p.permalink,
+      subreddit: p.subreddit,
+      score: p.score,
+    })),
+  ]).slice(0, 12);
+
+  return {
+    topic: key,
+    items,
+    headlines: items.map((i) => i.title),
+    opennewsBuzz: items.find((i) => i.kind === "opennews")?.title,
+    twitterBuzz: items.find((i) => i.kind === "twitter")?.title,
+    redditBuzz: items.find((i) => i.kind === "reddit")?.title,
+    social,
+  };
 }
 
 /** Fast path for bulk Alpha scan — news + social headline only */

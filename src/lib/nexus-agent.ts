@@ -11,11 +11,12 @@ import { anchorDecisionPayload } from "./arc";
 import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
 import { assessTokenScam, applyScamAndSecurity } from "./scam-detection";
 import { fetchTokenByAddress } from "./dexscreener";
-import { getMacroRegime, type MacroRegime } from "./macro-regime";
+import { getMacroRegime, macroRegimeGuidance, type MacroRegime } from "./macro-regime";
 import { hasBirdeyeKey } from "./birdeye-client";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import type { TokenSocialIntel } from "./social-intel";
 import { formatTokenPrice } from "./utils";
+import { filterReasoningFactorsForDisplay } from "./reasoning-factors";
 
 
 function buildReasoningFactors(
@@ -39,36 +40,9 @@ function buildReasoningFactors(
           : "neutral";
     factors.push({
       label: "Macro regime (PRISM)",
-      detail: macro.detail,
+      detail: macroRegimeGuidance(macro),
       impact: macroImpact,
       weight: macro.label === "risk-off" ? 18 : macro.label === "risk-on" ? 12 : 8,
-    });
-  }
-
-  const momentumImpact =
-    token.change24h > 5 ? "bullish" : token.change24h < -5 ? "bearish" : "neutral";
-  factors.push({
-    label: "24h Momentum",
-    detail: `${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(2)}% price change`,
-    impact: momentumImpact,
-    weight: Math.min(30, Math.abs(token.change24h) * 2),
-  });
-
-  const liqImpact = token.liquidityUsd > 100_000 ? "bullish" : token.liquidityUsd < 25_000 ? "bearish" : "neutral";
-  factors.push({
-    label: "Liquidity Depth",
-    detail: `$${(token.liquidityUsd / 1000).toFixed(1)}K pool liquidity`,
-    impact: liqImpact,
-    weight: token.liquidityUsd > 100_000 ? 22 : 12,
-  });
-
-  if (intel.marketCap || token.marketCap) {
-    const mc = intel.marketCap ?? token.marketCap ?? 0;
-    factors.push({
-      label: "Market Cap",
-      detail: mc >= 1_000_000 ? `$${(mc / 1_000_000).toFixed(2)}M` : `$${(mc / 1000).toFixed(0)}K`,
-      impact: mc > 500_000 ? "bullish" : mc < 50_000 ? "bearish" : "neutral",
-      weight: 15,
     });
   }
 
@@ -101,12 +75,17 @@ function buildReasoningFactors(
 
   if (token.txns24h) {
     const ratio = token.txns24h.buys / Math.max(token.txns24h.sells, 1);
-    factors.push({
-      label: "Buy/Sell Flow",
-      detail: `${token.txns24h.buys} buys vs ${token.txns24h.sells} sells (24h)`,
-      impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
-      weight: 14,
-    });
+    if (ratio > 1.15 || ratio < 0.85) {
+      factors.push({
+        label: "Order flow skew",
+        detail:
+          ratio > 1
+            ? `Buy-heavy swap flow (~${((ratio - 1) * 100).toFixed(0)}% more buy txs than sells)`
+            : `Sell-heavy swap flow (~${((1 - ratio) * 100).toFixed(0)}% more sell txs than buys)`,
+        impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
+        weight: 14,
+      });
+    }
   }
 
   if (intel.isMintable || intel.isFreezable) {
@@ -120,23 +99,21 @@ function buildReasoningFactors(
 
   if (intel.technical) {
     const ta = intel.technical;
-    const taLabel = ta.taSource === "birdeye_ohlcv" ? "Birdeye TA" : "TA";
+    const src = ta.taSource === "birdeye_ohlcv" ? "Birdeye" : "Dex";
+    const taImpact =
+      ta.trend.includes("down") || ta.macdSignal === "bearish"
+        ? "bearish"
+        : ta.trend.includes("up") || ta.macdSignal === "bullish"
+          ? "bullish"
+          : ta.rsiSignal === "oversold"
+            ? "bullish"
+            : ta.rsiSignal === "overbought"
+              ? "bearish"
+              : "neutral";
     factors.push({
-      label: `${taLabel} · RSI (${ta.rsi.toFixed(0)})`,
-      detail: `${ta.rsiSignal} · ${ta.rsi > 70 ? "overbought zone" : ta.rsi < 30 ? "oversold bounce setup" : "neutral momentum"}`,
-      impact: ta.rsiSignal === "oversold" ? "bullish" : ta.rsiSignal === "overbought" ? "bearish" : "neutral",
-      weight: 16,
-    });
-    factors.push({
-      label: "MACD",
-      detail: `${ta.macdSignal} crossover · histogram ${ta.macd >= 0 ? "+" : ""}${ta.macd}`,
-      impact: ta.macdSignal === "bullish" ? "bullish" : ta.macdSignal === "bearish" ? "bearish" : "neutral",
-      weight: 18,
-    });
-    factors.push({
-      label: "Trend",
-      detail: ta.trendLine,
-      impact: ta.trend.includes("up") ? "bullish" : ta.trend.includes("down") ? "bearish" : "neutral",
+      label: "Technical setup",
+      detail: `${src} · RSI ${ta.rsi.toFixed(0)} (${ta.rsiSignal}) · MACD ${ta.macdSignal} · ${ta.trendLine}`,
+      impact: taImpact,
       weight: 20,
     });
   }
@@ -150,33 +127,19 @@ function buildReasoningFactors(
     });
   }
 
-  if (token.fdv && token.fdv > 0) {
-    factors.push({
-      label: "FDV",
-      detail: `$${token.fdv >= 1e6 ? `${(token.fdv / 1e6).toFixed(2)}M` : `${(token.fdv / 1e3).toFixed(0)}K`} fully diluted valuation`,
-      impact: token.fdv < 500_000 ? "bearish" : token.fdv > 5_000_000 ? "bullish" : "neutral",
-      weight: 12,
-    });
-  }
-
-  if (token.liquidityUsd > 0 && token.volume24h > 0) {
-    const turnover = token.volume24h / token.liquidityUsd;
-    factors.push({
-      label: "24h Turnover",
-      detail: `${turnover.toFixed(2)}× volume vs liquidity (higher = more active)`,
-      impact: turnover > 1.5 ? "bullish" : turnover < 0.3 ? "bearish" : "neutral",
-      weight: 14,
-    });
-  }
-
-  if (intel.sell24h && intel.buy24h) {
+  if (intel.sell24h && intel.buy24h && !token.txns24h) {
     const ratio = intel.buy24h / Math.max(intel.sell24h, 1);
-    factors.push({
-      label: "On-chain Flow",
-      detail: `${intel.buy24h} buys vs ${intel.sell24h} sells (24h)`,
-      impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
-      weight: 16,
-    });
+    if (ratio > 1.15 || ratio < 0.85) {
+      factors.push({
+        label: "Order flow skew",
+        detail:
+          ratio > 1
+            ? `Buy-heavy on-chain flow (~${((ratio - 1) * 100).toFixed(0)}% more buys than sells)`
+            : `Sell-heavy on-chain flow (~${((1 - ratio) * 100).toFixed(0)}% more sells than buys)`,
+        impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
+        weight: 16,
+      });
+    }
   }
 
   const lc = intel.social?.lunarcrush;
@@ -223,7 +186,7 @@ function buildReasoningFactors(
     });
   }
 
-  return factors;
+  return filterReasoningFactorsForDisplay(factors, 8);
 }
 
 function normalizePct(n: number | undefined, fallback: number) {

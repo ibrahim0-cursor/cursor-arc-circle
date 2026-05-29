@@ -13,6 +13,7 @@ import {
 } from "@/lib/nexus-copy";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
+import { filterReasoningFactorsForDisplay } from "@/lib/reasoning-factors";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import { formatCompact, formatPct, formatUsd } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -197,7 +198,9 @@ export function NexusAlphaList({
                     )}
                     {row.reasoningFactors && row.reasoningFactors.length > 0 && (
                       <div className="mt-1.5 flex flex-wrap gap-1">
-                        {row.reasoningFactors.slice(0, 3).map((f) => (
+                        {filterReasoningFactorsForDisplay(row.reasoningFactors, 4)
+                          .slice(0, 3)
+                          .map((f) => (
                           <span
                             key={`${f.label}-${f.detail.slice(0, 12)}`}
                             className="rounded-md border border-white/10 bg-black/35 px-1.5 py-0.5 text-[9px] text-white/60"

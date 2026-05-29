@@ -3,6 +3,8 @@
  * https://6551.io/mcp · Base: https://ai.6551.io
  */
 
+import { parse6551ErrorMessage } from "./6551-errors";
+
 const DEFAULT_BASE = "https://ai.6551.io";
 
 export function clean6551Token(raw?: string): string | undefined {
@@ -11,20 +13,32 @@ export function clean6551Token(raw?: string): string | undefined {
   return v.length > 0 ? v : undefined;
 }
 
+export type Resolve6551TokenSource =
+  | "OPENNEWS_TOKEN"
+  | "TWITTER_TOKEN"
+  | "API_KEY_6551"
+  | "6551_API_KEY"
+  | null;
+
+/** Which Vercel env var wins for probes (no secret values). */
+export function resolve6551TokenSource(role: "opennews" | "twitter"): Resolve6551TokenSource {
+  if (role === "opennews" && clean6551Token(process.env.OPENNEWS_TOKEN)) return "OPENNEWS_TOKEN";
+  if (role === "twitter" && clean6551Token(process.env.TWITTER_TOKEN)) return "TWITTER_TOKEN";
+  if (clean6551Token(process.env.API_KEY_6551)) return "API_KEY_6551";
+  if (clean6551Token(process.env["6551_API_KEY"])) return "6551_API_KEY";
+  if (clean6551Token(process.env.OPENNEWS_TOKEN)) return "OPENNEWS_TOKEN";
+  if (clean6551Token(process.env.TWITTER_TOKEN)) return "TWITTER_TOKEN";
+  return null;
+}
+
 /** One 6551 account key often powers both OpenNews and OpenTwitter REST routes. */
 export function resolve6551Token(role: "opennews" | "twitter"): string | undefined {
-  const primary =
-    role === "opennews"
-      ? clean6551Token(process.env.OPENNEWS_TOKEN)
-      : clean6551Token(process.env.TWITTER_TOKEN);
-  if (primary) return primary;
-
-  const shared =
-    clean6551Token(process.env.API_KEY_6551) ??
-    clean6551Token(process.env["6551_API_KEY"]) ??
-    clean6551Token(process.env.OPENNEWS_TOKEN) ??
-    clean6551Token(process.env.TWITTER_TOKEN);
-  return shared;
+  const source = resolve6551TokenSource(role);
+  if (!source) return undefined;
+  if (source === "OPENNEWS_TOKEN") return clean6551Token(process.env.OPENNEWS_TOKEN);
+  if (source === "TWITTER_TOKEN") return clean6551Token(process.env.TWITTER_TOKEN);
+  if (source === "API_KEY_6551") return clean6551Token(process.env.API_KEY_6551);
+  return clean6551Token(process.env["6551_API_KEY"]);
 }
 
 export function has6551Token(): boolean {
@@ -55,7 +69,11 @@ export async function fetch6551<T>(
     });
     const text = await res.text();
     if (!res.ok) {
-      return { ok: false, error: text.slice(0, 200) || `HTTP ${res.status}`, status: res.status };
+      return {
+        ok: false,
+        error: parse6551ErrorMessage(text.slice(0, 400) || `HTTP ${res.status}`),
+        status: res.status,
+      };
     }
     const json = JSON.parse(text) as { data?: T; code?: number; msg?: string };
     if (json.code !== undefined && json.code !== 0) {

@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { ArcPageTransition } from "@/components/layout/arc-page-transition";
 import { AppProviders } from "@/components/providers/app-providers";
+import { MERIDIAN_META_DESCRIPTION, MERIDIAN_PAGE_TITLE } from "@/lib/meridian-brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,12 +18,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ARC CIRCLE | NEXUS + PRISM Agent Suite",
-  description:
-    "Autonomous trading and macro forecasting agents for the Agora Hackathon — built on Circle + Arc testnet.",
+  title: MERIDIAN_PAGE_TITLE,
+  description: MERIDIAN_META_DESCRIPTION,
   openGraph: {
-    title: "ARC CIRCLE Agent Intelligence Suite",
-    description: "NEXUS trading agent and PRISM macro oracle on Arc testnet.",
+    title: MERIDIAN_PAGE_TITLE,
+    description: MERIDIAN_META_DESCRIPTION,
   },
 };
 

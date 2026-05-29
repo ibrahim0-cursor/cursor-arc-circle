@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       buildDeepTokenIntel(token, {
         scanKind,
         tokenIndex: 0,
-        skipGmgnEnrich: tier !== "alpha",
+        skipGmgnEnrich: false,
       }),
       fetchMergedTokenDetection(token.tokenAddress, token.chainId, dexStats),
     ]);
