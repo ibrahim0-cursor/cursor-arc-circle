@@ -11,6 +11,7 @@ import {
   type GmgnMonitorSkillId,
 } from "./gmgn-monitor";
 import { hasGmgnApiKey, type GmgnChain } from "./gmgn-client";
+import { gmgnCacheKey, readGmgnCache, writeGmgnCache } from "./gmgn-rate-budget";
 
 function signalToToken(chain: GmgnChain, ev: { tokenAddress: string; symbol?: string }): TrendingToken {
   const chainId = gmgnChainToDexChainId(chain);
@@ -87,16 +88,25 @@ export async function fetchGmgnMonitorTokens(chain: GmgnChain = "sol"): Promise<
     "kol-trade-activity",
   ];
 
-  const results = await Promise.all(
-    skills.map(async (skill) => ({
-      skill,
-      res: await runGmgnMonitorSkill(skill, {
-        chain,
-        limit: skill.includes("signal") ? undefined : 25,
-        side: skill === "smart-money-trades" || skill === "kol-trade-activity" ? "buy" : undefined,
-      }),
-    })),
-  );
+  const bundleKey = gmgnCacheKey("monitor-bundle", { chain });
+  const cached = readGmgnCache<{
+    tokens: TrendingToken[];
+    sources: Record<string, number>;
+    errors: string[];
+  }>(bundleKey);
+  if (cached) return cached;
+
+  const results: { skill: GmgnMonitorSkillId; res: Awaited<ReturnType<typeof runGmgnMonitorSkill>> }[] =
+    [];
+  for (const skill of skills) {
+    const res = await runGmgnMonitorSkill(skill, {
+      chain,
+      limit: skill.includes("signal") ? undefined : 25,
+      side: skill === "smart-money-trades" || skill === "kol-trade-activity" ? "buy" : undefined,
+    });
+    results.push({ skill, res });
+    if (res.error?.includes("BANNED") || res.error?.includes("RATE_LIMIT")) break;
+  }
 
   const tokens: TrendingToken[] = [];
   const sources: Record<string, number> = {};
@@ -119,5 +129,7 @@ export async function fetchGmgnMonitorTokens(chain: GmgnChain = "sol"): Promise<
     }
   }
 
-  return { tokens: filterAlphaScanTokens(dedupe(tokens)), sources, errors };
+  const bundle = { tokens: filterAlphaScanTokens(dedupe(tokens)), sources, errors };
+  writeGmgnCache(bundleKey, bundle);
+  return bundle;
 }

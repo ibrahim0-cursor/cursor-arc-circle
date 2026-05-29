@@ -45,11 +45,9 @@ export async function enrichTokenIntelWithGmgn(
   const gmgnChain = dexChainIdToGmgn(chainId);
   if (!gmgnChain) return { intel, enrichment: null, gmgnSecurity: undefined };
 
-  const [bundle, overview, kol] = await Promise.all([
-    fetchGmgnTokenScanBundle(gmgnChain, tokenAddress),
-    gmgnTokenOverview(gmgnChain, tokenAddress),
-    gmgnKolHolders(gmgnChain, tokenAddress, 10),
-  ]);
+  const bundle = await fetchGmgnTokenScanBundle(gmgnChain, tokenAddress);
+  const overview = await gmgnTokenOverview(gmgnChain, tokenAddress);
+  const kol = await gmgnKolHolders(gmgnChain, tokenAddress, 10);
   const lines: string[] = [];
   let next = { ...intel };
 

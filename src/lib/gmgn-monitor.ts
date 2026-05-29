@@ -240,12 +240,26 @@ export async function probeGmgnMonitorSkills(chain: GmgnChain = "sol"): Promise<
   ];
 
   const skills: Record<string, { ok: boolean; error?: string }> = {};
-  await Promise.all(
-    probes.map(async (id) => {
-      const r = await runGmgnMonitorSkill(id, { chain, limit: 5 });
-      skills[id] = { ok: r.ok, error: r.error };
-    }),
-  );
+  const light =
+    process.env.GMGN_STATUS_FULL_PROBE?.trim().toLowerCase() !== "true" &&
+    process.env.GMGN_LIGHT_STATUS_PROBE?.trim().toLowerCase() !== "false";
+
+  if (light) {
+    const r = await runGmgnMonitorSkill("smart-money-buy-signal", { chain, limit: 3 });
+    return {
+      ok: r.ok,
+      skills: {
+        "smart-money-buy-signal": { ok: r.ok, error: r.error },
+        _mode: { ok: true, error: "light status probe" },
+      },
+    };
+  }
+
+  for (const id of probes) {
+    const r = await runGmgnMonitorSkill(id, { chain, limit: 5 });
+    skills[id] = { ok: r.ok, error: r.error };
+    if (r.error?.includes("BANNED") || r.error?.includes("RATE_LIMIT")) break;
+  }
 
   const okCount = Object.values(skills).filter((s) => s.ok).length;
   return { ok: okCount >= 1, skills };

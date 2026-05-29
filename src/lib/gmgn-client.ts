@@ -5,6 +5,12 @@
 
 import { createPrivateKey, sign } from "crypto";
 import { randomUUID } from "crypto";
+import {
+  gmgnCacheKey,
+  recordGmgnBanFromError,
+  withGmgnCache,
+  withGmgnQueue,
+} from "./gmgn-rate-budget";
 
 const DEFAULT_HOST = "https://openapi.gmgn.ai";
 
@@ -87,8 +93,7 @@ function signCritical(
   }
 }
 
-/** Low-level OpenAPI request (read routes use API key only; trade routes need GMGN_PRIVATE_KEY). */
-export async function gmgnApiRequest<T>(
+async function gmgnApiRequestImpl<T>(
   method: "GET" | "POST",
   path: string,
   params: Record<string, string | number | undefined> = {},
@@ -127,11 +132,14 @@ export async function gmgnApiRequest<T>(
     });
     const text = await res.text();
     if (!res.ok) {
+      recordGmgnBanFromError(text);
       return { ok: false, error: text.slice(0, 200) || `HTTP ${res.status}`, status: res.status };
     }
     const json = JSON.parse(text) as { code?: number; data?: unknown; msg?: string };
     if (json.code !== 0 && json.code !== undefined) {
-      return { ok: false, error: json.msg ?? `GMGN code ${json.code}`, status: res.status };
+      const err = json.msg ?? `GMGN code ${json.code}`;
+      recordGmgnBanFromError(err);
+      return { ok: false, error: err, status: res.status };
     }
     let payload: unknown = json.data ?? json;
     for (let i = 0; i < 3; i++) {
@@ -146,6 +154,30 @@ export async function gmgnApiRequest<T>(
       error: e instanceof Error ? e.message : "GMGN request failed",
       status: 0,
     };
+  }
+}
+
+/** Low-level OpenAPI request (queued + cached reads; signed trades skip cache). */
+export async function gmgnApiRequest<T>(
+  method: "GET" | "POST",
+  path: string,
+  params: Record<string, string | number | undefined> = {},
+  body?: Record<string, unknown>,
+  critical = false,
+): Promise<{ ok: boolean; data?: T; error?: string; status: number }> {
+  const run = () => gmgnApiRequestImpl<T>(method, path, params, body, critical);
+  if (critical) {
+    try {
+      return await withGmgnQueue(run);
+    } catch {
+      return { ok: false, error: "GMGN_RATE_LIMIT_BANNED", status: 429 };
+    }
+  }
+  const cacheKey = gmgnCacheKey("api", { method, path, ...params });
+  try {
+    return await withGmgnCache(cacheKey, () => withGmgnQueue(run));
+  } catch {
+    return { ok: false, error: "GMGN_RATE_LIMIT_BANNED", status: 429 };
   }
 }
 

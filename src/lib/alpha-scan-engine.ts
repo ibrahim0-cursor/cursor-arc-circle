@@ -130,32 +130,30 @@ export async function buildAlphaScanUniverse(
   const emptyDiscovery = { tokens: [] as TrendingToken[], sources: {}, errors: [] as string[] };
   const emptyMonitor = { tokens: [] as TrendingToken[], sources: {}, errors: [] as string[] };
 
-  const [gmgnDiscovery, gmgnMonitor, smBuySignals] = await Promise.all([
-    withTimeout(
-      fetchGmgnDiscoveryTokens("sol").catch((e) => {
-        errors.push(e instanceof Error ? e.message : "discovery feed unavailable");
-        return emptyDiscovery;
-      }),
-      22_000,
-      emptyDiscovery,
-    ),
-    withTimeout(
-      fetchGmgnMonitorTokens("sol").catch((e) => {
-        errors.push(e instanceof Error ? e.message : "signal feed unavailable");
-        return emptyMonitor;
-      }),
-      22_000,
-      emptyMonitor,
-    ),
-    hasGmgnApiKey()
-      ? withTimeout(runGmgnMonitorSkill("smart-money-buy-signal", { chain: "sol" }), 18_000, {
-          ok: false,
-          skill: "smart-money-buy-signal",
-          status: 0,
-          data: undefined,
-        })
-      : Promise.resolve({ ok: false, data: undefined }),
-  ]);
+  const gmgnDiscovery = await withTimeout(
+    fetchGmgnDiscoveryTokens("sol").catch((e) => {
+      errors.push(e instanceof Error ? e.message : "discovery feed unavailable");
+      return emptyDiscovery;
+    }),
+    28_000,
+    emptyDiscovery,
+  );
+  const gmgnMonitor = await withTimeout(
+    fetchGmgnMonitorTokens("sol").catch((e) => {
+      errors.push(e instanceof Error ? e.message : "signal feed unavailable");
+      return emptyMonitor;
+    }),
+    28_000,
+    emptyMonitor,
+  );
+  const smBuySignals = hasGmgnApiKey()
+    ? await withTimeout(runGmgnMonitorSkill("smart-money-buy-signal", { chain: "sol" }), 18_000, {
+        ok: false,
+        skill: "smart-money-buy-signal",
+        status: 0,
+        data: undefined,
+      })
+    : { ok: false, data: undefined };
 
   errors.push(...gmgnDiscovery.errors, ...gmgnMonitor.errors);
 

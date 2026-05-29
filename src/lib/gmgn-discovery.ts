@@ -14,6 +14,11 @@ import {
   type GmgnAnalyticsSkillId,
 } from "./gmgn-analytics";
 import { hasGmgnApiKey, type GmgnChain, type GmgnTrendingToken } from "./gmgn-client";
+import {
+  gmgnCacheKey,
+  readGmgnCache,
+  writeGmgnCache,
+} from "./gmgn-rate-budget";
 
 export function gmgnChainToDexChainId(chain: GmgnChain): string {
   const map: Record<GmgnChain, string> = {
@@ -99,23 +104,27 @@ function dedupeTokens(tokens: TrendingToken[]): TrendingToken[] {
   return out;
 }
 
-/** Run all market-discovery analytics skills (parallel). */
-export async function fetchGmgnDiscoveryTokens(chain: GmgnChain = "sol"): Promise<{
+export type GmgnDiscoveryBundle = {
   tokens: TrendingToken[];
   sources: Record<string, number>;
   errors: string[];
-}> {
+};
+
+/** Run all market-discovery analytics skills (sequential + 10m bundle cache). */
+export async function fetchGmgnDiscoveryTokens(chain: GmgnChain = "sol"): Promise<GmgnDiscoveryBundle> {
   if (!hasGmgnApiKey()) {
     return { tokens: [], sources: {}, errors: ["GMGN_API_KEY not set"] };
   }
 
-  const [fiveMin, pumpFun, newly, kolBought, nearGrad] = await Promise.all([
-    gmgnFiveMinTrending(chain, 25),
-    gmgnPumpFunTrending(chain, "1h", 20),
-    gmgnNewlyCreated(chain, 30),
-    gmgnKolBoughtNew(chain, 25),
-    gmgnNearGraduation(chain, 25),
-  ]);
+  const bundleKey = gmgnCacheKey("discovery-bundle", { chain });
+  const cached = readGmgnCache<GmgnDiscoveryBundle>(bundleKey);
+  if (cached) return cached;
+
+  const fiveMin = await gmgnFiveMinTrending(chain, 25);
+  const pumpFun = await gmgnPumpFunTrending(chain, "1h", 20);
+  const newly = await gmgnNewlyCreated(chain, 30);
+  const kolBought = await gmgnKolBoughtNew(chain, 25);
+  const nearGrad = await gmgnNearGraduation(chain, 25);
 
   const errors: string[] = [];
   const tokens: TrendingToken[] = [];
@@ -184,13 +193,44 @@ export const GMGN_DATA_ANALYTICS_SKILLS: GmgnAnalyticsSkillId[] = [
   "pump-fun-trending",
 ];
 
-/** Probe each analytics skill (lightweight). */
+function gmgnLightStatusProbe(): boolean {
+  return (
+    process.env.GMGN_STATUS_FULL_PROBE?.trim().toLowerCase() !== "true" &&
+    process.env.GMGN_LIGHT_STATUS_PROBE?.trim().toLowerCase() !== "false"
+  );
+}
+
+/** Status probe — light mode uses cache / one skill; full mode runs discovery skills sequentially. */
 export async function probeGmgnAnalyticsSkills(chain: GmgnChain = "sol"): Promise<{
   ok: boolean;
-  skills: Record<string, { ok: boolean; error?: string }>;
+  skills: Record<string, { ok: boolean; error?: string; note?: string }>;
 }> {
   if (!hasGmgnApiKey()) {
     return { ok: false, skills: {} };
+  }
+
+  if (gmgnLightStatusProbe()) {
+    const bundleKey = gmgnCacheKey("discovery-bundle", { chain });
+    const cached = readGmgnCache<GmgnDiscoveryBundle>(bundleKey);
+    if (cached && cached.tokens.length > 0) {
+      return {
+        ok: true,
+        skills: {
+          "discovery-bundle": {
+            ok: true,
+            note: `cached ${cached.tokens.length} tokens — all 5 discovery skills`,
+          },
+        },
+      };
+    }
+    const r = await runGmgnAnalyticsSkill("five-min-trending", { chain, limit: 2 });
+    return {
+      ok: r.ok,
+      skills: {
+        "five-min-trending": { ok: r.ok, error: r.error },
+        _mode: { ok: true, note: "light status probe (set GMGN_STATUS_FULL_PROBE=true for all skills)" },
+      },
+    };
   }
 
   const probes: { id: GmgnAnalyticsSkillId; params: Parameters<typeof runGmgnAnalyticsSkill>[1] }[] = [
@@ -202,12 +242,11 @@ export async function probeGmgnAnalyticsSkills(chain: GmgnChain = "sol"): Promis
   ];
 
   const skills: Record<string, { ok: boolean; error?: string }> = {};
-  await Promise.all(
-    probes.map(async ({ id, params }) => {
-      const r = await runGmgnAnalyticsSkill(id, params);
-      skills[id] = { ok: r.ok, error: r.error };
-    }),
-  );
+  for (const { id, params } of probes) {
+    const r = await runGmgnAnalyticsSkill(id, params);
+    skills[id] = { ok: r.ok, error: r.error };
+    if (r.error?.includes("BANNED") || r.error?.includes("RATE_LIMIT")) break;
+  }
 
   const okCount = Object.values(skills).filter((s) => s.ok).length;
   return { ok: okCount >= 2, skills };

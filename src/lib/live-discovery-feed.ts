@@ -61,7 +61,7 @@ export async function fetchLiveDiscoveryFeed(limit = STABLE_FEED_LIMIT): Promise
       const gmgn = await Promise.race([
         fetchGmgnDiscoveryTokens("sol"),
         new Promise<{ tokens: TrendingToken[]; sources: Record<string, number> }>((resolve) =>
-          setTimeout(() => resolve({ tokens: [], sources: {} }), 14_000),
+          setTimeout(() => resolve({ tokens: [], sources: {} }), 26_000),
         ),
       ]);
       const fresh = tagGmgnFresh(gmgn.tokens).slice(0, FEED_DISCOVERY_GMGN_LIMIT);

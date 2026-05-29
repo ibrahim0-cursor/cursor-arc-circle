@@ -414,19 +414,12 @@ export async function fetchGmgnTokenScanBundle(
     return { security: null, smartMoneyHolders: null, trendingMatch: null };
   }
 
-  const [security, smartMoneyHolders, trending] = await Promise.all([
-    gmgnTokenSecurity(chain, address),
-    gmgnSmartMoneyHolders(chain, address, 20),
-    fetchGmgnMarketRank(chain, "1h", 30).catch(() => [] as GmgnTrendingToken[]),
-  ]);
+  const security = await gmgnTokenSecurity(chain, address);
+  const smartMoneyHolders = await gmgnSmartMoneyHolders(chain, address, 20);
+  const trending = await fetchGmgnMarketRank(chain, "1h", 20).catch(() => [] as GmgnTrendingToken[]);
 
   const key = address.toLowerCase();
-  const trendingMatch =
-    trending.find((t) => t.address.toLowerCase() === key) ??
-    (await fetchGmgnMarketRank(chain, "5m", 30).catch(() => [])).find(
-      (t) => t.address.toLowerCase() === key,
-    ) ??
-    null;
+  const trendingMatch = trending.find((t) => t.address.toLowerCase() === key) ?? null;
 
   return { security, smartMoneyHolders, trendingMatch };
 }
