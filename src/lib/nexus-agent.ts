@@ -486,7 +486,8 @@ async function analyzeTokenForMemoryScan(
     security.flags = [...new Set([...security.flags, ...scam.flags])].slice(0, 8);
   }
   const macro = await getMacroRegime();
-  let signal = heuristicDecision(fresh, intel, macro);
+  let signal = heuristicDecision(fresh, intel, macro, { security, scam });
+  signal = enforceSignalGate(fresh, intel, signal, { macro, security, scam });
   signal = applyScamAndSecurity(fresh, intel, signal, security, scam);
   return {
     token: { ...fresh, intel },
@@ -760,104 +761,105 @@ export async function runAlphaScan(
     throw new Error("No tradable tokens for alpha scan. Check DexScreener connection.");
   }
 
-  tokens = await enrichTokensWithIcons(tokens, limit);
+  tokens = await enrichTokensWithIcons(tokens, Math.min(limit, 10));
 
   const { buildAlphaIntelReport } = await import("./alpha-intel");
+  const { buildAlphaDeskIntel, EMPTY_ALPHA_COMMUNITY } = await import("./alpha-desk-scan");
   const { getApeWisdomMentionMap, lookupApeWisdom } = await import("./apewisdom");
-  const apeMap = await getApeWisdomMentionMap("all-crypto", 2);
-
-  const analyzed = await mapWithConcurrencySafe(
-    tokens,
-    (token, index) => analyzeTokenForMemoryScan(token, index, "alpha"),
-    2,
-    "alpha-intel",
+  const { scanConcurrencyFor } = await import("./birdeye-policy");
+  const macro = await getMacroRegime();
+  const apeMap = await getApeWisdomMentionMap("all-crypto", 1).catch(
+    () => new Map() as Awaited<ReturnType<typeof getApeWisdomMentionMap>>,
   );
 
-  if (analyzed.length === 0) {
-    throw new Error("Alpha intel failed for all tokens — external APIs may be rate-limited. Retry shortly.");
+  const deskRows = await mapWithConcurrencySafe(
+    tokens,
+    async (token, index) => {
+      const fresh = index < 4 ? await refreshTokenFromDex(token) : token;
+      const desk = await buildAlphaDeskIntel(fresh, index);
+      const { scoreTokenSecurity } = await import("./token-security");
+      let security = scoreTokenSecurity(desk.token, desk.intel);
+      if (desk.gmgnSecurity) {
+        const { mergeGmgnIntoSecurityReport } = await import("./gmgn-enrichment");
+        security = mergeGmgnIntoSecurityReport(security, desk.gmgnSecurity);
+      }
+      const scam = assessTokenScam(desk.token, desk.intel, security);
+      let signal = heuristicDecision(desk.token, desk.intel, macro, { security, scam });
+      signal = enforceSignalGate(desk.token, desk.intel, signal, { macro, security, scam });
+      signal = applyScamAndSecurity(desk.token, desk.intel, signal, security, scam);
+      return { ...desk, security, scam, signal };
+    },
+    scanConcurrencyFor("alpha", 4),
+    "alpha-desk",
+  );
+
+  if (deskRows.length === 0) {
+    throw new Error("Alpha desk pass failed — Dex/GMGN may be slow. Retry in a moment.");
   }
 
-  const opportunities: AlphaOpportunity[] = await mapWithConcurrencySafe(
-    analyzed,
-    async ({ token, intel, signal, news, social, community, security, gmgnLines }, index) => {
-      const key = `${token.chainId}:${token.tokenAddress.toLowerCase()}`;
-      const socialHeadline = pickCommunityBuzz(community, news.map((n) => n.title));
-      const candidate = candidateMap.get(key);
-      const gmgnExtra = gmgnLines?.length ? gmgnLines.join(" · ") : undefined;
-      const sourceTags = candidate?.sourceTags ?? [];
-      const gmgnTagBoost = sourceTags.some((t) => /signal|trending/i.test(t)) ? 8 : 0;
-      const signalBoost = sourceTags.some((t) => /signal/i.test(t)) ? 6 : 0;
-      const report = await buildAlphaIntelReport({
-        token,
-        intel,
-        signal,
-        news,
-        community,
-        geckoTrending: geckoHot.has(key),
-        gmgnLine: gmgnExtra,
-        security,
-        skipGithub: true,
-        sourceTags,
-      });
-      const { buildLiveReasoning } = await import("./nexus-research-dossier");
-      const liveReason = buildLiveReasoning(token, intel, signal, undefined, undefined, "alpha");
-      const researchGlance = liveReason.narrative.slice(0, 200);
-      const apeRow = lookupApeWisdom(token.symbol, apeMap);
-      let legacyScore =
-        scoreOpportunity(token, signal, intel, social, news.length) +
-        (geckoHot.has(key) ? 5 : 0) +
-        gmgnTagBoost +
-        signalBoost;
-      if (apeRow) {
-        legacyScore += Math.min(18, 8 + Math.min(10, apeRow.mentions));
-      }
+  const opportunities: AlphaOpportunity[] = await Promise.all(
+    deskRows.map(async (row) => {
+    const { token, intel, signal, security, gmgnLines } = row;
+    const key = `${token.chainId}:${token.tokenAddress.toLowerCase()}`;
+    const sourceTags = candidateMap.get(key)?.sourceTags ?? [];
+    const gmgnExtra = gmgnLines?.length ? gmgnLines.join(" · ") : undefined;
+    const gmgnTagBoost = sourceTags.some((t) => /signal|trending/i.test(t)) ? 8 : 0;
+    const report = await buildAlphaIntelReport({
+      token,
+      intel,
+      signal,
+      news: [],
+      community: EMPTY_ALPHA_COMMUNITY,
+      geckoTrending: geckoHot.has(key),
+      gmgnLine: gmgnExtra,
+      security,
+      skipGithub: true,
+      sourceTags,
+    });
+    const apeRow = lookupApeWisdom(token.symbol, apeMap);
+    let legacyScore =
+      scoreOpportunity(token, signal, intel, undefined, 0) +
+      (geckoHot.has(key) ? 5 : 0) +
+      gmgnTagBoost;
+    if (apeRow) legacyScore += Math.min(18, 8 + Math.min(10, apeRow.mentions));
 
-      return {
-        rank: 0,
-        symbol: token.symbol,
-        name: token.name,
-        tokenAddress: token.tokenAddress,
-        chainId: token.chainId,
-        priceUsd: token.priceUsd,
-        change24h: token.change24h,
-        action: signal.action,
-        confidence: signal.confidence,
-        opportunityScore: Math.round((legacyScore + report.alphaScore) / 2),
-        alphaScore: report.alphaScore,
-        narrativeAcceleration: report.narrativeAcceleration,
-        narrativeSummary: report.narrativeSummary,
-        smartMoneySignal: report.smartMoneySignal,
-        momentumHealth: report.momentumHealth,
-        riskScore: report.riskScore,
-        riskBreakdown: report.riskBreakdown,
-        aiThesis: report.aiThesis,
-        ecosystemTags: report.ecosystemTags,
-        reasoning: signal.reasoning,
-        whyAction: signal.whyAction,
-        newsHeadlines: news.slice(0, 3).map((n) => n.title),
-        socialBuzz: socialHeadline,
-        apeWisdomRank: apeRow?.rank,
-        apeMentions: apeRow?.mentions,
-        galaxyScore: social.lunarcrush?.galaxyScore,
-        socialDegraded:
-          usePremiumSocialApis() && social.status.lunarcrush === "402"
-            ? "Social: LunarCrush subscription required"
-            : usePremiumSocialApis()
-              ? social.degradedMessage
-              : undefined,
-        githubDevSummary: report.githubDev?.summary,
-        icon: token.icon,
-        liquidityUsd: token.liquidityUsd,
-        volume24h: token.volume24h,
-        sourceTags,
-        marketSentiment: scanIntel.marketSentiment.publicSummary,
-        sentimentScore: scanIntel.marketSentiment.score,
-        researchGlance,
-        reasoningFactors: signal.reasoningFactors,
-      };
-    },
-    2,
-    "alpha-report",
+    return {
+      rank: 0,
+      symbol: token.symbol,
+      name: token.name,
+      tokenAddress: token.tokenAddress,
+      chainId: token.chainId,
+      priceUsd: token.priceUsd,
+      change24h: token.change24h,
+      action: signal.action,
+      confidence: signal.confidence,
+      opportunityScore: Math.round((legacyScore + report.alphaScore) / 2),
+      alphaScore: report.alphaScore,
+      narrativeAcceleration: report.narrativeAcceleration,
+      narrativeSummary: report.narrativeSummary,
+      smartMoneySignal: report.smartMoneySignal,
+      momentumHealth: report.momentumHealth,
+      riskScore: report.riskScore,
+      riskBreakdown: report.riskBreakdown,
+      aiThesis: report.aiThesis,
+      ecosystemTags: report.ecosystemTags,
+      reasoning: signal.reasoning,
+      whyAction: signal.whyAction,
+      newsHeadlines: [] as string[],
+      socialBuzz: gmgnExtra,
+      apeWisdomRank: apeRow?.rank,
+      apeMentions: apeRow?.mentions,
+      galaxyScore: intel.social?.lunarcrush?.galaxyScore,
+      icon: token.icon,
+      liquidityUsd: token.liquidityUsd,
+      volume24h: token.volume24h,
+      sourceTags,
+      marketSentiment: scanIntel.marketSentiment.publicSummary,
+      sentimentScore: scanIntel.marketSentiment.score,
+      researchGlance: signal.whyAction.slice(0, 200),
+      reasoningFactors: signal.reasoningFactors,
+    };
+    }),
   );
 
   if (opportunities.length === 0) {

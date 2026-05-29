@@ -55,6 +55,7 @@ export function getBirdeyePlan(
 /** Lower concurrency when Birdeye is active to avoid CU bursts */
 export function scanConcurrencyFor(kind: BirdeyeScanKind, defaultConcurrency: number): number {
   if (!hasBirdeyeKey()) return defaultConcurrency;
-  if (kind === "memory" || kind === "alpha") return 1;
+  if (kind === "memory") return 1;
+  if (kind === "alpha") return 3;
   return defaultConcurrency;
 }

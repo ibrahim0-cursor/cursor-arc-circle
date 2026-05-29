@@ -35,7 +35,7 @@ export const ALPHA_INTEL_LAYERS = [
   "Community (Reddit, ApeWisdom, HN, Perception)",
   "DexScreener + GeckoTerminal liquidity",
   "Birdeye whales + TA momentum",
-  "Risk + scam gate + AI thesis",
+  "Risk + scam gate + desk verdict",
 ] as const;
 
 function tokenKey(t: TrendingToken): string {
@@ -138,22 +138,24 @@ export async function buildAlphaScanUniverse(
     errors: [] as string[],
   };
 
-  const gmgnDiscovery = await withTimeout(
-    fetchGmgnDiscoveryTokens("sol", { forceFull: true }).catch((e) => {
-      errors.push(e instanceof Error ? e.message : "discovery feed unavailable");
-      return emptyDiscovery;
-    }),
-    45_000,
-    emptyDiscovery,
-  );
-  const gmgnMonitor = await withTimeout(
-    fetchGmgnMonitorTokens("sol", { forceFull: true }).catch((e) => {
-      errors.push(e instanceof Error ? e.message : "signal feed unavailable");
-      return emptyMonitor;
-    }),
-    45_000,
-    emptyMonitor,
-  );
+  const [gmgnDiscovery, gmgnMonitor] = await Promise.all([
+    withTimeout(
+      fetchGmgnDiscoveryTokens("sol", { forceFull: false }).catch((e) => {
+        errors.push(e instanceof Error ? e.message : "discovery feed unavailable");
+        return emptyDiscovery;
+      }),
+      20_000,
+      emptyDiscovery,
+    ),
+    withTimeout(
+      fetchGmgnMonitorTokens("sol", { forceFull: false }).catch((e) => {
+        errors.push(e instanceof Error ? e.message : "signal feed unavailable");
+        return emptyMonitor;
+      }),
+      20_000,
+      emptyMonitor,
+    ),
+  ]);
 
   errors.push(...gmgnDiscovery.errors, ...gmgnMonitor.errors);
 

@@ -248,17 +248,19 @@ export async function buildAlphaIntelReport(input: {
       ? " Pattern resembles early ecosystem rotations (rising discourse + liquidity before mainstream move)."
       : "";
 
+  const sm = smartMoneyLine(intel, token);
+  const mom = momentumHealth(token, intel);
   const aiThesis =
     signal.action === "SELL" || scam.isScam
-      ? `Bearish / avoid — ${scam.label ?? signal.whyAction} Risk ${risk.total}/100.`
-      : `${signal.whyAction} ${narrative.summary}${comparable} Confidence ${signal.confidence}%, continuation probability weighted by narrative + flow.`;
+      ? `Desk: avoid — ${scam.label ?? signal.whyAction} Risk ${risk.total}/100.`
+      : `Desk ${signal.action} (${signal.confidence}% conf) — ${signal.whyAction} ${narrative.summary} Flow: ${sm} Momentum: ${mom}${comparable}`;
 
   const layerHints = [
     "Narrative velocity",
     "Smart-money flow",
     "Momentum structure",
     "Risk gates",
-    "Agent thesis",
+    "Desk verdict",
     ...(githubDev && githubDev.score > 20 ? ["Developer activity"] : []),
   ];
 

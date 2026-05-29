@@ -60,7 +60,7 @@ export const NEXUS_AUTOMATES = [
 ] as const;
 
 export const ALPHA_SCAN_LOADING =
-  "Your agent is doing the hard work — ranking setups by momentum, sentiment, liquidity, and risk. About a minute.";
+  "Pro desk pass — DexScreener structure, Birdeye TA/flow, GMGN signals & security. Ranking by liquidity, momentum, holder risk, and entry gate (not AI hype).";
 
 export const ALPHA_SCAN_EMPTY =
   "Run a scan from the hero above — the agent will research dozens of tokens and return a short ranked list.";
@@ -110,7 +110,7 @@ export const ALPHA_TAB_SUBTITLE =
   "Paid pro desk — unique ranked picks (not your Live Feed list)";
 
 export const ALPHA_LIST_INTRO =
-  "Pro meme-coin desk after your Arc scan fee: GMGN signals, Birdeye holders/TA, 6551 news/X, full thesis & risk matrix. Names here do not repeat Live Feed.";
+  "Pro meme-coin desk — Dex + GMGN + Birdeye quantitative pass (flow, TA, security, entry gate). BUY only when checks align; most setups stay WATCH. Not your Live Feed list.";
 
 /** One-line agent verdict for list rows */
 export function agentVerdictLine(whyAction?: string, thesis?: string, reasoning?: string): string {

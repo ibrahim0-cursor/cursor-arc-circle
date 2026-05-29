@@ -3,8 +3,14 @@ import { runAlphaScan } from "@/lib/nexus-agent";
 import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { chainIdFromWallet } from "@/lib/swappable";
 import { ALPHA_SCAN_LIMIT } from "@/lib/feed-config";
+import {
+  alphaScanCacheKey,
+  getAlphaScanCache,
+  setAlphaScanCache,
+} from "@/lib/alpha-scan-cache";
 
 export const maxDuration = 120;
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
@@ -25,11 +31,19 @@ export async function POST(request: Request) {
     if (body.chainId && body.tokenAddress) {
       focusToken = (await fetchTokenByAddress(body.chainId, body.tokenAddress)) ?? undefined;
     }
+    const liveFeedKeys = body.liveFeedKeys ?? [];
+    const cacheKey = alphaScanCacheKey(liveFeedKeys);
+    const cached = getAlphaScanCache(cacheKey);
+    if (cached) {
+      return NextResponse.json({ ...cached, cached: true });
+    }
+
     const result = await runAlphaScan(ALPHA_SCAN_LIMIT, {
       preferredChain,
       focusToken,
-      liveFeedKeys: body.liveFeedKeys,
+      liveFeedKeys,
     });
+    setAlphaScanCache(cacheKey, result as Record<string, unknown>);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Scan failed";
