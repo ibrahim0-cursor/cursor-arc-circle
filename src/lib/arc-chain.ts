@@ -2,6 +2,8 @@ import { defineChain } from "viem";
 
 export const ARC_TESTNET_ID = 5042002;
 export const ARC_FEE_USD = 0.01;
+/** Per PRISM macro forecast (Arc testnet settlement) */
+export const PRISM_FORECAST_FEE_USD = 0.01;
 
 export const arcTestnet = defineChain({
   id: ARC_TESTNET_ID,

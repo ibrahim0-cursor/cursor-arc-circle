@@ -10,10 +10,17 @@ import { cn } from "@/lib/utils";
 type PrismPremiumHeroProps = {
   loading: boolean;
   onAnalyze: () => void;
+  feeUsd?: number;
+  walletConnected?: boolean;
 };
 
 /** PRISM workspace intro — home/NEXUS glass + 3D icon parity */
-export function PrismPremiumHero({ loading, onAnalyze }: PrismPremiumHeroProps) {
+export function PrismPremiumHero({
+  loading,
+  onAnalyze,
+  feeUsd = 0.01,
+  walletConnected = false,
+}: PrismPremiumHeroProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -53,7 +60,7 @@ export function PrismPremiumHero({ loading, onAnalyze }: PrismPremiumHeroProps) 
               ) : (
                 <ArcIcon3d icon={Target} theme="prism" size="sm" static />
               )}
-              Generate Forecast
+              {walletConnected ? "Generate Forecast" : "Connect wallet to forecast"}
             </button>
           </div>
         </div>

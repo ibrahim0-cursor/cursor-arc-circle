@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
 import { History, Radar, Target } from "lucide-react";
+import { useArcSettlement } from "@/hooks/use-arc-settlement";
+import { PRISM_FORECAST_FEE_USD } from "@/lib/arc-chain";
+import { arcExplorerTx } from "@/lib/arc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
@@ -46,6 +50,9 @@ function eventScopeKey(eventId: string, customEvent: string) {
 
 export function PrismConsole() {
   const toast = useToast();
+  const { isConnected } = useAccount();
+  const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
+  const [lastArcFeeTx, setLastArcFeeTx] = useState<string | null>(null);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [selected, setSelected] = useState<string>("fed-cut-june");
   const [customEvent, setCustomEvent] = useState("");
@@ -134,12 +141,31 @@ export function PrismConsole() {
   }, [selected, customEvent]);
 
   async function analyze() {
+    if (!isConnected) {
+      toast({
+        type: "error",
+        title: "Connect wallet",
+        message: `Connect on Arc testnet to pay the $${PRISM_FORECAST_FEE_USD.toFixed(2)} forecast fee.`,
+      });
+      return;
+    }
     setLoading(true);
     try {
+      await ensureArcNetwork();
+      const fee = await payArcFee(
+        "PRISM_FORECAST",
+        `prism-${selected}-${customEvent.trim() || "preset"}-${Date.now()}`,
+      );
+      setLastArcFeeTx(fee.txHash);
+
       const res = await fetch("/api/prism/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: selected, customEvent }),
+        body: JSON.stringify({
+          eventId: selected,
+          customEvent,
+          arcFeeTxHash: fee.txHash,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Forecast failed");
@@ -177,7 +203,25 @@ export function PrismConsole() {
     <div className="relative isolate min-h-screen overflow-x-hidden text-white" data-prism-page data-arc-theme="prism">
       <ArcBackground theme="prism" />
       <div className="relative z-10 mx-auto max-w-7xl px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-8 sm:pb-12">
-        <PrismPremiumHero loading={loading} onAnalyze={analyze} />
+        <PrismPremiumHero
+          loading={loading || arcPending}
+          onAnalyze={analyze}
+          feeUsd={feeUsd}
+          walletConnected={isConnected}
+        />
+        {lastArcFeeTx && (
+          <p className="mb-3 text-center text-[11px] text-emerald-200/80">
+            Arc forecast fee recorded ·{" "}
+            <a
+              href={arcExplorerTx(lastArcFeeTx)}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              {truncateHash(lastArcFeeTx, 8, 6)}
+            </a>
+          </p>
+        )}
 
         {macroSnap?.market && (
           <div className="prism-macro-strip mb-4 sm:mb-6">

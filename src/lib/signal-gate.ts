@@ -179,15 +179,15 @@ export function evaluateTradeSetup(input: {
   const pumpDump = h24 > 8 && (m5 < -15 || h1 < -20);
   const fakeMoon = h24 >= 80 && (m5 < -10 || h1 < -18 || flowRatio < 0.9);
 
-  if (crimeDump || pumpDump || fakeMoon || (scam?.isScam && (scam.severity ?? 0) >= 40)) {
+  if (crimeDump || pumpDump || fakeMoon || (scam?.isScam && (scam.severity ?? 0) >= 35)) {
     return {
       tier: "avoid",
       action: "SELL",
       agreement: 0,
-      confidence: Math.min(38, scam?.maxConfidence ?? 35),
-      riskScore: Math.max(82, scam?.severity ?? 80),
+      confidence: Math.max(88, scam?.maxConfidence ?? 90),
+      riskScore: Math.max(88, scam?.severity ?? 85),
       gaps: ["Chart/flow shows exit liquidity or rug pattern"],
-      thesis: `${token.symbol}: avoid — structure failed intraday checks before any 2x/10x thesis.`,
+      thesis: `${token.symbol}: AVOID — rug/pump-dump or honeypot structure; no entry.`,
       checksPassed: 0,
       checksTotal: 10,
     };
@@ -256,7 +256,10 @@ export function evaluateTradeSetup(input: {
 export function enforceSignalGate(
   token: TrendingToken,
   intel: TokenIntel,
-  signal: Pick<AgentSignal, "action" | "confidence" | "riskScore" | "reasoning" | "whyAction" | "reasoningFactors">,
+  signal: Pick<
+    AgentSignal,
+    "action" | "confidence" | "riskScore" | "reasoning" | "whyAction" | "reasoningFactors" | "deskVerdict"
+  >,
   opts?: {
     macro?: MacroRegime | null;
     security?: TokenSecurityReport;
@@ -319,20 +322,24 @@ export function enforceSignalGate(
     };
   }
 
-  if (signal.action === "HOLD" && gate.action === "SELL") {
+  if (gate.tier === "avoid" || (signal.action === "HOLD" && gate.action === "SELL")) {
     return {
       ...signal,
       action: "SELL",
-      confidence: Math.min(signal.confidence, gate.confidence),
-      riskScore: Math.max(signal.riskScore, gate.riskScore),
+      confidence: Math.max(signal.confidence, gate.confidence, 88),
+      riskScore: Math.max(signal.riskScore, gate.riskScore, 88),
       whyAction: gate.thesis,
       reasoningFactors: mergedFactors,
+      deskVerdict: "AVOID",
     };
   }
 
   return {
     ...signal,
-    confidence: Math.min(signal.confidence, signal.action === "HOLD" ? 56 : gate.confidence),
+    confidence:
+      signal.action === "HOLD"
+        ? Math.min(signal.confidence, 56)
+        : Math.max(signal.confidence, gate.confidence),
     reasoningFactors: mergedFactors,
   };
 }

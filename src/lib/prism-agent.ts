@@ -16,10 +16,13 @@ import {
 } from "./prism-intelligence-engine";
 import { getPrismMemoryCalibration } from "./prism-forecast-memory";
 import { addPrismPrediction, type PrismPrediction } from "./storage";
+import { getApeWisdomMentionMap } from "./apewisdom";
+import { fetchOpenNewsMacro, hasOpenNewsToken } from "./opennews-6551";
 
 type EventInput = {
   eventId?: string;
   customEvent?: string;
+  arcFeeTxHash?: string;
 };
 
 function getAnthropic() {
@@ -136,14 +139,38 @@ export async function runPrismAnalysis(input: EventInput) {
   const query = preset?.query ?? event;
   const eventKey = input.eventId ?? preset?.id ?? "fed-cut-june";
 
-  const [gdelt, news, eventRegistry, community, macro, memory] = await Promise.all([
-    fetchGdeltArticles(query, 8),
-    fetchNewsArticles(query, 6),
-    fetchEventRegistryArticles(query, 6),
-    fetchMacroCommunityPulse(event, query),
-    buildPrismMacroSnapshot(eventKey),
-    getPrismMemoryCalibration(),
-  ]);
+  const [gdelt, news, eventRegistry, community, macro, memory, apeMap, openNewsMacro] =
+    await Promise.all([
+      fetchGdeltArticles(query, 8),
+      fetchNewsArticles(query, 6),
+      fetchEventRegistryArticles(query, 6),
+      fetchMacroCommunityPulse(event, query),
+      buildPrismMacroSnapshot(eventKey),
+      getPrismMemoryCalibration(),
+      getApeWisdomMentionMap(),
+      hasOpenNewsToken() ? fetchOpenNewsMacro(query, 6) : Promise.resolve([]),
+    ]);
+
+  const btcApe = apeMap.get("BTC");
+  const ethApe = apeMap.get("ETH");
+  if (btcApe?.mentions) {
+    macro.factors.push(`BTC social rank #${btcApe.rank} · ${btcApe.mentions} mentions (ApeWisdom)`);
+  }
+  if (ethApe?.mentions) {
+    macro.factors.push(`ETH social rank #${ethApe.rank} · ${ethApe.mentions} mentions (ApeWisdom)`);
+  }
+  if (openNewsMacro.length > 0) {
+    community.items = [
+      ...openNewsMacro.map((n) => ({
+        kind: "opennews" as const,
+        title: n.title,
+        source: n.source,
+        link: n.link,
+      })),
+      ...community.items,
+    ].slice(0, 16);
+    community.headlines = community.items.map((i) => i.title).slice(0, 8);
+  }
 
   const engine = buildPrismEngineContext(
     event,
@@ -169,7 +196,7 @@ export async function runPrismAnalysis(input: EventInput) {
     id: randomUUID(),
     timestamp: new Date().toISOString(),
     ...core,
-    arcTxHash: anchor.txHash,
+    arcTxHash: input.arcFeeTxHash ?? anchor.txHash,
   };
 
   await addPrismPrediction(prediction);

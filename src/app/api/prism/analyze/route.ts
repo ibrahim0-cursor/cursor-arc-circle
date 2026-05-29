@@ -3,7 +3,11 @@ import { runPrismAnalysis, listPrismEvents } from "@/lib/prism-agent";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { eventId?: string; customEvent?: string };
+    const body = (await request.json()) as {
+      eventId?: string;
+      customEvent?: string;
+      arcFeeTxHash?: string;
+    };
     const result = await runPrismAnalysis(body);
     return NextResponse.json(result);
   } catch (error) {

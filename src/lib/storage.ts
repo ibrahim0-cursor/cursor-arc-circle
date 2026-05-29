@@ -110,6 +110,7 @@ export type NexusDecision = {
   reasoning: string;
   whyAction: string;
   reasoningFactors: ReasoningFactor[];
+  deskVerdict?: "AVOID" | "EXIT";
   intel: TokenIntel;
   arcTxHash?: string;
   arcBlockNumber?: number;
@@ -127,11 +128,14 @@ export type { DemoPosition, DemoTradeRecord };
 
 export type AgentSignal = {
   action: "BUY" | "SELL" | "HOLD";
+  /** High = confidence in the desk verdict (AVOID/EXIT), not a buy sizing hint */
   confidence: number;
   riskScore: number;
   reasoning: string;
   whyAction: string;
   reasoningFactors: ReasoningFactor[];
+  /** Rug/honeypot — show AVOID instead of weak % SELL */
+  deskVerdict?: "AVOID" | "EXIT";
 };
 
 export type PrismPrediction = {

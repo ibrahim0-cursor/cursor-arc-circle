@@ -123,14 +123,24 @@ export function assessTokenScam(
           ? "⚠️ Honeypot risk"
           : "⚠️ High scam risk — avoid";
 
+  const forceExit =
+    isScam &&
+    (severity >= 35 ||
+      scamType === "crime_dump" ||
+      scamType === "pump_dump" ||
+      scamType === "rug_pull" ||
+      scamType === "honeypot" ||
+      scamType === "micro_liquidity");
+
   return {
     isScam,
     scamType,
     label,
     flags: [...new Set(flags)].slice(0, 6),
     severity,
-    recommendedAction: severity >= 55 || scamType === "crime_dump" ? "SELL" : "HOLD",
-    maxConfidence: isScam ? Math.max(22, 40 - Math.floor(severity / 3)) : 94,
+    recommendedAction: forceExit ? "SELL" : "HOLD",
+    /** Confidence we are right to exit/avoid (high), not a position-size hint */
+    maxConfidence: isScam ? Math.min(98, Math.max(88, 52 + Math.floor(severity / 2))) : 94,
   };
 }
 
@@ -142,7 +152,7 @@ export function applyScamAndSecurity(
   scam: ScamAssessment,
 ): AgentSignal {
   if (scam.isScam) {
-    const action = scam.recommendedAction;
+    const exitConf = Math.max(scam.maxConfidence, 88);
     const scamFactors: typeof signal.reasoningFactors = [
       {
         label: "Scam check",
@@ -153,20 +163,22 @@ export function applyScamAndSecurity(
       ...(signal.reasoningFactors ?? []).slice(0, 4),
     ];
     return {
-      action,
-      confidence: Math.min(signal.confidence, scam.maxConfidence),
-      riskScore: Math.max(signal.riskScore, scam.severity, 82),
+      action: "SELL",
+      confidence: exitConf,
+      riskScore: Math.max(signal.riskScore, scam.severity, 88),
       reasoning: `SCAM ALERT (${scam.scamType ?? "risk"}): ${scam.flags.join("; ")}`,
-      whyAction: `${token.symbol}: ${scam.label}. Not a hold — chart shows dump/sell pressure like DexScreener rugs. ${scam.flags[0] ?? ""}`,
+      whyAction: `${token.symbol}: ${scam.label} — do not enter; exit if held. ${scam.flags[0] ?? ""}`,
       reasoningFactors: scamFactors,
+      deskVerdict: "AVOID",
     };
   }
 
   if (security.honeypotRisk || scam.scamType === "honeypot") {
     return {
       action: "SELL",
-      confidence: Math.min(signal.confidence, 32),
-      riskScore: Math.max(signal.riskScore, 88),
+      confidence: Math.max(90, scam.maxConfidence),
+      riskScore: Math.max(signal.riskScore, 92),
+      deskVerdict: "AVOID",
       reasoning: `Honeypot / exit-trap risk on ${token.symbol}: ${(security.flags ?? []).concat(scam.flags).join("; ") || security.label}. High 24h % is not a buy signal when you cannot safely sell.`,
       whyAction: `${token.symbol}: ${scam.label || security.label} — do not chase "+${token.change24h.toFixed(0)}%" tape; treat as avoid/exit, not 100x hunter setup.`,
       reasoningFactors: [

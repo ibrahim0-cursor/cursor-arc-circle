@@ -445,7 +445,7 @@ export function NexusTrendingFeed({
             <p className="flex items-center gap-1.5 text-[11px] text-white/55">
               <Bot className="h-3 w-3 shrink-0 text-cyan-300/80" />
               <span className="font-semibold text-cyan-200/95">
-                {agent.confidence}% {agent.action}
+                {agent.confidence}% {agent.deskVerdict ?? agent.action}
               </span>
               {token.intel?.technical && cleanFeed && (
                 <span className="text-[10px] text-violet-200/60">

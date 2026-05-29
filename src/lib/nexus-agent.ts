@@ -300,6 +300,7 @@ function heuristicDecision(
   | "reasoning"
   | "whyAction"
   | "reasoningFactors"
+  | "deskVerdict"
 > {
   const security = risk?.security;
   const scam =
@@ -310,23 +311,25 @@ function heuristicDecision(
     const factors = buildReasoningFactors(token, intel, "SELL", macro, { security, scam });
     return {
       action: "SELL",
-      confidence: 28,
-      riskScore: 90,
+      confidence: Math.max(90, scam.maxConfidence),
+      riskScore: 92,
       reasoning: `Honeypot / trap risk on ${token.symbol} despite ${token.change24h.toFixed(1)}% 24h — ${scam.flags[0] ?? security?.label ?? "exit blocked"}.`,
-      whyAction: `${token.symbol}: honeypot risk — do not treat as 100x hunter; exit or avoid even if 24h tape looks green.`,
+      whyAction: `${token.symbol}: honeypot risk — AVOID; do not size into green 24h tape.`,
       reasoningFactors: factors,
+      deskVerdict: "AVOID",
     };
   }
 
-  if (scam.isScam && scam.severity >= 42) {
+  if (scam.isScam && scam.severity >= 35) {
     const factors = buildReasoningFactors(token, intel, "SELL", macro, { security, scam });
     return {
-      action: scam.recommendedAction,
-      confidence: Math.min(38, scam.maxConfidence),
-      riskScore: Math.max(82, scam.severity),
+      action: "SELL",
+      confidence: Math.max(88, scam.maxConfidence),
+      riskScore: Math.max(85, scam.severity),
       reasoning: `${scam.label}: ${scam.flags.join("; ")}`,
-      whyAction: `${token.symbol}: ${scam.flags[0] ?? scam.label} — rug/scam pattern on chart, not a momentum long.`,
+      whyAction: `${token.symbol}: ${scam.flags[0] ?? scam.label} — rug/pump-dump pattern; AVOID entry.`,
       reasoningFactors: factors,
+      deskVerdict: "AVOID",
     };
   }
 
