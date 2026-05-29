@@ -19,6 +19,7 @@ export function ArcIcon3d({
   size = "md",
   className,
   delay = 0,
+  static: isStatic = false,
 }: {
   icon: LucideIcon;
   theme?: Theme;
@@ -26,14 +27,16 @@ export function ArcIcon3d({
   className?: string;
   /** Stagger float animation (seconds) */
   delay?: number;
+  /** Disable float animation — use inside buttons and compact controls */
+  static?: boolean;
 }) {
   const dim = size === "lg" ? "h-14 w-14" : size === "sm" ? "h-9 w-9" : "h-11 w-11";
   const iconDim = size === "lg" ? "h-7 w-7" : size === "sm" ? "h-4 w-4" : "h-5 w-5";
 
   return (
     <div
-      className={cn("arc-icon-3d", themeClass[theme], dim, className)}
-      style={{ animationDelay: `${delay}s` }}
+      className={cn("arc-icon-3d", themeClass[theme], isStatic && "arc-icon-3d--static", dim, className)}
+      style={isStatic ? undefined : { animationDelay: `${delay}s` }}
       aria-hidden
     >
       <div className="arc-icon-3d-plate">

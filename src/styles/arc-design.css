@@ -1387,6 +1387,10 @@ html.arc-fancy-pointer select {
   }
 }
 
+.arc-icon-3d--static {
+  animation: none;
+}
+
 .arc-home-hero-shell {
   position: relative;
   min-height: min(82vh, 880px);
@@ -2103,6 +2107,21 @@ html[data-arc-theme="nexus"] [data-nexus-page] .nexus-feed-row.arc-glass-interac
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.1) inset,
     0 0 36px -6px rgba(168, 85, 247, 0.48),
+    0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.nexus-glass-cta--alpha {
+  background: linear-gradient(
+    155deg,
+    rgba(139, 92, 246, 0.42) 0%,
+    rgba(217, 70, 239, 0.34) 48%,
+    rgba(14, 6, 24, 0.92) 100%
+  ) !important;
+  border: 1px solid rgba(167, 139, 250, 0.48) !important;
+  color: #f5f3ff !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 36px -6px rgba(168, 85, 247, 0.45),
     0 14px 32px -12px rgba(0, 0, 0, 0.7) !important;
 }
 

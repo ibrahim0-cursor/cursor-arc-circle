@@ -11,6 +11,14 @@ export function arcThemeFromPath(pathname: string): ArcTheme {
   return "home";
 }
 
+/** Route href → 3D icon accent (shared by top + mobile nav) */
+export function arcNavIconTheme(href: string): ArcTheme | "neutral" {
+  if (href === "/nexus") return "nexus";
+  if (href === "/prism") return "prism";
+  if (href === "/") return "home";
+  return "neutral";
+}
+
 /** Syncs route → document theme for cursor, glass, and ambient CSS */
 export function ArcThemeSync() {
   const pathname = usePathname();

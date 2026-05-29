@@ -16,9 +16,9 @@ export function nexusActionGlass(
   );
 }
 
-/** Full-width glass CTAs (swap, confirm buy/sell, run agent) */
+/** Full-width glass CTAs (swap, confirm buy/sell, run agent, alpha scan) */
 export function nexusGlassCta(
-  variant: "buy" | "sell" | "autopilot" | "swap",
+  variant: "buy" | "sell" | "autopilot" | "swap" | "alpha",
   className?: string,
   /** When false, CTA stays dim until user enters an amount */
   lit = true,

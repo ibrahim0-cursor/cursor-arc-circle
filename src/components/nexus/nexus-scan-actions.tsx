@@ -2,7 +2,7 @@
 
 import { Loader2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { ArcIconFrame } from "@/components/ui/arc-icon-frame";
+import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { cn } from "@/lib/utils";
 
 export type NexusScanActionId = "alpha";
@@ -62,12 +62,12 @@ export function NexusScanActions({
               <Loader2 className="h-6 w-6 animate-spin text-white/90" />
             </span>
           ) : (
-            <ArcIconFrame
+            <ArcIcon3d
               icon={a.icon}
-              variant="home"
+              theme="nexus"
               size="sm"
-              active
-              className="shrink-0 pointer-events-none"
+              static
+              className="shrink-0 pointer-events-none !h-9 !w-9"
             />
           )}
           <span className="min-w-0 flex-1 pointer-events-none">

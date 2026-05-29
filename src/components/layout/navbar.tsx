@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Droplets, Home, Radar, Sparkles, Zap } from "lucide-react";
 import { ArcLogoMark } from "@/components/layout/arc-logo-mark";
-import { arcThemeFromPath } from "@/components/layout/arc-theme-sync";
+import { arcNavIconTheme, arcThemeFromPath } from "@/components/layout/arc-theme-sync";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
-import { ArcIconBadge } from "@/components/ui/arc-icon-badge";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NexusWalletMenu } from "@/components/nexus/nexus-wallet-menu";
@@ -30,8 +29,6 @@ export function Navbar() {
         ? "bg-[var(--prism-amber)] text-[#1a0c00] hover:brightness-110"
         : "bg-white text-black hover:bg-white/90";
 
-  const badgeTheme = theme === "home" ? "home" : theme;
-
   return (
     <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
       <div className="arc-nav-glass mx-auto flex h-[62px] max-w-5xl items-center justify-between rounded-2xl px-3 sm:px-5">
@@ -50,6 +47,7 @@ export function Navbar() {
         <nav className="hidden items-center gap-0.5 md:flex">
           {links.map((link) => {
             const Icon = link.icon;
+            const iconTheme = arcNavIconTheme(link.href);
             if ("external" in link && link.external) {
               return (
                 <a
@@ -59,7 +57,7 @@ export function Navbar() {
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-full px-3 py-2 text-sm text-white/55 transition hover:bg-white/5 hover:text-white"
                 >
-                  <Icon className="h-4 w-4" />
+                  <ArcIcon3d icon={Icon} theme={iconTheme} size="sm" className="!h-7 !w-7" />
                   {link.label}
                 </a>
               );
@@ -74,18 +72,7 @@ export function Navbar() {
                   active ? "arc-nav-pill-active font-semibold" : "text-white/55 hover:bg-white/5 hover:text-white",
                 )}
               >
-                {theme === "home" ? (
-                  <ArcIcon3d
-                    icon={Icon}
-                    theme={
-                      link.href === "/nexus" ? "nexus" : link.href === "/prism" ? "prism" : "home"
-                    }
-                    size="sm"
-                    className="!h-7 !w-7"
-                  />
-                ) : (
-                  <Icon className="h-4 w-4" />
-                )}
+                <ArcIcon3d icon={Icon} theme={iconTheme} size="sm" className="!h-7 !w-7" />
                 {link.label}
               </Link>
             );
@@ -97,16 +84,12 @@ export function Navbar() {
             <NexusWalletMenu />
           ) : (
             <>
-              {theme === "home" ? (
-                <ArcIcon3d icon={Sparkles} theme="home" size="sm" className="hidden lg:flex" />
-              ) : (
-                <ArcIconBadge
-                  icon={theme === "prism" ? Radar : Home}
-                  theme={badgeTheme}
-                  size="sm"
-                  className="hidden lg:flex"
-                />
-              )}
+              <ArcIcon3d
+                icon={theme === "prism" ? Radar : Sparkles}
+                theme={theme === "prism" ? "prism" : "home"}
+                size="sm"
+                className="hidden lg:flex"
+              />
               <Link
                 href={theme === "prism" ? "/prism" : "/nexus"}
                 className={cn(

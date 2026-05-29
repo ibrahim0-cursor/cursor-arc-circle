@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Sparkles } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
+import { nexusGlassCta } from "@/lib/nexus-action-glass";
 import { NEXUS_ALPHA_HERO_LINES, NEXUS_ALPHA_HERO_SUB } from "@/lib/nexus-copy";
 import { cn } from "@/lib/utils";
 
@@ -76,9 +77,10 @@ export function NexusAlphaHero({
             onClick={onAlphaScan}
             disabled={disabled || alphaScanning}
             className={cn(
-              "arc-btn-pill arc-btn-signal inline-flex min-h-[52px] items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold transition sm:min-w-[220px]",
-              "border-violet-400/50 bg-gradient-to-r from-violet-600/45 to-fuchsia-600/35 text-violet-50",
-              "hover:border-violet-300/60 hover:shadow-[0_0_28px_rgba(168,85,247,0.35)]",
+              nexusGlassCta(
+                "alpha",
+                "arc-btn-pill arc-btn-signal inline-flex min-h-[52px] items-center justify-center gap-2.5 px-5 py-3 text-sm sm:min-w-[220px]",
+              ),
               "disabled:cursor-not-allowed disabled:opacity-50",
               alphaScanning && "arc-ai-pulse",
             )}
@@ -86,7 +88,7 @@ export function NexusAlphaHero({
             {alphaScanning ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <Sparkles className="h-5 w-5" />
+              <ArcIcon3d icon={Sparkles} theme="nexus" size="sm" static className="!h-7 !w-7" />
             )}
             {alphaScanning ? "Alpha scan running…" : "Run Alpha Scan"}
           </button>
