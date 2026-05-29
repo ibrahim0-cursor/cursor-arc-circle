@@ -162,7 +162,8 @@ export function discoveryHunterLabel(
   const m5 = t.priceChange?.m5 ?? 0;
   const h1 = t.priceChange?.h1 ?? 0;
   if (ch > 8 && (m5 < -15 || h1 < -25)) return "Pump-dump risk";
-  if (ch >= 80) return "100x zone";
+  if (ch >= 80 && (m5 < -8 || h1 < -12)) return "Hype zone — confirm flow";
+  if (ch >= 80) return "100x zone (gated)";
   if (ch >= 35) return "2x+ momentum";
   if (ch >= 15) return "Early runner";
   if (t.sourceTags?.some((s) => /GMGN|new|launch/i.test(s))) return "Fresh launch";

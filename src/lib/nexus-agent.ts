@@ -10,6 +10,11 @@ import { checkSwappable } from "./swappable";
 import { anchorDecisionPayload } from "./arc";
 import { addNexusDecision, type NexusDecision, type TokenIntel, type AgentSignal, type ReasoningFactor } from "./storage";
 import { assessTokenScam, applyScamAndSecurity } from "./scam-detection";
+import {
+  enforceSignalGate,
+  evaluateTradeSetup,
+  NEXUS_SIGNAL_GATE_PROMPT,
+} from "./signal-gate";
 import { fetchTokenByAddress } from "./dexscreener";
 import { getMacroRegime, macroRegimeGuidance, type MacroRegime } from "./macro-regime";
 import { hasBirdeyeKey } from "./birdeye-client";
@@ -302,83 +307,32 @@ function heuristicDecision(
 
   const draftFactors = buildReasoningFactors(token, intel, "HOLD", macro, { security, scam });
   const { edge } = scoreFactorEdge(draftFactors);
-  const ta = intel.technical;
-  const taScore = ta?.score ?? 50;
 
-  const turnover = token.liquidityUsd > 0 ? token.volume24h / token.liquidityUsd : 0;
-  const flowRatio = (token.txns24h?.buys ?? intel.buy24h ?? 0) / Math.max(token.txns24h?.sells ?? intel.sell24h ?? 1, 1);
-  const m5 = token.priceChange?.m5 ?? 0;
-  const h1 = token.priceChange?.h1 ?? 0;
-  const crimeDump = m5 <= -25 || h1 <= -35;
-  const pumpDump = token.change24h > 8 && (m5 < -15 || h1 < -20);
-  const fakeMoon = token.change24h >= 80 && (m5 < -10 || h1 < -18 || flowRatio < 0.9);
+  const gate = evaluateTradeSetup({
+    token,
+    intel,
+    edge,
+    macro,
+    security,
+    scam,
+  });
 
-  let action: NexusDecision["action"] = "HOLD";
-  if (crimeDump || pumpDump || fakeMoon) {
-    action = "SELL";
-  } else if (
-    edge > 28 &&
-    taScore >= 58 &&
-    token.liquidityUsd > 40_000 &&
-    flowRatio > 1.05 &&
-    token.change24h < 120
-  ) {
-    action = "BUY";
-  } else if (edge < -22 || taScore < 42 || token.change24h < -18) {
-    action = "SELL";
-  } else if (edge > 18 && token.change24h > 12 && token.change24h < 90 && token.liquidityUsd > 80_000) {
-    action = "BUY";
-  } else if (edge < -14 && (intel.sniperCount ?? 0) > 6) {
-    action = "SELL";
-  } else if (Math.abs(token.change24h) > 25 && token.change24h < 100 && turnover > 2) {
-    action = token.change24h > 0 ? "BUY" : "SELL";
-  }
-
+  const action = gate.action;
   const finalFactors = buildReasoningFactors(token, intel, action, macro, { security, scam });
   const { edge: finalEdge } = scoreFactorEdge(finalFactors);
 
-  const confidence = Math.round(
-    Math.min(
-      94,
-      Math.max(
-        36,
-        44 +
-          Math.abs(finalEdge) * 0.55 +
-          (taScore - 50) * 0.35 +
-          Math.min(12, turnover * 4) +
-          (flowRatio > 1.3 ? 6 : flowRatio < 0.7 ? -6 : 0) +
-          (action === "BUY" && token.change24h > 0 ? token.change24h * 0.15 : 0) +
-          (action === "SELL" && token.change24h < 0 ? Math.abs(token.change24h) * 0.12 : 0),
-      ),
-    ),
-  );
-
-  const riskScore = Math.round(
-    Math.min(
-      92,
-      Math.max(
-        12,
-        48 -
-          finalEdge * 0.4 +
-          (token.liquidityUsd < 25_000 ? 18 : token.liquidityUsd < 80_000 ? 8 : -4) +
-          (intel.sniperCount ?? 0) * 1.8 +
-          (intel.top10HolderPercent ?? 0) * 0.25 +
-          (intel.isMintable ? 10 : 0) +
-          (intel.isFreezable ? 12 : 0) +
-          (turnover > 8 ? 6 : 0),
-      ),
-    ),
-  );
-
   const top = [...finalFactors].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).slice(0, 4);
-  const reasoning = top.map((f) => `${f.label}: ${f.detail}`).join(" · ");
+  const reasoning = `${top.map((f) => `${f.label}: ${f.detail}`).join(" · ")} · Gate ${gate.checksPassed}/${gate.checksTotal} (${gate.tier})`;
 
   return {
     action,
-    confidence,
-    riskScore,
+    confidence: gate.confidence,
+    riskScore: gate.riskScore,
     reasoning,
-    whyAction: buildWhyAction(action, token, finalFactors, finalEdge),
+    whyAction:
+      action === "HOLD"
+        ? gate.thesis
+        : buildWhyAction(action, token, finalFactors, finalEdge),
     reasoningFactors: finalFactors,
   };
 }
@@ -440,14 +394,19 @@ async function aiDecision(token: TrendingToken, intel: TokenIntel) {
     const factors = buildReasoningFactors(token, intelMerged, action);
     const { edge } = scoreFactorEdge(factors);
 
-    return {
-      action,
-      confidence: normalizePct(parsed.confidence, fallback.confidence),
-      riskScore: normalizePct(parsed.riskScore, fallback.riskScore),
-      reasoning: parsed.reasoning ?? fallback.reasoning,
-      whyAction: parsed.whyAction ?? buildWhyAction(action, token, factors, edge),
-      reasoningFactors: factors,
-    };
+    return enforceSignalGate(
+      token,
+      intelMerged,
+      {
+        action,
+        confidence: normalizePct(parsed.confidence, fallback.confidence),
+        riskScore: normalizePct(parsed.riskScore, fallback.riskScore),
+        reasoning: parsed.reasoning ?? fallback.reasoning,
+        whyAction: parsed.whyAction ?? buildWhyAction(action, token, factors, edge),
+        reasoningFactors: factors,
+      },
+      { macro: await getMacroRegime() },
+    );
   } catch (error) {
     console.warn("OpenAI unavailable:", error);
     return fallback;
@@ -634,8 +593,8 @@ function scoreOpportunity(
   newsCount = 0,
 ): number {
   let score = signal.confidence;
-  if (signal.action === "BUY") score += 22;
-  else if (signal.action === "HOLD") score += 4;
+  if (signal.action === "BUY") score += 14;
+  else if (signal.action === "HOLD") score += 2;
   else score -= 18;
   if (intel.technical?.score) score += intel.technical.score * 0.15;
   if (token.liquidityUsd > 150_000) score += 12;
@@ -921,9 +880,11 @@ export async function runAlphaScan(
     throw new Error("Alpha scan found only stablecoins — no tradable alts. Retry shortly.");
   }
 
-  opportunities.sort(
-    (a, b) => b.alphaScore - a.alphaScore || b.opportunityScore - a.opportunityScore,
-  );
+  opportunities.sort((a, b) => {
+    const desk = (o: AlphaOpportunity) =>
+      (o.action === "BUY" ? 1200 : o.action === "HOLD" ? 0 : -400) + o.confidence * 2;
+    return desk(b) + b.alphaScore - (desk(a) + a.alphaScore) || b.opportunityScore - a.opportunityScore;
+  });
   opportunities.forEach((row, i) => {
     row.rank = i + 1;
   });
@@ -1023,8 +984,7 @@ async function aiFeedBatch(
       messages: [
         {
           role: "system",
-          content:
-            "Analyze EACH token independently. Return JSON { signals: [{ symbol, action, confidence, riskScore, reasoning, whyAction }] } — one row per input symbol. Use different confidence/risk per token based on its metrics. No generic copy-paste.",
+          content: `${NEXUS_SIGNAL_GATE_PROMPT} Batch: return JSON { signals: [{ symbol, action, confidence, riskScore, reasoning, whyAction }] } — one row per symbol.`,
         },
         { role: "user", content: JSON.stringify(payload) },
       ],
@@ -1046,14 +1006,18 @@ async function aiFeedBatch(
       if (!match) continue;
       const factors = buildReasoningFactors(match.token, match.intel, row.action ?? "HOLD");
       const { edge } = scoreFactorEdge(factors);
-      out.set(match.token.tokenAddress.toLowerCase(), {
+      const rawSignal = {
         action: row.action ?? "HOLD",
         confidence: normalizePct(row.confidence, 50),
         riskScore: normalizePct(row.riskScore, 50),
         reasoning: row.reasoning ?? "",
         whyAction: row.whyAction ?? buildWhyAction(row.action ?? "HOLD", match.token, factors, edge),
         reasoningFactors: factors,
-      });
+      };
+      out.set(
+        match.token.tokenAddress.toLowerCase(),
+        enforceSignalGate(match.token, match.intel, rawSignal),
+      );
     }
   } catch (e) {
     console.warn("Feed batch AI failed:", e);
@@ -1147,6 +1111,7 @@ export async function analyzeTrendingFeedQuick(
         : await feedTokenSecurity(token, intel, rank);
       const scam = assessTokenScam(token, intel, security);
       let signal = heuristicDecision(token, intel, macro, { security, scam });
+      signal = enforceSignalGate(token, intel, signal, { macro, security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
       if (rank < 6 && !security.honeypotRisk && !scam.isScam) {
         const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
@@ -1202,6 +1167,7 @@ export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
       const security = await feedTokenSecurity(token, intel, rank);
       const scam = assessTokenScam(token, intel, security);
       let signal = aiMap.get(key) ?? heuristicDecision(token, intel, macro, { security, scam });
+      signal = enforceSignalGate(token, intel, signal, { macro, security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
       if (rank < 8 && !security.honeypotRisk && !scam.isScam) {
         const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");

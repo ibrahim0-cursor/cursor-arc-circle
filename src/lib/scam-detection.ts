@@ -184,10 +184,20 @@ export function applyScamAndSecurity(
   if (security.grade === "F" || security.grade === "D") {
     return {
       ...signal,
-      action: signal.action === "BUY" ? "HOLD" : signal.action,
-      confidence: Math.min(signal.confidence, 52),
+      action: "HOLD",
+      confidence: Math.min(signal.confidence, 48),
       riskScore: Math.max(signal.riskScore, 70),
-      whyAction: `Risk grade ${security.grade}: ${security.flags.join(", ") || security.label}. ${signal.whyAction}`,
+      whyAction: `Risk grade ${security.grade}: ${security.flags.join(", ") || security.label}. Entry gate blocked — research only.`,
+    };
+  }
+
+  if (security.grade === "C" && signal.action === "BUY") {
+    return {
+      ...signal,
+      action: "HOLD",
+      confidence: Math.min(signal.confidence, 58),
+      riskScore: Math.max(signal.riskScore, 62),
+      whyAction: `Grade C contract risk — wait for A/B security or stronger flow before sizing ${token.symbol}.`,
     };
   }
 

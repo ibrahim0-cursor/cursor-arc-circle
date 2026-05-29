@@ -101,7 +101,7 @@ export const REASONING_HEADLINE =
   "Expand for thesis and signals — stats above are Dex-verified; agent only cites actionable edges.";
 
 export const LIVE_FEED_INTRO =
-  "Discovery hunter — fresh launches & 2x–100x momentum bands. Dex + GMGN new pairs, light agent verdict (BUY/SELL/HOLD). Not the paid desk.";
+  "Discovery hunter — fresh launches & 2x–100x bands. Scout pass: BUY only when liquidity, flow, TA & intraday structure align (most rows WATCH). Alpha Scan = pro desk.";
 
 export const FEED_ROW_HINT =
   "Dex-verified price & flow · scout pass for new movers — run Alpha Scan for the pro desk";
