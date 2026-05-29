@@ -383,15 +383,12 @@ export function PrismConsole() {
                           ))}
                       </div>
                     )}
-                    {latestEngine?.weakCausalityRejected && latestEngine.weakCausalityRejected.length > 0 && (
-                      <p className="break-words text-[11px] text-white/45">
-                        Filtered weak signals: {latestEngine.weakCausalityRejected.slice(0, 3).join(" · ")}
-                      </p>
-                    )}
-                    <p className="break-words text-sm leading-relaxed text-white/70">
-                      <span className="font-semibold text-amber-200/90">Agent reasoning: </span>
-                      {latest.reasoning}
-                    </p>
+                    <div className="break-words text-sm leading-relaxed text-white/70">
+                      <span className="font-semibold text-amber-200/90">Agent reasoning</span>
+                      <pre className="mt-2 whitespace-pre-wrap font-sans text-xs leading-relaxed text-white/75">
+                        {latest.reasoning}
+                      </pre>
+                    </div>
                     {latestEngine?.scoredHeadlines && latestEngine.scoredHeadlines.length > 0 && (
                       <div className="rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-200/80">
@@ -402,7 +399,7 @@ export function PrismConsole() {
                             <li key={`${h.source}-${i}`} className="text-xs text-white/75">
                               <span className="text-amber-200/90">{h.impact}</span>
                               {" · "}
-                              {Math.round(h.cryptoRelevance * 100)}% crypto · {h.title.slice(0, 120)}
+                              {h.cryptoRelevance}% crypto · {h.title.slice(0, 120)}
                               {h.title.length > 120 ? "…" : ""}
                             </li>
                           ))}

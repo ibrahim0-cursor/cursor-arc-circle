@@ -6,7 +6,11 @@ export type NewsArticle = {
   publishedAt: string;
 };
 
-export async function fetchNewsArticles(query: string, max = 6): Promise<NewsArticle[]> {
+export async function fetchNewsArticles(
+  query: string,
+  max = 6,
+  opts?: { domains?: string },
+): Promise<NewsArticle[]> {
   const apiKey = process.env.NEWS_API_KEY;
   if (!apiKey) return [];
 
@@ -17,6 +21,7 @@ export async function fetchNewsArticles(query: string, max = 6): Promise<NewsArt
     pageSize: String(max),
     apiKey,
   });
+  if (opts?.domains) params.set("domains", opts.domains);
 
   const res = await fetch(`https://newsapi.org/v2/everything?${params}`, {
     next: { revalidate: 300 },

@@ -2,7 +2,7 @@
 
 import type { CommunityPulseItem } from "./community-pulse";
 import type { OpenNewsItem } from "./opennews-6551";
-import { dedupeHeadlines, isQualityHeadline } from "./intel-headline-quality";
+import { dedupeHeadlines, isConsumerFinanceNoise, isQualityHeadline } from "./intel-headline-quality";
 
 export type IntelItem = { title: string; source: string; url?: string; link?: string };
 
@@ -89,6 +89,7 @@ export function mergeIntelSources(intel: {
 
   for (const list of [intel.gdelt, intel.news, intel.eventRegistry]) {
     for (const item of list ?? []) {
+      if (isConsumerFinanceNoise(item.title)) continue;
       push({ title: item.title, source: item.source, url: item.url ?? item.link });
     }
   }

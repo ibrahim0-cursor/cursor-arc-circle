@@ -51,7 +51,7 @@ export const MACRO_EVENTS = [
     id: "fed-cut-june",
     label: "Fed cuts rates at next FOMC meeting",
     category: "macro" as const,
-    query: "Federal Reserve interest rate decision",
+    query: "(Federal Reserve OR FOMC) interest rate decision cut hold",
   },
   {
     id: "cpi-hot",

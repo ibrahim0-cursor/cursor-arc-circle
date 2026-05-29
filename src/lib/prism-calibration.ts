@@ -40,10 +40,10 @@ export function calibratePrismForecast(
   if (bullish > bearish + 2) probability = Math.min(88, probability + 4);
   if (bearish > bullish + 2) probability = Math.max(10, probability - 4);
 
-  const hasDesk = /desk review|source triage|transmission/i.test(core.reasoning);
-  const reasoning = hasDesk
-    ? `${core.reasoning} ${engine.memoryNote}`.trim()
-    : `${core.reasoning} Regime: ${engine.regime}. ${engine.memoryNote}`.trim();
+  const hasPublicBrief = /research brief|verified headline/i.test(core.reasoning);
+  const reasoning = hasPublicBrief
+    ? core.reasoning
+    : `${core.reasoning} ${engine.memoryNote}`.trim();
 
   return {
     ...core,

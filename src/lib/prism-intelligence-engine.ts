@@ -5,7 +5,13 @@
 import type { PrismMacroSnapshot } from "./prism-macro-snapshot";
 import type { PrismPrediction } from "./storage";
 import type { CommunityPulseItem } from "./community-pulse";
-import { isSensationalHeadline } from "./intel-headline-quality";
+import {
+  isConsumerFinanceNoise,
+  isOffTopicForEvent,
+  isSensationalHeadline,
+  sourceTrustTier,
+} from "./intel-headline-quality";
+import { macroProbabilityAdjust } from "./prism-macro-snapshot";
 import type { OpenNewsItem } from "./opennews-6551";
 import { mergeIntelSources, type IntelItem } from "./prism-intel-filter";
 
@@ -290,14 +296,27 @@ function scoreHeadlineRow(
   };
 }
 
-function passesStrictFilter(h: ScoredHeadline, category: PrismEventCategory): boolean {
+function passesStrictFilter(
+  h: ScoredHeadline,
+  category: PrismEventCategory,
+  eventLabel: string,
+): boolean {
   if (isSensationalHeadline(h.title)) return false;
+  if (isConsumerFinanceNoise(h.title)) return false;
+  if (isOffTopicForEvent(h.title, eventLabel, category)) return false;
   if (!categoryAllowsClass(category, h.newsClass)) return false;
+  if (category === "macro" && sourceTrustTier(h.source) === 0) return false;
   return h.cryptoRelevance >= 42 && h.eventMatchPct >= 18;
 }
 
-function passesRelaxedFilter(h: ScoredHeadline, category: PrismEventCategory): boolean {
+function passesRelaxedFilter(
+  h: ScoredHeadline,
+  category: PrismEventCategory,
+  eventLabel: string,
+): boolean {
   if (isSensationalHeadline(h.title)) return false;
+  if (isConsumerFinanceNoise(h.title)) return false;
+  if (isOffTopicForEvent(h.title, eventLabel, category)) return false;
   if (!categoryAllowsClass(category, h.newsClass)) return false;
   return h.cryptoRelevance >= 30 && h.eventMatchPct >= 8;
 }
@@ -311,12 +330,16 @@ export function scoreHeadlinesForIntel(
 ): ScoredHeadline[] {
   const scored = items
     .map((item) => scoreHeadlineRow(item, eventLabel, query, category, macro))
-    .sort((a, b) => b.cryptoRelevance + b.eventMatchPct - (a.cryptoRelevance + a.eventMatchPct));
+    .sort(
+      (a, b) =>
+        sourceTrustTier(b.source) - sourceTrustTier(a.source) ||
+        b.cryptoRelevance + b.eventMatchPct - (a.cryptoRelevance + a.eventMatchPct),
+    );
 
-  const strict = scored.filter((h) => passesStrictFilter(h, category));
+  const strict = scored.filter((h) => passesStrictFilter(h, category, eventLabel));
   if (strict.length >= 3) return strict.slice(0, 12);
 
-  const relaxed = scored.filter((h) => passesRelaxedFilter(h, category));
+  const relaxed = scored.filter((h) => passesRelaxedFilter(h, category, eventLabel));
   const pool =
     strict.length > 0
       ? [...strict, ...relaxed.filter((h) => !strict.some((s) => s.title === h.title))]
@@ -443,7 +466,11 @@ export function computeQuantForecast(
     base += category === "macro" ? 6 : 0;
   }
 
-  const probability = Math.min(88, Math.max(10, Math.round(base)));
+  const probability = macroProbabilityAdjust(
+    Math.min(88, Math.max(10, Math.round(base))),
+    category,
+    macro,
+  );
 
   let confidence = 44 + Math.round(engine.signalAgreement * 32);
   confidence += engine.scoredHeadlines.length >= 6 ? 10 : engine.scoredHeadlines.length >= 3 ? 5 : -4;

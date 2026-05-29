@@ -2,9 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAiClient, getAiModel } from "./ai-client";
 import { randomUUID } from "crypto";
 import { fetchMacroCommunityPulse } from "./community-pulse";
-import { fetchGdeltArticles, MACRO_EVENTS } from "./gdelt";
-import { fetchNewsArticles } from "./newsapi";
-import { fetchEventRegistryArticles } from "./eventregistry-client";
+import { MACRO_EVENTS } from "./gdelt";
 import { buildPrismMacroSnapshot, type PrismMacroSnapshot } from "./prism-macro-snapshot";
 import { anchorDecisionPayload } from "./arc";
 import { calibratePrismForecast } from "./prism-calibration";
@@ -25,6 +23,14 @@ import {
   mergeIntelSources,
   type PrismIntelStatus,
 } from "./prism-intel-filter";
+import {
+  buildEventIntelQueries,
+  computeDataAnchoredProbability,
+  fetchExpandedEventIntel,
+  filterResearchIntel,
+  formatPublicAgentReasoning,
+  formatPublicSummary,
+} from "./prism-research-pipeline";
 
 type EventInput = {
   eventId?: string;
@@ -57,8 +63,14 @@ function parsePrismJson(raw: string, fallback: ReturnType<typeof computeQuantFor
     reasoning = `${fallback.reasoning.split(" Transmission:")[0] ?? fallback.reasoning} ${reasoning}`.trim();
   }
 
+  const prob = parsed.probability ?? fallback.probability;
+  const anchored = Math.min(
+    92,
+    Math.max(8, Math.round((prob + fallback.probability) / 2)),
+  );
+
   return {
-    probability: Math.min(100, Math.max(0, parsed.probability ?? 50)),
+    probability: anchored,
     confidence: Math.min(100, Math.max(0, parsed.confidence ?? 60)),
     kellyFraction: Math.min(1, Math.max(0, parsed.kellyFraction ?? 0.05)),
     horizon: parsed.horizon ?? "30 days",
@@ -74,11 +86,13 @@ async function aiPrediction(input: {
   category: PrismPrediction["category"];
   engine: PrismEngineContext;
   macro: PrismMacroSnapshot;
+  dataProbability: number;
 }) {
   const anthropic = getAnthropic();
   const openai = getAiClient();
 
   const fallback = computeQuantForecast(input.event, input.category, input.engine, input.macro);
+  const deskBrief = buildDeskResearchBrief(input.event, input.engine, input.macro);
 
   const payload = JSON.stringify({
     event: input.event,
@@ -86,11 +100,11 @@ async function aiPrediction(input: {
     regime: input.engine.regime,
     regimeDetail: input.engine.regimeDetail,
     signalAgreement: input.engine.signalAgreement,
+    dataAnchoredProbability: input.dataProbability,
     weights: input.engine.weights,
     transmissionChain: input.engine.transmissionChain,
     sectorImpact: input.engine.sectorImpact,
     invalidation: input.engine.invalidation,
-    weakCausalityRejected: input.engine.weakCausalityRejected,
     macroFactors: input.macro.factors,
     macro: {
       market: input.macro.market,
@@ -98,17 +112,20 @@ async function aiPrediction(input: {
       fred: input.macro.fred,
       dune: input.macro.dune,
     },
-    topHeadlines: input.engine.scoredHeadlines.slice(0, 8).map((h) => ({
+    deskResearchBrief: deskBrief,
+    topHeadlines: input.engine.scoredHeadlines.slice(0, 12).map((h) => ({
       title: h.title,
       source: h.source,
+      url: h.url,
       cryptoRelevance: h.cryptoRelevance,
       eventMatchPct: h.eventMatchPct,
       impact: h.impact,
+      newsClass: h.newsClass,
       transmission: h.transmission,
     })),
     headlineCount: input.engine.scoredHeadlines.length,
     instruction:
-      "Use topHeadlines as primary intel — cite 2+ by source in reasoning. Reject sensational single-source items.",
+      "Professional macro desk: complete 5-step research internally. Probability MUST stay within ±12 of dataAnchoredProbability unless ≥3 trusted wire headlines disagree. Cite [source] titles. No BUY/SELL/HOLD.",
   });
 
   if (openai) {
@@ -174,26 +191,24 @@ export async function runPrismAnalysis(input: EventInput) {
   const eventKey = input.eventId ?? preset?.id ?? "fed-cut-june";
 
   const keywordQuery = extractEventKeywords(event, query).slice(0, 5).join(" ");
+  const intelQueries = buildEventIntelQueries(event, eventKey, query);
 
-  const [gdelt, news, eventRegistry, community, macro, memory, apeMap, openNewsResult, gdeltFallback] =
-    await Promise.all([
-      fetchGdeltArticles(query, 10),
-      fetchNewsArticles(query, 8),
-      fetchEventRegistryArticles(query, 8),
-      fetchMacroCommunityPulse(event, query),
-      buildPrismMacroSnapshot(eventKey),
-      getPrismMemoryCalibration(),
-      getApeWisdomMentionMap(),
-      hasOpenNewsToken()
-        ? fetchOpenNewsMacroWithStatus(keywordQuery || query, 10)
-        : Promise.resolve({ items: [] as OpenNewsItem[], quotaExhausted: false }),
-      input.customEvent?.trim() && keywordQuery !== query
-        ? fetchGdeltArticles(keywordQuery, 6)
-        : Promise.resolve([]),
-    ]);
+  const [expandedIntel, community, macro, memory, apeMap, openNewsResult] = await Promise.all([
+    fetchExpandedEventIntel(intelQueries),
+    fetchMacroCommunityPulse(event, query),
+    buildPrismMacroSnapshot(eventKey),
+    getPrismMemoryCalibration(),
+    getApeWisdomMentionMap(),
+    hasOpenNewsToken()
+      ? fetchOpenNewsMacroWithStatus(keywordQuery || query, 10)
+      : Promise.resolve({ items: [] as OpenNewsItem[], quotaExhausted: false }),
+  ]);
 
   const openNewsMacro = openNewsResult.items;
-  const mergedGdelt = [...gdelt, ...gdeltFallback].slice(0, 14);
+  const gdelt = filterResearchIntel(expandedIntel.gdelt, event, category);
+  const news = filterResearchIntel(expandedIntel.news, event, category);
+  const eventRegistry = filterResearchIntel(expandedIntel.eventRegistry, event, category);
+  const mergedGdelt = gdelt.slice(0, 20);
 
   const btcApe = apeMap.get("BTC");
   const ethApe = apeMap.get("ETH");
@@ -233,8 +248,14 @@ export async function runPrismAnalysis(input: EventInput) {
     newsApiCount: news.length,
   });
 
-  const raw = await aiPrediction({ event, category, engine, macro });
-  const core = calibratePrismForecast(raw, macro, engine, memory.maxAllowedConfidence);
+  const dataProbability = computeDataAnchoredProbability(event, category, macro, engine);
+  const raw = await aiPrediction({ event, category, engine, macro, dataProbability });
+  const calibrated = calibratePrismForecast(raw, macro, engine, memory.maxAllowedConfidence);
+  const core = {
+    ...calibrated,
+    summary: formatPublicSummary(event, calibrated.probability, engine, macro),
+    reasoning: formatPublicAgentReasoning(event, engine, macro, calibrated),
+  };
 
   const payload = JSON.stringify({
     product: "PRISM",
