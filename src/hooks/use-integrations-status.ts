@@ -49,7 +49,9 @@ export function useIntegrationsStatus() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/status?t=${Date.now()}`);
+      const res = await fetch(`/api/status?quick=1&t=${Date.now()}`, {
+        cache: "no-store",
+      });
       if (res.ok) setStatus(await res.json());
     } catch {
       setStatus(null);
