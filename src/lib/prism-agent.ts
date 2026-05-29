@@ -114,6 +114,7 @@ async function aiPrediction(input: {
           }
         : null,
       fred: input.macro.fred,
+      dune: input.macro.dune,
     },
     gdelt: input.gdelt.slice(0, 6),
     news: input.news.slice(0, 6),

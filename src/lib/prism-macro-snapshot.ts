@@ -2,6 +2,7 @@ import { binanceSpotFromTickers, fetchBinance24hTickers } from "./binance-market
 import { fetchGlobalMarket, type GlobalMarket } from "./coingecko";
 import { fetchDefiLlamaOverview, type DefiLlamaOverview } from "./defillama-client";
 import { fetchFredSeriesContext, type FredSeriesContext } from "./fred-client";
+import { fetchDunePrismSnippet, type DuneQuerySnippet } from "./dune-client";
 
 export type PrismMarketSnapshot = GlobalMarket & {
   priceSource: "binance+coingecko" | "binance" | "coingecko";
@@ -11,6 +12,7 @@ export type PrismMacroSnapshot = {
   market: PrismMarketSnapshot | null;
   defi: DefiLlamaOverview | null;
   fred: FredSeriesContext | null;
+  dune: DuneQuerySnippet | null;
   factors: string[];
 };
 
@@ -38,6 +40,7 @@ function buildFactors(
   market: PrismMarketSnapshot | null,
   defi: DefiLlamaOverview | null,
   fred: FredSeriesContext | null,
+  dune: DuneQuerySnippet | null,
 ): string[] {
   const factors: string[] = [];
 
@@ -69,22 +72,28 @@ function buildFactors(
     factors.push(`${fred.label}: ${fred.latest.value}${fred.unit ? ` ${fred.unit}` : ""}${ch} (FRED)`);
   }
 
+  if (dune) {
+    const keys = Object.keys(dune.sample).slice(0, 2).join(", ");
+    factors.push(`Dune on-chain query #${dune.queryId} (${dune.rowCount} rows${keys ? `: ${keys}` : ""})`);
+  }
+
   return factors;
 }
 
 /** Quantitative macro context for PRISM forecasts — parallel, cached fetches. */
 export async function buildPrismMacroSnapshot(eventId: string): Promise<PrismMacroSnapshot> {
-  const [tickers, gecko, defi, fred] = await Promise.all([
+  const [tickers, gecko, defi, fred, dune] = await Promise.all([
     fetchBinance24hTickers(),
     fetchGlobalMarket(),
     fetchDefiLlamaOverview(),
     fetchFredSeriesContext(eventId),
+    fetchDunePrismSnippet(),
   ]);
 
   const market = mergeMarkets(binanceSpotFromTickers(tickers), gecko);
-  const factors = buildFactors(market, defi, fred);
+  const factors = buildFactors(market, defi, fred, dune);
 
-  return { market, defi, fred, factors };
+  return { market, defi, fred, dune, factors };
 }
 
 /** Adjust heuristic probability using live macro readings. */

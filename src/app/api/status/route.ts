@@ -28,6 +28,12 @@ import { hasOpenNewsToken, probeOpenNews } from "@/lib/opennews-6551";
 import { hasOpenTwitterToken, probeOpenTwitter } from "@/lib/opentwitter-6551";
 import { probeWithTimeout } from "@/lib/probe-timeout";
 import { getGmgnBanStatus } from "@/lib/gmgn-rate-budget";
+import { hasOpenRouterKey } from "@/lib/ai-client";
+import { probeBinanceMarket } from "@/lib/binance-market";
+import { probeDefiLlama } from "@/lib/defillama-client";
+import { probeFred, hasFredKey } from "@/lib/fred-client";
+import { probeEventRegistry, hasEventRegistryKey } from "@/lib/eventregistry-client";
+import { probeDune, hasDuneKey } from "@/lib/dune-client";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -344,17 +350,50 @@ export async function GET(request: Request) {
       socialData: hasSocialDataKey(),
       socialDataProbe: optional.socialDataProbe ?? { ok: false, configured: false },
       statusMode: quick ? "quick" : "full",
+      openrouter: hasOpenRouterKey(),
+      prismFeeds: quick
+        ? {
+            binance: { ok: true, note: "public data-api.binance.vision" },
+            defillama: { ok: true, note: "public api.llama.fi" },
+            fred: { ok: hasFredKey(), configured: hasFredKey() },
+            eventRegistry: { ok: hasEventRegistryKey(), configured: hasEventRegistryKey() },
+            dune: { ok: hasDuneKey(), configured: hasDuneKey() },
+          }
+        : {
+            binance: await probeWithTimeout(() => probeBinanceMarket(), T.fast, { ok: false }),
+            defillama: await probeWithTimeout(() => probeDefiLlama(), T.fast, { ok: false }),
+            fred: await probeWithTimeout(() => probeFred(), T.social, {
+              ok: false,
+              configured: hasFredKey(),
+            }),
+            eventRegistry: await probeWithTimeout(() => probeEventRegistry(), T.social, {
+              ok: false,
+              configured: hasEventRegistryKey(),
+            }),
+            dune: await probeWithTimeout(() => probeDune(), T.social, {
+              ok: false,
+              configured: hasDuneKey(),
+              queryConfigured: false,
+            }),
+          },
       alphaLayers:
-        "gmgn|apewisdom|reddit-public|hackernews|perception|narrative|telegram|discord|github|on-chain",
+        "gmgn|apewisdom|reddit-public|hackernews|perception|narrative|telegram|discord|github|on-chain|binance|defillama|fred|dune",
       mode:
-        process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
+        process.env.GROQ_API_KEY ||
+        process.env.OPENROUTER_API_KEY ||
+        process.env.OPENAI_API_KEY ||
+        process.env.ANTHROPIC_API_KEY
           ? "ai"
           : "heuristic",
       aiProvider: process.env.GROQ_API_KEY
         ? "groq"
-        : process.env.OPENAI_API_KEY
-          ? "openai"
-          : "heuristic",
+        : process.env.OPENROUTER_API_KEY
+          ? "openrouter"
+          : process.env.OPENAI_API_KEY
+            ? "openai"
+            : process.env.ANTHROPIC_API_KEY
+              ? "anthropic"
+              : "heuristic",
     },
     {
       headers: {
