@@ -127,8 +127,16 @@ export async function buildAlphaScanUniverse(
   geckoFeed: TrendingToken[],
 ): Promise<{ candidates: AlphaCandidate[]; intel: AlphaScanIntel }> {
   const errors: string[] = [];
-  const emptyDiscovery = { tokens: [] as TrendingToken[], sources: {}, errors: [] as string[] };
-  const emptyMonitor = { tokens: [] as TrendingToken[], sources: {}, errors: [] as string[] };
+  const emptyDiscovery = {
+    tokens: [] as TrendingToken[],
+    sources: {} as Record<string, number>,
+    errors: [] as string[],
+  };
+  const emptyMonitor = {
+    tokens: [] as TrendingToken[],
+    sources: {} as Record<string, number>,
+    errors: [] as string[],
+  };
 
   const gmgnDiscovery = await withTimeout(
     fetchGmgnDiscoveryTokens("sol", { forceFull: true }).catch((e) => {

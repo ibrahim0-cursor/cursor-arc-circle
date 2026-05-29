@@ -34,7 +34,7 @@ export async function getGmgnAlphaContext(force = false): Promise<GmgnAlphaConte
       change24h: t.change24h,
       volume24h: t.volume24h,
       liquidityUsd: t.liquidityUsd,
-      marketCap: t.marketCap,
+      marketCap: t.marketCap ?? 0,
       logo: t.icon,
     };
     if (!bySymbol.has(sym) || row.volume24h > (bySymbol.get(sym)?.volume24h ?? 0)) {
