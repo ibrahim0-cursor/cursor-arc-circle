@@ -4,13 +4,13 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
-import { filterAlphaScanTokens, isStablecoin } from "./token-filters";
+import { filterAlphaScanTokens } from "./token-filters";
 import { fetchGmgnDiscoveryTokens } from "./gmgn-discovery";
 import { fetchGmgnMonitorTokens } from "./gmgn-monitor-feed";
 import { hasGmgnApiKey } from "./gmgn-client";
 import { hasOpenNewsToken } from "./opennews-6551";
 import { hasOpenTwitterToken } from "./opentwitter-6551";
-import { parseSignalEvents, runGmgnMonitorSkill } from "./gmgn-monitor";
+import { filterRealGmgnMarketTokens } from "./gmgn-real-data";
 
 export type AlphaCandidate = TrendingToken & { sourceTags: string[] };
 
@@ -131,68 +131,32 @@ export async function buildAlphaScanUniverse(
   const emptyMonitor = { tokens: [] as TrendingToken[], sources: {}, errors: [] as string[] };
 
   const gmgnDiscovery = await withTimeout(
-    fetchGmgnDiscoveryTokens("sol").catch((e) => {
+    fetchGmgnDiscoveryTokens("sol", { forceFull: true }).catch((e) => {
       errors.push(e instanceof Error ? e.message : "discovery feed unavailable");
       return emptyDiscovery;
     }),
-    28_000,
+    45_000,
     emptyDiscovery,
   );
   const gmgnMonitor = await withTimeout(
-    fetchGmgnMonitorTokens("sol").catch((e) => {
+    fetchGmgnMonitorTokens("sol", { forceFull: true }).catch((e) => {
       errors.push(e instanceof Error ? e.message : "signal feed unavailable");
       return emptyMonitor;
     }),
-    28_000,
+    45_000,
     emptyMonitor,
   );
-  const smBuySignals = hasGmgnApiKey()
-    ? await withTimeout(runGmgnMonitorSkill("smart-money-buy-signal", { chain: "sol" }), 18_000, {
-        ok: false,
-        skill: "smart-money-buy-signal",
-        status: 0,
-        data: undefined,
-      })
-    : { ok: false, data: undefined };
 
   errors.push(...gmgnDiscovery.errors, ...gmgnMonitor.errors);
 
-  const signalEvents = smBuySignals.ok ? parseSignalEvents(smBuySignals.data) : [];
-  const signalHits = signalEvents.length;
+  const signalHits = gmgnMonitor.sources["smart-money-buy-signal"] ?? 0;
 
   const lists: AlphaCandidate[] = [
-    ...tagList(filterAlphaScanTokens(gmgnMonitor.tokens), "GMGN signal"),
-    ...tagList(filterAlphaScanTokens(gmgnDiscovery.tokens), "GMGN trending"),
+    ...tagList(filterRealGmgnMarketTokens(gmgnMonitor.tokens), "GMGN signal"),
+    ...tagList(filterRealGmgnMarketTokens(gmgnDiscovery.tokens), "GMGN trending"),
     ...tagList(filterAlphaScanTokens(dexFeed), "DexScreener"),
     ...tagList(filterAlphaScanTokens(geckoFeed), "GeckoTerminal"),
   ];
-
-  for (const ev of signalEvents.slice(0, 40)) {
-    if (!ev.tokenAddress) continue;
-    const sym = ev.symbol ?? ev.tokenAddress.slice(0, 6);
-    if (
-      isStablecoin(sym, sym, {
-        tokenAddress: ev.tokenAddress,
-        chainId: "solana",
-      })
-    ) {
-      continue;
-    }
-    lists.push({
-      symbol: ev.symbol ?? ev.tokenAddress.slice(0, 6),
-      name: ev.symbol ?? ev.tokenAddress.slice(0, 8),
-      tokenAddress: ev.tokenAddress,
-      chainId: "solana",
-      pairAddress: ev.tokenAddress,
-      priceUsd: 0,
-      change24h: 0,
-      volume24h: 0,
-      liquidityUsd: 0,
-      marketCap: ev.marketCap,
-      url: `https://gmgn.ai/sol/token/${ev.tokenAddress}`,
-      sourceTags: ["GMGN smart-money buy signal"],
-    });
-  }
 
   const intel: AlphaScanIntel = {
     layers: [...ALPHA_INTEL_LAYERS],

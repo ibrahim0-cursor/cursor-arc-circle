@@ -2,6 +2,7 @@
  * GMGN market rank → Alpha scan narrative boost (read-only).
  */
 
+import { fetchGmgnDiscoveryTokens } from "./gmgn-discovery";
 import { fetchGmgnMarketRank, hasGmgnApiKey, type GmgnTrendingToken } from "./gmgn-client";
 
 export type GmgnAlphaContext = {
@@ -18,17 +19,36 @@ export async function getGmgnAlphaContext(force = false): Promise<GmgnAlphaConte
     return contextCache.ctx;
   }
 
-  const [sol, base, sol5m] = await Promise.all([
-    fetchGmgnMarketRank("sol", "1h", 30),
-    fetchGmgnMarketRank("base", "1h", 15),
-    fetchGmgnMarketRank("sol", "5m", 20),
-  ]);
-
+  const discovery = await fetchGmgnDiscoveryTokens("sol", { forceFull: false });
   const bySymbol = new Map<string, GmgnTrendingToken>();
-  for (const row of [...sol, ...base, ...sol5m]) {
-    const sym = row.symbol.toUpperCase();
+
+  for (const t of discovery.tokens) {
+    if (t.priceUsd <= 0 && t.volume24h <= 0) continue;
+    const sym = t.symbol.toUpperCase();
+    const row: GmgnTrendingToken = {
+      address: t.tokenAddress,
+      symbol: t.symbol,
+      name: t.name,
+      chain: "sol",
+      priceUsd: t.priceUsd,
+      change24h: t.change24h,
+      volume24h: t.volume24h,
+      liquidityUsd: t.liquidityUsd,
+      marketCap: t.marketCap,
+      logo: t.icon,
+    };
     if (!bySymbol.has(sym) || row.volume24h > (bySymbol.get(sym)?.volume24h ?? 0)) {
       bySymbol.set(sym, row);
+    }
+  }
+
+  if (bySymbol.size < 5) {
+    const sol = await fetchGmgnMarketRank("sol", "5m", 15);
+    for (const row of sol) {
+      const sym = row.symbol.toUpperCase();
+      if (!bySymbol.has(sym) || row.volume24h > (bySymbol.get(sym)?.volume24h ?? 0)) {
+        bySymbol.set(sym, row);
+      }
     }
   }
 

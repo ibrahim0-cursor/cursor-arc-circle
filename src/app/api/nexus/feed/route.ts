@@ -45,7 +45,14 @@ async function enrichMissingPairs(tokens: TrendingToken[], cap: number) {
 function buildFeedPayload(
   analyzed: Awaited<ReturnType<typeof analyzeTrendingFeed>>,
   mode: string,
-  meta?: { profile?: string; sources?: Record<string, number> },
+  meta?: {
+    profile?: string;
+    sources?: Record<string, number>;
+    gmgnErrors?: string[];
+    gmgnFromCache?: boolean;
+    gmgnSkillsRefreshed?: string[];
+    dataPolicy?: string;
+  },
 ) {
   const feed = filterLiveFeedTokens(
     analyzed.map(({ token, intel, signal, security }) => ({
@@ -74,6 +81,10 @@ function buildFeedPayload(
     mode,
     feedProfile: meta?.profile ?? "discovery-hunter",
     feedSources: meta?.sources,
+    gmgnErrors: meta?.gmgnErrors,
+    gmgnFromCache: meta?.gmgnFromCache,
+    gmgnSkillsRefreshed: meta?.gmgnSkillsRefreshed,
+    dataPolicy: meta?.dataPolicy ?? "live-reads-only",
     aiProvider: process.env.GROQ_API_KEY ? "groq" : process.env.OPENAI_API_KEY ? "openai" : "heuristic",
     settlement: "Arc Testnet USDC",
     updatedAt: new Date().toISOString(),
@@ -97,7 +108,14 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
 async function buildFeed(quick: boolean, limit: number) {
   const discovery = await fetchLiveDiscoveryFeed(limit);
   let tokens = discovery.tokens.slice(0, limit);
-  const feedMeta = { profile: discovery.profile, sources: discovery.sources };
+  const feedMeta = {
+    profile: discovery.profile,
+    sources: discovery.sources,
+    gmgnErrors: discovery.gmgnErrors,
+    gmgnFromCache: discovery.gmgnFromCache,
+    gmgnSkillsRefreshed: discovery.gmgnSkillsRefreshed,
+    dataPolicy: "live-reads-only",
+  };
   tokens = await enrichTokensWithIcons(tokens, quick ? 4 : 8);
   tokens = await enrichMissingPairs(tokens, quick ? 2 : 6);
   tokens = filterLiveFeedTokens(tokens);

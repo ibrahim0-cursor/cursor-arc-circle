@@ -15,5 +15,13 @@ export const ALPHA_SCAN_LIMIT = 12;
 /** GMGN fresh launches merged into Live Feed (not Alpha universe) */
 export const FEED_DISCOVERY_GMGN_LIMIT = 10;
 
+/** Live Feed: refresh N discovery skills per load (rotates through all 5). Alpha uses forceFull. */
+export const GMGN_DISCOVERY_SKILLS_PER_REFRESH = Number(
+  process.env.GMGN_DISCOVERY_SKILLS_PER_REFRESH ?? 2,
+);
+
+/** Alpha Scan: refresh N monitor skills per full scan (rotates through all 5). */
+export const GMGN_MONITOR_SKILLS_PER_REFRESH = Number(process.env.GMGN_MONITOR_SKILLS_PER_REFRESH ?? 2);
+
 /** Alpha list should not duplicate Live Feed names (paid desk = unique picks) */
 export const ALPHA_MAX_LIVE_OVERLAP = 0;

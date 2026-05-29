@@ -14,12 +14,24 @@ MERIDIAN uses **all GMGN catalog skills** via OpenAPI on Vercel (`/api/nexus/gmg
 
 ## How we use every skill (without hammering the API)
 
+### Live Feed (incremental)
+
+- Each refresh runs **2 of 5** discovery skills (~3s GMGN budget), rotating until all skills update.
+- Merged bundle is cached **10 minutes**. Only tokens with **real price/volume/liquidity/mcap** from GMGN are shown.
+- If GMGN is in cooldown, feed shows **last cached real reads** (never synthetic tickers).
+
+### Alpha Scan (full sweep)
+
+- Runs **all 5 discovery + all 5 monitor** skills **sequentially** once per scan (~15s GMGN budget).
+- Signal rows get **Dex price enrichment** when GMGN returns address-only signals — no $0 placeholder cards.
+- Extra duplicate API calls removed (no second smart-money-buy probe).
+
 ### Tier 1 — Background (cached bundles)
 
 | Skills | When | Budget |
 |--------|------|--------|
-| `five-min-trending`, `pump-fun-trending`, `newly-created-tokens`, `kol-bought-new`, `near-graduation` | Live Feed + Alpha discovery | 1 bundle / 10 min, **sequential** (~7s total) |
-| `smart-money-buy-signal`, `price-surge-signal`, `kol-call-signal`, `smart-money-trades`, `kol-trade-activity` | Alpha monitor feed | Same pattern, separate cache |
+| `five-min-trending`, `pump-fun-trending`, `newly-created-tokens`, `kol-bought-new`, `near-graduation` | Live Feed (2/scan) + Alpha (all 5) | Rotating + 10m cache |
+| `smart-money-buy-signal`, `price-surge-signal`, `kol-call-signal`, `smart-money-trades`, `kol-trade-activity` | Alpha monitor | Full on scan; rotating slices cached |
 
 ### Tier 2 — On demand (per token)
 

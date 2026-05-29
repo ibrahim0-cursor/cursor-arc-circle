@@ -15,10 +15,13 @@ import {
 } from "./gmgn-analytics";
 import { hasGmgnApiKey, type GmgnChain, type GmgnTrendingToken } from "./gmgn-client";
 import {
+  getGmgnBanStatus,
   gmgnCacheKey,
   readGmgnCache,
   writeGmgnCache,
 } from "./gmgn-rate-budget";
+import { filterRealGmgnMarketTokens } from "./gmgn-real-data";
+import { GMGN_DISCOVERY_SKILLS_PER_REFRESH } from "./feed-config";
 
 export function gmgnChainToDexChainId(chain: GmgnChain): string {
   const map: Record<GmgnChain, string> = {
@@ -108,74 +111,168 @@ export type GmgnDiscoveryBundle = {
   tokens: TrendingToken[];
   sources: Record<string, number>;
   errors: string[];
+  fromCache?: boolean;
+  skillsRefreshed?: string[];
 };
 
-/** Run all market-discovery analytics skills (sequential + 10m bundle cache). */
-export async function fetchGmgnDiscoveryTokens(chain: GmgnChain = "sol"): Promise<GmgnDiscoveryBundle> {
+type DiscoverySkillId =
+  | "five-min-trending"
+  | "pump-fun-trending"
+  | "newly-created-tokens"
+  | "kol-bought-new"
+  | "near-graduation";
+
+const DISCOVERY_ROTATE: DiscoverySkillId[] = [
+  "five-min-trending",
+  "pump-fun-trending",
+  "newly-created-tokens",
+  "kol-bought-new",
+  "near-graduation",
+];
+
+let discoveryRotateIdx = 0;
+
+type SkillSlice = { tokens: TrendingToken[]; count: number; error?: string };
+
+function mergeSkillSlices(
+  slices: Partial<Record<DiscoverySkillId, SkillSlice>>,
+): { tokens: TrendingToken[]; sources: Record<string, number>; errors: string[] } {
+  const tokens: TrendingToken[] = [];
+  const sources: Record<string, number> = {};
+  const errors: string[] = [];
+  for (const id of DISCOVERY_ROTATE) {
+    const slice = slices[id];
+    if (!slice) continue;
+    if (slice.error) errors.push(`${id}: ${slice.error}`);
+    sources[id] = slice.count;
+    tokens.push(...slice.tokens);
+  }
+  return {
+    tokens: filterAlphaScanTokens(filterRealGmgnMarketTokens(dedupeTokens(tokens))),
+    sources,
+    errors,
+  };
+}
+
+function parseTrendingSkill(
+  chain: GmgnChain,
+  res: { ok: boolean; data?: unknown; error?: string },
+): SkillSlice {
+  if (!res.ok) return { tokens: [], count: 0, error: res.error };
+  const data = res.data as { tokens?: GmgnTrendingToken[]; rank?: unknown[] } | undefined;
+  let rows: GmgnTrendingToken[] = [];
+  if (Array.isArray(data?.tokens)) rows = data.tokens;
+  else if (Array.isArray(data?.rank)) {
+    rows = (data.rank as Record<string, unknown>[]).map((r) => ({
+      address: String(r.address ?? ""),
+      symbol: String(r.symbol ?? ""),
+      name: String(r.name ?? r.symbol ?? ""),
+      chain,
+      priceUsd: Number(r.price ?? 0),
+      change24h: Number(r.price_change_percent1h ?? r.price_change_percent ?? 0),
+      volume24h: Number(r.volume ?? 0),
+      liquidityUsd: Number(r.liquidity ?? 0),
+      marketCap: Number(r.market_cap ?? 0),
+      logo: r.logo ? String(r.logo) : undefined,
+    }));
+  }
+  const mapped = filterRealGmgnMarketTokens(
+    rows.filter((r) => r.address && r.symbol).map(gmgnTrendingRowToToken),
+  );
+  return { tokens: mapped, count: mapped.length };
+}
+
+function parseTrenchesSkill(
+  chain: GmgnChain,
+  res: { ok: boolean; data?: unknown; error?: string },
+): SkillSlice {
+  if (!res.ok) return { tokens: [], count: 0, error: res.error };
+  const mapped = filterRealGmgnMarketTokens(
+    trenchesRows(res.data)
+      .map((r) => trenchesRowToToken(r, chain))
+      .filter((t): t is TrendingToken => t != null),
+  );
+  return { tokens: mapped, count: mapped.length };
+}
+
+async function runDiscoverySkill(
+  chain: GmgnChain,
+  id: DiscoverySkillId,
+): Promise<SkillSlice> {
+  switch (id) {
+    case "five-min-trending":
+      return parseTrendingSkill(chain, await gmgnFiveMinTrending(chain, 25));
+    case "pump-fun-trending":
+      return parseTrendingSkill(chain, await gmgnPumpFunTrending(chain, "1h", 20));
+    case "newly-created-tokens":
+      return parseTrenchesSkill(chain, await gmgnNewlyCreated(chain, 30));
+    case "kol-bought-new":
+      return parseTrenchesSkill(chain, await gmgnKolBoughtNew(chain, 25));
+    case "near-graduation":
+      return parseTrenchesSkill(chain, await gmgnNearGraduation(chain, 25));
+  }
+}
+
+export type FetchGmgnDiscoveryOptions = {
+  /** Alpha Scan: run all 5 discovery skills once (sequential). Live Feed: 2 skills per refresh. */
+  forceFull?: boolean;
+};
+
+/** Discovery skills — incremental on feed, full on Alpha; cached reads when rate-limited. */
+export async function fetchGmgnDiscoveryTokens(
+  chain: GmgnChain = "sol",
+  opts: FetchGmgnDiscoveryOptions = {},
+): Promise<GmgnDiscoveryBundle> {
   if (!hasGmgnApiKey()) {
     return { tokens: [], sources: {}, errors: ["GMGN_API_KEY not set"] };
   }
 
   const bundleKey = gmgnCacheKey("discovery-bundle", { chain });
+  const sliceKey = gmgnCacheKey("discovery-slices", { chain });
   const cached = readGmgnCache<GmgnDiscoveryBundle>(bundleKey);
-  if (cached) return cached;
+  const slices = readGmgnCache<Partial<Record<DiscoverySkillId, SkillSlice>>>(sliceKey) ?? {};
 
-  const fiveMin = await gmgnFiveMinTrending(chain, 25);
-  const pumpFun = await gmgnPumpFunTrending(chain, "1h", 20);
-  const newly = await gmgnNewlyCreated(chain, 30);
-  const kolBought = await gmgnKolBoughtNew(chain, 25);
-  const nearGrad = await gmgnNearGraduation(chain, 25);
-
-  const errors: string[] = [];
-  const tokens: TrendingToken[] = [];
-  const sources: Record<string, number> = {};
-
-  const addTrending = (label: string, res: { ok: boolean; data?: unknown; error?: string }) => {
-    if (!res.ok) {
-      if (res.error) errors.push(`${label}: ${res.error}`);
-      return;
+  const ban = getGmgnBanStatus();
+  if (ban.banned) {
+    if (cached?.tokens.length) {
+      return {
+        ...cached,
+        fromCache: true,
+        errors: [...(cached.errors ?? []), "GMGN cooldown — showing last real cached reads"],
+      };
     }
-    const data = res.data as { tokens?: GmgnTrendingToken[]; rank?: unknown[] } | undefined;
-    let rows: GmgnTrendingToken[] = [];
-    if (Array.isArray(data?.tokens)) rows = data.tokens;
-    else if (Array.isArray(data?.rank)) {
-      rows = (data.rank as Record<string, unknown>[]).map((r) => ({
-        address: String(r.address ?? ""),
-        symbol: String(r.symbol ?? ""),
-        name: String(r.name ?? r.symbol ?? ""),
-        chain,
-        priceUsd: Number(r.price ?? 0),
-        change24h: Number(r.price_change_percent1h ?? r.price_change_percent ?? 0),
-        volume24h: Number(r.volume ?? 0),
-        liquidityUsd: Number(r.liquidity ?? 0),
-        marketCap: Number(r.market_cap ?? 0),
-        logo: r.logo ? String(r.logo) : undefined,
-      }));
-    }
-    const mapped = rows.filter((r) => r.address && r.symbol).map(gmgnTrendingRowToToken);
-    sources[label] = mapped.length;
-    tokens.push(...mapped);
+    return { tokens: [], sources: {}, errors: ["GMGN_RATE_LIMIT_BANNED"] };
+  }
+
+  const perRefresh = Math.max(1, Math.min(5, GMGN_DISCOVERY_SKILLS_PER_REFRESH));
+  const forceFull = opts.forceFull === true || Object.keys(slices).length < 2;
+
+  const toRun: DiscoverySkillId[] = forceFull
+    ? [...DISCOVERY_ROTATE]
+    : Array.from({ length: perRefresh }, (_, i) => {
+        const idx = (discoveryRotateIdx + i) % DISCOVERY_ROTATE.length;
+        return DISCOVERY_ROTATE[idx]!;
+      });
+
+  if (!forceFull) discoveryRotateIdx = (discoveryRotateIdx + perRefresh) % DISCOVERY_ROTATE.length;
+
+  const refreshed: string[] = [];
+  for (const id of toRun) {
+    const slice = await runDiscoverySkill(chain, id);
+    slices[id] = slice;
+    refreshed.push(id);
+    if (slice.error?.includes("BANNED") || slice.error?.includes("RATE_LIMIT")) break;
+  }
+
+  writeGmgnCache(sliceKey, slices);
+  const merged = mergeSkillSlices(slices);
+  const bundle: GmgnDiscoveryBundle = {
+    ...merged,
+    fromCache: false,
+    skillsRefreshed: refreshed,
   };
-
-  const addTrenches = (label: string, res: { ok: boolean; data?: unknown; error?: string }) => {
-    if (!res.ok) {
-      if (res.error) errors.push(`${label}: ${res.error}`);
-      return;
-    }
-    const mapped = trenchesRows(res.data)
-      .map((r) => trenchesRowToToken(r, chain))
-      .filter((t): t is TrendingToken => t != null);
-    sources[label] = mapped.length;
-    tokens.push(...mapped);
-  };
-
-  addTrending("five-min-trending", fiveMin);
-  addTrending("pump-fun-trending", pumpFun);
-  addTrenches("newly-created-tokens", newly);
-  addTrenches("kol-bought-new", kolBought);
-  addTrenches("near-graduation", nearGrad);
-
-  return { tokens: filterAlphaScanTokens(dedupeTokens(tokens)), sources, errors };
+  writeGmgnCache(bundleKey, bundle);
+  return bundle;
 }
 
 export const GMGN_DATA_ANALYTICS_SKILLS: GmgnAnalyticsSkillId[] = [

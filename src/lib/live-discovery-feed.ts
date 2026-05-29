@@ -9,6 +9,7 @@ import { FEED_DISCOVERY_GMGN_LIMIT, STABLE_FEED_LIMIT } from "./feed-config";
 import { filterLiveFeedTokens } from "./token-filters";
 import { fetchGmgnDiscoveryTokens } from "./gmgn-discovery";
 import { hasGmgnApiKey } from "./gmgn-client";
+import { filterRealGmgnMarketTokens } from "./gmgn-real-data";
 
 export type LiveFeedProfile = "discovery-hunter";
 
@@ -44,6 +45,9 @@ export async function fetchLiveDiscoveryFeed(limit = STABLE_FEED_LIMIT): Promise
   tokens: TrendingToken[];
   profile: LiveFeedProfile;
   sources: Record<string, number>;
+  gmgnErrors?: string[];
+  gmgnFromCache?: boolean;
+  gmgnSkillsRefreshed?: string[];
 }> {
   const sources: Record<string, number> = {};
   const pools: TrendingToken[] = [];
@@ -56,20 +60,34 @@ export async function fetchLiveDiscoveryFeed(limit = STABLE_FEED_LIMIT): Promise
   sources.dexRotate = dexLatest.length;
   pools.push(...dexDiscovery, ...dexLatest);
 
+  let gmgnErrors: string[] | undefined;
+  let gmgnFromCache: boolean | undefined;
+  let gmgnSkillsRefreshed: string[] | undefined;
+
   if (hasGmgnApiKey()) {
     try {
       const gmgn = await Promise.race([
-        fetchGmgnDiscoveryTokens("sol"),
-        new Promise<{ tokens: TrendingToken[]; sources: Record<string, number> }>((resolve) =>
-          setTimeout(() => resolve({ tokens: [], sources: {} }), 26_000),
+        fetchGmgnDiscoveryTokens("sol", { forceFull: false }),
+        new Promise<Awaited<ReturnType<typeof fetchGmgnDiscoveryTokens>>>((resolve) =>
+          setTimeout(
+            () => resolve({ tokens: [], sources: {}, errors: ["GMGN discovery timeout"] }),
+            20_000,
+          ),
         ),
       ]);
-      const fresh = tagGmgnFresh(gmgn.tokens).slice(0, FEED_DISCOVERY_GMGN_LIMIT);
+      gmgnErrors = gmgn.errors;
+      gmgnFromCache = gmgn.fromCache;
+      gmgnSkillsRefreshed = gmgn.skillsRefreshed;
+      const fresh = tagGmgnFresh(filterRealGmgnMarketTokens(gmgn.tokens)).slice(
+        0,
+        FEED_DISCOVERY_GMGN_LIMIT,
+      );
       sources.gmgn = fresh.length;
       Object.assign(sources, gmgn.sources);
       pools.push(...fresh);
     } catch {
       sources.gmgn = 0;
+      gmgnErrors = ["GMGN discovery failed"];
     }
   }
 
@@ -79,5 +97,12 @@ export async function fetchLiveDiscoveryFeed(limit = STABLE_FEED_LIMIT): Promise
     discoveryTag: t.discoveryTag ?? discoveryHunterLabel(t),
   }));
 
-  return { tokens: curated, profile: "discovery-hunter", sources };
+  return {
+    tokens: curated,
+    profile: "discovery-hunter",
+    sources,
+    gmgnErrors,
+    gmgnFromCache,
+    gmgnSkillsRefreshed,
+  };
 }
