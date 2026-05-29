@@ -121,9 +121,17 @@ export function buildIntelStatus(
     (feedCount > 0 && (opts.gdeltCount ?? 0) > 0 && feedCount <= (opts.gdeltCount ?? 0));
   let message: string | undefined;
   if (feedCount === 0 && rawCount === 0) {
-    message = "No headlines returned from news APIs — check server env keys or try again.";
+    if ((opts.newsApiCount ?? 0) === 0 && (opts.gdeltCount ?? 0) === 0) {
+      message =
+        "No headlines from GDELT or NewsAPI. If keys are set on Vercel, NewsAPI free tier blocks production hosts — upgrade plan or use GDELT-only.";
+    } else {
+      message = "No headlines returned — retry shortly or narrow your event wording.";
+    }
   } else if (feedCount === 0 && rawCount > 0) {
-    message = "Headlines fetched but none matched this event — try a more specific query.";
+    message =
+      (opts.newsApiCount ?? 0) === 0
+        ? "GDELT returned items but none passed Fed/macro relevance filters. NewsAPI returned 0 — check plan allows production."
+        : "Headlines fetched but none matched this event after trust filters — try a more specific query.";
   } else if (opts.openNewsQuotaExhausted) {
     message = "Intel limited — 6551 quota hit; showing GDELT / NewsAPI / Event Registry fallbacks.";
   } else if (usingFallback && feedCount < 3) {

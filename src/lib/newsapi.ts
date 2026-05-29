@@ -25,9 +25,13 @@ export async function fetchNewsArticles(
 
   const res = await fetch(`https://newsapi.org/v2/everything?${params}`, {
     next: { revalidate: 300 },
+    signal: AbortSignal.timeout(10_000),
   });
 
-  if (!res.ok) return [];
+  if (!res.ok) {
+    console.warn(`NewsAPI ${res.status} for query="${query.slice(0, 60)}"`);
+    return [];
+  }
 
   const data = (await res.json()) as {
     articles?: Array<{

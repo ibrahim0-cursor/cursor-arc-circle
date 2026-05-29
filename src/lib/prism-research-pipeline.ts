@@ -54,16 +54,21 @@ export async function fetchExpandedEventIntel(queries: string[]): Promise<{
   eventRegistry: IntelItem[];
 }> {
   const gdeltBatches = await Promise.all(queries.map((q) => fetchGdeltArticles(q, 8)));
-  const newsBatches = await Promise.all(
+  const newsTrustedBatches = await Promise.all(
     queries.map((q) => fetchNewsArticles(q, 6, { domains: TRUSTED_NEWS_DOMAINS })),
   );
+  let newsFlat = newsTrustedBatches.flat();
+  if (newsFlat.length < 3) {
+    const newsBroadBatches = await Promise.all(queries.map((q) => fetchNewsArticles(q, 6)));
+    newsFlat = [...newsFlat, ...newsBroadBatches.flat()];
+  }
   const registryBatches = await Promise.all(queries.map((q) => fetchEventRegistryArticles(q, 5)));
 
   const gdelt = dedupeHeadlines(
     gdeltBatches.flat().map((a) => ({ title: a.title, source: a.source, url: a.url })),
   );
   const news = dedupeHeadlines(
-    newsBatches.flat().map((a) => ({ title: a.title, source: a.source, url: a.url })),
+    newsFlat.map((a) => ({ title: a.title, source: a.source, url: a.url })),
   );
   const eventRegistry = dedupeHeadlines(
     registryBatches.flat().map((a) => ({ title: a.title, source: a.source, url: a.url })),
