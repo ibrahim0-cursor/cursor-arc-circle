@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Droplets, Home, Radar, Sparkles, Zap } from "lucide-react";
+import { Droplets, Home, Radar, Zap } from "lucide-react";
 import { ArcLogoMark } from "@/components/layout/arc-logo-mark";
-import { arcNavIconTheme, arcThemeFromPath } from "@/components/layout/arc-theme-sync";
+import { arcNavIconTheme } from "@/components/layout/arc-theme-sync";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { cn } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -20,14 +20,6 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const theme = arcThemeFromPath(pathname);
-
-  const ctaClass =
-    theme === "nexus"
-      ? "bg-[var(--nexus-accent)] text-[#021a12] hover:brightness-110"
-      : theme === "prism"
-        ? "bg-[var(--prism-amber)] text-[#1a0c00] hover:brightness-110"
-        : "bg-white text-black hover:bg-white/90";
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
@@ -80,27 +72,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {theme === "nexus" ? (
-            <NexusWalletMenu />
-          ) : (
-            <>
-              <ArcIcon3d
-                icon={theme === "prism" ? Radar : Sparkles}
-                theme={theme === "prism" ? "prism" : "home"}
-                size="sm"
-                className="hidden lg:flex"
-              />
-              <Link
-                href={theme === "prism" ? "/prism" : "/nexus"}
-                className={cn(
-                  "arc-btn-pill hidden rounded-full px-4 py-2 text-sm font-bold transition sm:inline-block",
-                  ctaClass,
-                )}
-              >
-                Get started
-              </Link>
-            </>
-          )}
+          <NexusWalletMenu />
           <MobileNav />
         </div>
       </div>

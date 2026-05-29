@@ -157,6 +157,11 @@ export function PrismConsole() {
         `prism-${selected}-${customEvent.trim() || "preset"}-${Date.now()}`,
       );
       setLastArcFeeTx(fee.txHash);
+      toast({
+        type: "success",
+        title: "Forecast fee paid",
+        message: `$${PRISM_FORECAST_FEE_USD.toFixed(2)} USDC on Arc · ${truncateHash(fee.txHash, 6, 4)}`,
+      });
 
       const res = await fetch("/api/prism/analyze", {
         method: "POST",
@@ -209,20 +214,6 @@ export function PrismConsole() {
           feeUsd={feeUsd}
           walletConnected={isConnected}
         />
-        {lastArcFeeTx && (
-          <p className="mb-3 text-center text-[11px] text-emerald-200/80">
-            Arc forecast fee recorded ·{" "}
-            <a
-              href={arcExplorerTx(lastArcFeeTx)}
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              {truncateHash(lastArcFeeTx, 8, 6)}
-            </a>
-          </p>
-        )}
-
         {macroSnap?.market && (
           <div className="prism-macro-strip mb-4 sm:mb-6">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -414,6 +405,20 @@ export function PrismConsole() {
                 )}
               </CardContent>
             </Card>
+
+            {lastArcFeeTx && (
+              <p className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2.5 text-center text-[11px] leading-relaxed text-emerald-100/90 sm:text-xs">
+                Fee paid on Arc ·{" "}
+                <a
+                  href={arcExplorerTx(lastArcFeeTx)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium underline underline-offset-2"
+                >
+                  tx {truncateHash(lastArcFeeTx, 8, 6)}
+                </a>
+              </p>
+            )}
 
             <PrismCollapsible
               label="Intel feed"
