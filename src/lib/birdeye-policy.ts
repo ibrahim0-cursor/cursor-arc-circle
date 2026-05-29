@@ -17,8 +17,8 @@ export const SAVED_SCANS_MAX = 15;
 
 const MEMORY_DETECTION_SLOTS = 8;
 const MEMORY_OHLCV_SLOTS = 4;
-const ALPHA_DETECTION_SLOTS = 6;
-const ALPHA_OHLCV_SLOTS = 3;
+const ALPHA_DETECTION_SLOTS = 10;
+const ALPHA_OHLCV_SLOTS = 8;
 const FEED_OHLCV_SLOTS = 5;
 
 export function getBirdeyePlan(

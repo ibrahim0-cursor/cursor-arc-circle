@@ -11,3 +11,9 @@ export { SAVED_SCANS_MAX };
 
 /** Alpha scan: ranked opportunities (tuned for Vercel ~120s limit) */
 export const ALPHA_SCAN_LIMIT = 12;
+
+/** GMGN fresh launches merged into Live Feed (not Alpha universe) */
+export const FEED_DISCOVERY_GMGN_LIMIT = 10;
+
+/** Alpha list should not duplicate Live Feed names (paid desk = unique picks) */
+export const ALPHA_MAX_LIVE_OVERLAP = 0;

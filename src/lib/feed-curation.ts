@@ -109,7 +109,50 @@ export function scoreLiveFeedToken(t: TrendingToken): number {
   return score;
 }
 
-/** Alpha: favor strong movers + signal-friendly liquidity. */
+/**
+ * Discovery hunter — favors meme launch band (2x–100x style movers, sub-$15M MC).
+ * Used for Live Feed only.
+ */
+export function scoreDiscoveryHunterToken(t: TrendingToken): number {
+  if (isFeedExcluded(t)) return -1000;
+
+  let score = scoreLiveFeedToken(t);
+  const ch = t.change24h;
+  const abs = Math.abs(ch);
+
+  if (ch >= 20 && ch <= 500) score += Math.min(35, (ch - 15) * 0.12);
+  if (ch >= 100) score += 12;
+  if (abs >= 8 && abs < 20) score += 8;
+
+  const mc = t.marketCap ?? t.fdv ?? 0;
+  if (mc >= 30_000 && mc <= 15_000_000) score += 22;
+  else if (mc > 0 && mc < 30_000) score += 10;
+  else if (mc > 80_000_000) score -= 18;
+
+  const h1 = t.priceChange?.h1 ?? 0;
+  if (h1 > 12 && ch > 0) score += 14;
+  if (h1 > 25) score += 8;
+
+  const turn = turnover(t);
+  if (turn >= 0.5 && turn <= 18) score += Math.min(16, turn * 1.5);
+
+  if (t.sourceTags?.some((s) => /GMGN|launch|new|pump/i.test(s))) score += 16;
+  if (t.discoveryTag?.includes("GMGN")) score += 10;
+
+  return score;
+}
+
+/** Short label for feed rows — hunter tier. */
+export function discoveryHunterLabel(t: TrendingToken): string {
+  const ch = t.change24h;
+  if (ch >= 80) return "100x zone";
+  if (ch >= 35) return "2x+ momentum";
+  if (ch >= 15) return "Early runner";
+  if (t.sourceTags?.some((s) => /GMGN|new|launch/i.test(s))) return "Fresh launch";
+  return "Discovery";
+}
+
+/** Alpha: pro desk — signals, multi-timeframe, liquidity discipline. */
 export function scoreAlphaCandidate(t: TrendingToken): number {
   if (isFeedExcluded(t)) return -1000;
 
@@ -120,7 +163,15 @@ export function scoreAlphaCandidate(t: TrendingToken): number {
   if (ch < -35) score -= 8;
 
   const h1 = t.priceChange?.h1 ?? 0;
+  const h6 = t.priceChange?.h6 ?? 0;
   if (h1 > 8 && ch > 0) score += 10;
+  if (h6 > 15 && ch > 0) score += 8;
+
+  if (t.sourceTags?.some((s) => /signal|smart-money|KOL/i.test(s))) score += 20;
+  if (t.sourceTags?.some((s) => /GMGN trending|five-min|pump/i.test(s))) score += 14;
+
+  const mc = t.marketCap ?? t.fdv ?? 0;
+  if (mc >= 100_000 && mc <= 40_000_000 && t.liquidityUsd >= 50_000) score += 15;
 
   return score;
 }
@@ -132,11 +183,19 @@ export function curateLiveFeed<T extends TrendingToken>(tokens: T[], limit: numb
     .slice(0, limit);
 }
 
+/** Live Feed roster — discovery hunter scoring. */
+export function curateDiscoveryFeed<T extends TrendingToken>(tokens: T[], limit: number): T[] {
+  return [...tokens]
+    .filter((t) => scoreDiscoveryHunterToken(t) > 0)
+    .sort((a, b) => scoreDiscoveryHunterToken(b) - scoreDiscoveryHunterToken(a))
+    .slice(0, limit);
+}
+
 export function curateAlphaCandidates<T extends TrendingToken>(
   tokens: T[],
   liveKeys: Set<string>,
   limit: number,
-  maxLiveOverlap = 3,
+  maxLiveOverlap = 0,
 ): T[] {
   const ranked = [...tokens]
     .filter((t) => scoreAlphaCandidate(t) > 0)
@@ -157,6 +216,7 @@ export function curateAlphaCandidates<T extends TrendingToken>(
     for (const t of ranked) {
       const k = tokenKey(t);
       if (out.some((x) => tokenKey(x) === k)) continue;
+      if (liveKeys.has(k) && maxLiveOverlap === 0) continue;
       out.push(t);
       if (out.length >= limit) break;
     }

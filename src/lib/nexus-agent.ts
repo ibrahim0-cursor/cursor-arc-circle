@@ -656,6 +656,7 @@ export async function runAlphaScan(
     await import("./dexscreener");
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
   const { curateAlphaCandidates, tokenKey } = await import("./feed-curation");
+  const { ALPHA_MAX_LIVE_OVERLAP } = await import("./feed-config");
   const { enrichTokensWithIcons } = await import("./token-icons");
 
   const { buildAlphaScanUniverse } = await import("./alpha-scan-engine");
@@ -689,7 +690,7 @@ export async function runAlphaScan(
     filterAlphaScanTokens(merged),
     liveKeys,
     limit,
-    3,
+    ALPHA_MAX_LIVE_OVERLAP,
   );
   if (tokens.length < Math.min(limit, 8)) {
     const gmgnOnly = filterAlphaScanTokens(mergedCandidates).slice(0, limit);
@@ -850,7 +851,9 @@ export async function runAlphaScan(
     throw new Error("Alpha scan found only stablecoins — no tradable alts. Retry shortly.");
   }
 
-  opportunities.sort((a, b) => b.alphaScore - a.alphaScore);
+  opportunities.sort(
+    (a, b) => b.alphaScore - a.alphaScore || b.opportunityScore - a.opportunityScore,
+  );
   opportunities.forEach((row, i) => {
     row.rank = i + 1;
   });
@@ -1016,12 +1019,15 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
 /** Fast path: heuristic + security; Birdeye TA on top-volume slice */
 export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
+  const { scoreDiscoveryHunterToken } = await import("./feed-curation");
   const macro = await getMacroRegime();
-  const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const sorted = [...tokens].sort(
+    (a, b) => scoreDiscoveryHunterToken(b) - scoreDiscoveryHunterToken(a),
+  );
   const rankOf = new Map(
     sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
   );
-  const birdeyeCap = 4;
+  const birdeyeCap = 5;
   return Promise.all(
     tokens.map(async (token) => {
       const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
@@ -1049,8 +1055,11 @@ export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
 /** Batch analyze trending tokens — unique scoring + AI on top-volume slice */
 export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
   const { scoreTokenSecurity } = await import("./token-security");
+  const { scoreDiscoveryHunterToken } = await import("./feed-curation");
   const macro = await getMacroRegime();
-  const sorted = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const sorted = [...tokens].sort(
+    (a, b) => scoreDiscoveryHunterToken(b) - scoreDiscoveryHunterToken(a),
+  );
   const rankOf = new Map(
     sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
   );

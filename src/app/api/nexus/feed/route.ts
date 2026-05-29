@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { fetchStableMarketFeed, fetchTokenByAddress } from "@/lib/dexscreener";
+import { fetchTokenByAddress, type TrendingToken } from "@/lib/dexscreener";
+import { fetchLiveDiscoveryFeed } from "@/lib/live-discovery-feed";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import {
   feedCacheKey,
@@ -20,10 +21,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-async function enrichMissingPairs(
-  tokens: Awaited<ReturnType<typeof fetchStableMarketFeed>>,
-  cap: number,
-) {
+async function enrichMissingPairs(tokens: TrendingToken[], cap: number) {
   const missing = tokens
     .filter((t) => !t.pairAddress)
     .sort((a, b) => b.volume24h - a.volume24h)
@@ -44,10 +42,16 @@ async function enrichMissingPairs(
   return tokens.map((t) => byKey.get(`${t.chainId}:${t.tokenAddress.toLowerCase()}`) ?? t);
 }
 
-function buildFeedPayload(analyzed: Awaited<ReturnType<typeof analyzeTrendingFeed>>, mode: string) {
+function buildFeedPayload(
+  analyzed: Awaited<ReturnType<typeof analyzeTrendingFeed>>,
+  mode: string,
+  meta?: { profile?: string; sources?: Record<string, number> },
+) {
   const feed = filterLiveFeedTokens(
     analyzed.map(({ token, intel, signal, security }) => ({
       ...trendingToDemoToken(token),
+      discoveryTag: token.discoveryTag,
+      sourceTags: token.sourceTags,
       intel,
       agent: signal
         ? {
@@ -61,13 +65,15 @@ function buildFeedPayload(analyzed: Awaited<ReturnType<typeof analyzeTrendingFee
   );
 
   const counts = {
-    buy: feed.filter((t) => t.agent.action === "BUY").length,
-    sell: feed.filter((t) => t.agent.action === "SELL").length,
-    hold: feed.filter((t) => t.agent.action === "HOLD").length,
+    buy: feed.filter((t) => t.agent?.action === "BUY").length,
+    sell: feed.filter((t) => t.agent?.action === "SELL").length,
+    hold: feed.filter((t) => t.agent?.action === "HOLD").length,
   };
 
   return {
     mode,
+    feedProfile: meta?.profile ?? "discovery-hunter",
+    feedSources: meta?.sources,
     aiProvider: process.env.GROQ_API_KEY ? "groq" : process.env.OPENAI_API_KEY ? "openai" : "heuristic",
     settlement: "Arc Testnet USDC",
     updatedAt: new Date().toISOString(),
@@ -89,7 +95,9 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
 }
 
 async function buildFeed(quick: boolean, limit: number) {
-  let tokens = filterLiveFeedTokens(await fetchStableMarketFeed(limit * 3)).slice(0, limit);
+  const discovery = await fetchLiveDiscoveryFeed(limit);
+  let tokens = discovery.tokens.slice(0, limit);
+  const feedMeta = { profile: discovery.profile, sources: discovery.sources };
   tokens = await enrichTokensWithIcons(tokens, quick ? 4 : 8);
   tokens = await enrichMissingPairs(tokens, quick ? 2 : 6);
   tokens = filterLiveFeedTokens(tokens);
@@ -98,7 +106,11 @@ async function buildFeed(quick: boolean, limit: number) {
     ? await analyzeTrendingFeedQuick(tokens)
     : await analyzeTrendingFeed(tokens);
 
-  return buildFeedPayload(analyzed, quick ? "live-agent-feed-quick" : "live-agent-feed");
+  return buildFeedPayload(
+    analyzed,
+    quick ? "live-discovery-feed-quick" : "live-discovery-feed",
+    feedMeta,
+  );
 }
 
 export async function GET(request: Request) {

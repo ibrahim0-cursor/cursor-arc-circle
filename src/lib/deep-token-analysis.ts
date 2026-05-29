@@ -5,7 +5,6 @@ import { fetchDexPaprikaToken, paprikaIntelFromToken } from "./dexpaprika";
 import { fetchMergedTokenDetection } from "./token-detection";
 import type { CryptoNewsItem } from "./crypto-news";
 import {
-  fetchCommunityPulseLite,
   fetchTokenCommunityPulse,
   type CommunityPulse,
 } from "./community-pulse";
@@ -67,9 +66,7 @@ export async function buildDeepTokenIntel(
       },
       { birdeyeMode: plan.detection },
     ),
-    opts?.scanKind === "alpha"
-      ? fetchCommunityPulseLite(token.symbol, token.name)
-      : fetchTokenCommunityPulse(token.symbol, token.name),
+    fetchTokenCommunityPulse(token.symbol, token.name),
   ]);
 
   const social = community.social ?? {

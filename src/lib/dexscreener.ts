@@ -31,6 +31,9 @@ export type TrendingToken = {
   suggestedNetwork?: string;
   priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
   intel?: TokenIntel;
+  /** Live feed: hunter tier label (2x zone, fresh launch, etc.) */
+  discoveryTag?: string;
+  sourceTags?: string[];
 };
 
 type DexPair = {

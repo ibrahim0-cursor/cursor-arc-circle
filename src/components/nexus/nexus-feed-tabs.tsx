@@ -3,6 +3,7 @@
 import { Radio, Sparkles } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { nexusActionGlass } from "@/lib/nexus-action-glass";
+import { ALPHA_TAB_SUBTITLE, LIVE_FEED_INTRO } from "@/lib/nexus-copy";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 
 export type NexusFeedTab = "live" | "alpha" | "swap";
@@ -17,7 +18,8 @@ export function NexusFeedTabs({
   alphaCount: number;
 }) {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
+    <div className="mb-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
         onClick={() => onChange("live")}
@@ -54,6 +56,14 @@ export function NexusFeedTabs({
         <ArcIcon3d icon={NEXUS_TRADE_ICONS.swap} theme="nexus" size="sm" delay={0.2} />
         Swap
       </button>
+      </div>
+      <p className="text-[11px] leading-snug text-white/45">
+        {active === "live"
+          ? LIVE_FEED_INTRO
+          : active === "alpha"
+            ? ALPHA_TAB_SUBTITLE
+            : "Quick swap on Arc testnet"}
+      </p>
     </div>
   );
 }

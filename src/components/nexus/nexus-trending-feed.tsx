@@ -25,7 +25,7 @@ import { formatCompact, formatPct, formatTokenPrice } from "@/lib/utils";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
-import { agentVerdictLine, FEED_ROW_HINT } from "@/lib/nexus-copy";
+import { agentVerdictLine, FEED_ROW_HINT, LIVE_FEED_INTRO } from "@/lib/nexus-copy";
 import { filterReasoningFactorsForDisplay } from "@/lib/reasoning-factors";
 import { cn } from "@/lib/utils";
 import type { TokenIntel } from "@/lib/storage";
@@ -54,6 +54,8 @@ export type TrendingMarketToken = {
   security?: TokenSecurityReport;
   updatedAt?: string;
   priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
+  discoveryTag?: string;
+  sourceTags?: string[];
 };
 
 const REFRESH_MS = 45_000;
@@ -61,7 +63,7 @@ const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
 const QUICK_TIMEOUT_MS = 12_000;
 const FULL_TIMEOUT_MS = 25_000;
-const FEED_SESSION_KEY = "nexus-feed-v6";
+const FEED_SESSION_KEY = "nexus-feed-v7";
 const FEED_SESSION_TTL_MS = 90_000;
 
 function isFeedExcluded(t: TrendingMarketToken): boolean {
@@ -353,6 +355,11 @@ export function NexusTrendingFeed({
                 <span className="rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white/50">
                   {chainLabel(token.chainId)}
                 </span>
+                {token.discoveryTag && (
+                  <span className="rounded-md border border-cyan-400/25 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-100/90">
+                    {token.discoveryTag}
+                  </span>
+                )}
                 <NexusTokenChatButton
                   token={token}
                   onOpenTrade={onOpenTrade}
@@ -531,8 +538,8 @@ export function NexusTrendingFeed({
       </div>
 
       <p className="text-xs text-white/50 max-lg:hidden">
-        {FEED_ROW_HINT}. Tap a row for chart + agent reasoning. <strong className="text-violet-200">Chat</strong> for
-        Q&amp;A. Run <strong className="text-fuchsia-200/90">Alpha Scan</strong> for the full paid thesis.
+        {LIVE_FEED_INTRO} {FEED_ROW_HINT}. Tap a row for chart + collapsed reasoning.{" "}
+        <strong className="text-fuchsia-200/90">Alpha Scan</strong> = paid pro desk (different tokens).
         {refreshing && <span className="ml-1 text-cyan-300"> Updating prices…</span>}
       </p>
       <p className="text-xs text-white/55 lg:hidden">

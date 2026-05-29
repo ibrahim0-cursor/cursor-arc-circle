@@ -111,12 +111,22 @@ export function NexusAlphaList({
           Last run: {scanError}
         </div>
       )}
+      <div className="rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/[0.08] px-3 py-2.5 text-xs text-fuchsia-100/90">
+        <p className="font-semibold text-fuchsia-50">Pro desk · paid Alpha Scan</p>
+        <p className="mt-1 leading-relaxed text-fuchsia-100/80">{ALPHA_LIST_INTRO}</p>
+      </div>
       {scanIntel && (
         <div className="arc-glass-card arc-glass-card-nexus space-y-2 px-3 py-2.5 text-xs">
           <p className="font-semibold text-emerald-100">
             Market mood: {scanIntel.marketSentiment.label} ({scanIntel.marketSentiment.score})
           </p>
           <p className="text-white/60 leading-relaxed">{sentimentLine}</p>
+          {scanIntel.layers.length > 0 && (
+            <p className="text-[10px] text-white/45">
+              Layers: {scanIntel.layers.slice(0, 4).join(" · ")}
+              {scanIntel.layers.length > 4 ? " · …" : ""}
+            </p>
+          )}
         </div>
       )}
       <div className="arc-glass-card arc-glass-card-nexus px-3 py-2.5 text-xs text-emerald-100/90">

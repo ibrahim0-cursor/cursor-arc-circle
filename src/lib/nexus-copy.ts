@@ -100,11 +100,17 @@ export const ALPHA_INTEL_LABEL = "Alpha deep intel";
 export const REASONING_HEADLINE =
   "Expand for thesis and signals — stats above are Dex-verified; agent only cites actionable edges.";
 
+export const LIVE_FEED_INTRO =
+  "Discovery hunter — fresh launches & 2x–100x momentum bands. Dex + GMGN new pairs, light agent verdict (BUY/SELL/HOLD). Not the paid desk.";
+
 export const FEED_ROW_HINT =
-  "Dex-verified price & flow · light agent pass (not a paid deep scan)";
+  "Dex-verified price & flow · scout pass for new movers — run Alpha Scan for the pro desk";
+
+export const ALPHA_TAB_SUBTITLE =
+  "Paid pro desk — unique ranked picks (not your Live Feed list)";
 
 export const ALPHA_LIST_INTRO =
-  "Ranked after your Arc scan fee — GMGN, Birdeye, news, smart money, and full agent thesis. Tap a row for chart + deep reasoning.";
+  "Pro meme-coin desk after your Arc scan fee: GMGN signals, Birdeye holders/TA, 6551 news/X, full thesis & risk matrix. Names here do not repeat Live Feed.";
 
 /** One-line agent verdict for list rows */
 export function agentVerdictLine(whyAction?: string, thesis?: string, reasoning?: string): string {
