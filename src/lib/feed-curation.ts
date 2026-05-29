@@ -4,6 +4,8 @@
 
 import type { TrendingToken } from "./dexscreener";
 import { isStablecoin } from "./token-filters";
+import type { ScamAssessment } from "./scam-detection";
+import type { TokenSecurityReport } from "./token-security";
 
 const BLUE_CHIP_SYMBOLS = new Set([
   "weth",
@@ -142,9 +144,24 @@ export function scoreDiscoveryHunterToken(t: TrendingToken): number {
   return score;
 }
 
-/** Short label for feed rows — hunter tier. */
-export function discoveryHunterLabel(t: TrendingToken): string {
+/** Short label for feed rows — hunter tier (never hype rugs/honeypots). */
+export function discoveryHunterLabel(
+  t: TrendingToken,
+  risk?: {
+    security?: Pick<TokenSecurityReport, "honeypotRisk" | "scamRisk" | "label" | "scamLabel">;
+    scam?: Pick<ScamAssessment, "isScam" | "scamType" | "label">;
+  },
+): string {
+  if (risk?.security?.honeypotRisk || risk?.scam?.scamType === "honeypot") {
+    return "Honeypot risk";
+  }
+  if (risk?.security?.scamRisk || risk?.scam?.isScam) {
+    return "Rug risk";
+  }
   const ch = t.change24h;
+  const m5 = t.priceChange?.m5 ?? 0;
+  const h1 = t.priceChange?.h1 ?? 0;
+  if (ch > 8 && (m5 < -15 || h1 < -25)) return "Pump-dump risk";
   if (ch >= 80) return "100x zone";
   if (ch >= 35) return "2x+ momentum";
   if (ch >= 15) return "Early runner";

@@ -356,7 +356,14 @@ export function NexusTrendingFeed({
                   {chainLabel(token.chainId)}
                 </span>
                 {token.discoveryTag && (
-                  <span className="rounded-md border border-cyan-400/25 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-100/90">
+                  <span
+                    className={cn(
+                      "rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                      /honeypot|rug risk|pump-dump/i.test(token.discoveryTag)
+                        ? "border-rose-400/35 bg-rose-500/15 text-rose-100"
+                        : "border-cyan-400/25 bg-cyan-500/10 text-cyan-100/90",
+                    )}
+                  >
                     {token.discoveryTag}
                   </span>
                 )}

@@ -16,6 +16,8 @@ import { trendingToDemoToken } from "@/lib/demo-trading";
 import { enrichTokensWithIcons } from "@/lib/token-icons";
 import { mapWithConcurrency } from "@/lib/async-pool";
 import { sanitizeAgentReasoningFactors } from "@/lib/reasoning-factors";
+import { discoveryHunterLabel } from "@/lib/feed-curation";
+import { assessTokenScam } from "@/lib/scam-detection";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -55,9 +57,11 @@ function buildFeedPayload(
   },
 ) {
   const feed = filterLiveFeedTokens(
-    analyzed.map(({ token, intel, signal, security }) => ({
+    analyzed.map(({ token, intel, signal, security }) => {
+      const scam = assessTokenScam(token, intel, security);
+      return {
       ...trendingToDemoToken(token),
-      discoveryTag: token.discoveryTag,
+      discoveryTag: discoveryHunterLabel(token, { security, scam }),
       sourceTags: token.sourceTags,
       intel,
       agent: signal
@@ -68,7 +72,8 @@ function buildFeedPayload(
         : signal,
       security,
       updatedAt: new Date().toISOString(),
-    })),
+    };
+    }),
   );
 
   const counts = {

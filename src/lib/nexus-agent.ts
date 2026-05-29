@@ -17,6 +17,8 @@ import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import type { TokenSocialIntel } from "./social-intel";
 import { formatTokenPrice } from "./utils";
 import { filterReasoningFactorsForDisplay } from "./reasoning-factors";
+import type { ScamAssessment } from "./scam-detection";
+import type { TokenSecurityReport } from "./token-security";
 
 
 function buildReasoningFactors(
@@ -24,8 +26,39 @@ function buildReasoningFactors(
   intel: TokenIntel,
   action: NexusDecision["action"],
   macro?: MacroRegime | null,
+  risk?: {
+    security?: TokenSecurityReport;
+    scam?: ScamAssessment;
+  },
 ): ReasoningFactor[] {
   const factors: ReasoningFactor[] = [];
+
+  if (risk?.security?.honeypotRisk || risk?.scam?.scamType === "honeypot") {
+    factors.push({
+      label: "Honeypot check",
+      detail:
+        risk.scam?.flags?.join(" · ") ||
+        risk.security?.flags?.join(" · ") ||
+        risk.security?.label ||
+        "Cannot safely exit — GMGN/Dex flags honeypot",
+      impact: "bearish",
+      weight: 55,
+    });
+  } else if (risk?.scam?.isScam) {
+    factors.push({
+      label: "Scam pattern",
+      detail: risk.scam.flags.join(" · ") || risk.scam.label,
+      impact: "bearish",
+      weight: 48,
+    });
+  } else if (risk?.security?.grade === "D" || risk?.security?.grade === "F") {
+    factors.push({
+      label: "Security grade",
+      detail: `${risk.security.grade} — ${risk.security.flags.join(", ") || risk.security.label}`,
+      impact: "bearish",
+      weight: 32,
+    });
+  }
 
   if (macro) {
     const macroImpact =
@@ -213,21 +246,22 @@ function buildWhyAction(
   edge: number,
 ): string {
   const top = [...factors].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).slice(0, 3);
-  const cites = top.map((f) => `${f.label} (${f.detail})`).join("; ");
+  const cites = top.map((f) => `${f.label}: ${f.detail}`).join(" · ");
 
   if (action === "HOLD") {
-    return `${token.symbol} @ ${formatTokenPrice(token.priceUsd)}: ${cites}. Net edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)} — mixed tape, no high-conviction entry.`;
+    return `${token.symbol} @ ${formatTokenPrice(token.priceUsd)} — ${cites}. Net edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)}: mixed signals, no A+ entry.`;
   }
   if (action === "BUY") {
-    return `${token.symbol}: ${cites}. Bullish edge +${edge.toFixed(0)} with ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% 24h — tactical long while liquidity supports size.`;
+    return `${token.symbol} — ${cites}. Edge +${edge.toFixed(0)}, 24h ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}%, liq $${(token.liquidityUsd / 1000).toFixed(0)}K: tactical long only if flow holds.`;
   }
-  return `${token.symbol}: ${cites}. Bearish edge ${edge.toFixed(0)} after ${token.change24h.toFixed(1)}% 24h move — trim risk before deeper drawdown.`;
+  return `${token.symbol} — ${cites}. Edge ${edge.toFixed(0)}, 24h ${token.change24h.toFixed(1)}%: reduce exposure — chart/flow does not support holding for upside.`;
 }
 
 function heuristicDecision(
   token: TrendingToken,
   intel: TokenIntel,
   macro?: MacroRegime | null,
+  risk?: { security?: TokenSecurityReport; scam?: ScamAssessment },
 ): Pick<
   NexusDecision,
   | "action"
@@ -237,7 +271,36 @@ function heuristicDecision(
   | "whyAction"
   | "reasoningFactors"
 > {
-  const draftFactors = buildReasoningFactors(token, intel, "HOLD", macro);
+  const security = risk?.security;
+  const scam =
+    risk?.scam ??
+    (security ? assessTokenScam(token, intel, security) : assessTokenScam(token, intel));
+
+  if (security?.honeypotRisk || scam.scamType === "honeypot") {
+    const factors = buildReasoningFactors(token, intel, "SELL", macro, { security, scam });
+    return {
+      action: "SELL",
+      confidence: 28,
+      riskScore: 90,
+      reasoning: `Honeypot / trap risk on ${token.symbol} despite ${token.change24h.toFixed(1)}% 24h — ${scam.flags[0] ?? security?.label ?? "exit blocked"}.`,
+      whyAction: `${token.symbol}: honeypot risk — do not treat as 100x hunter; exit or avoid even if 24h tape looks green.`,
+      reasoningFactors: factors,
+    };
+  }
+
+  if (scam.isScam && scam.severity >= 42) {
+    const factors = buildReasoningFactors(token, intel, "SELL", macro, { security, scam });
+    return {
+      action: scam.recommendedAction,
+      confidence: Math.min(38, scam.maxConfidence),
+      riskScore: Math.max(82, scam.severity),
+      reasoning: `${scam.label}: ${scam.flags.join("; ")}`,
+      whyAction: `${token.symbol}: ${scam.flags[0] ?? scam.label} — rug/scam pattern on chart, not a momentum long.`,
+      reasoningFactors: factors,
+    };
+  }
+
+  const draftFactors = buildReasoningFactors(token, intel, "HOLD", macro, { security, scam });
   const { edge } = scoreFactorEdge(draftFactors);
   const ta = intel.technical;
   const taScore = ta?.score ?? 50;
@@ -248,23 +311,30 @@ function heuristicDecision(
   const h1 = token.priceChange?.h1 ?? 0;
   const crimeDump = m5 <= -25 || h1 <= -35;
   const pumpDump = token.change24h > 8 && (m5 < -15 || h1 < -20);
+  const fakeMoon = token.change24h >= 80 && (m5 < -10 || h1 < -18 || flowRatio < 0.9);
 
   let action: NexusDecision["action"] = "HOLD";
-  if (crimeDump || pumpDump) {
+  if (crimeDump || pumpDump || fakeMoon) {
     action = "SELL";
-  } else if (edge > 28 && taScore >= 58 && token.liquidityUsd > 40_000 && flowRatio > 1.05) {
+  } else if (
+    edge > 28 &&
+    taScore >= 58 &&
+    token.liquidityUsd > 40_000 &&
+    flowRatio > 1.05 &&
+    token.change24h < 120
+  ) {
     action = "BUY";
   } else if (edge < -22 || taScore < 42 || token.change24h < -18) {
     action = "SELL";
-  } else if (edge > 18 && token.change24h > 12 && token.liquidityUsd > 80_000) {
+  } else if (edge > 18 && token.change24h > 12 && token.change24h < 90 && token.liquidityUsd > 80_000) {
     action = "BUY";
   } else if (edge < -14 && (intel.sniperCount ?? 0) > 6) {
     action = "SELL";
-  } else if (Math.abs(token.change24h) > 25 && turnover > 2) {
+  } else if (Math.abs(token.change24h) > 25 && token.change24h < 100 && turnover > 2) {
     action = token.change24h > 0 ? "BUY" : "SELL";
   }
 
-  const finalFactors = buildReasoningFactors(token, intel, action, macro);
+  const finalFactors = buildReasoningFactors(token, intel, action, macro, { security, scam });
   const { edge: finalEdge } = scoreFactorEdge(finalFactors);
 
   const confidence = Math.round(
@@ -991,11 +1061,38 @@ async function aiFeedBatch(
   return out;
 }
 
+async function feedTokenSecurity(
+  token: TrendingToken,
+  intel: TokenIntel,
+  rank: number,
+): Promise<import("./token-security").TokenSecurityReport> {
+  const { scoreTokenSecurity } = await import("./token-security");
+  let security = scoreTokenSecurity(token, intel);
+  if (rank >= 6) return security;
+
+  const { hasGmgnApiKey } = await import("./gmgn-client");
+  if (!hasGmgnApiKey()) return security;
+
+  const { runGmgnAnalyticsSkill, dexChainIdToGmgn } = await import("./gmgn-analytics");
+  const { mergeGmgnIntoSecurityReport } = await import("./gmgn-enrichment");
+  const chain = dexChainIdToGmgn(token.chainId);
+  if (!chain) return security;
+
+  const gmgnSec = await runGmgnAnalyticsSkill("token-security-check", {
+    chain,
+    address: token.tokenAddress,
+  });
+  if (gmgnSec.ok && gmgnSec.data) {
+    security = mergeGmgnIntoSecurityReport(security, gmgnSec.data);
+  }
+  return security;
+}
+
 function finalizeFeedSignal(
   token: TrendingToken,
   intel: TokenIntel,
   signal: AgentSignal,
-  security: ReturnType<typeof import("./token-security").scoreTokenSecurity>,
+  security: import("./token-security").TokenSecurityReport,
 ) {
   const scam = assessTokenScam(token, intel, security);
   if (scam.isScam) {
@@ -1035,12 +1132,15 @@ export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
         rank < birdeyeCap
           ? await intelForFeedRank(token, rank)
           : (token.intel ?? buildLocalTokenIntel(token));
-      const security = scoreTokenSecurity(token, intel);
-      let signal = heuristicDecision(token, intel, macro);
+      const security = await feedTokenSecurity(token, intel, rank);
+      const scam = assessTokenScam(token, intel, security);
+      let signal = heuristicDecision(token, intel, macro, { security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
-      if (rank < 6) {
+      if (rank < 6 && !security.honeypotRisk && !scam.isScam) {
         const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
-        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed");
+        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed", {
+          securityLabel: security.label,
+        });
         signal = {
           ...signal,
           whyAction: narrativeToWhyAction(bundle, 170),
@@ -1086,12 +1186,15 @@ export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
       const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
       const intel = await intelForFeedRank(token, rank);
       const key = token.tokenAddress.toLowerCase();
-      let signal = aiMap.get(key) ?? heuristicDecision(token, intel, macro);
-      const security = scoreTokenSecurity(token, intel);
+      const security = await feedTokenSecurity(token, intel, rank);
+      const scam = assessTokenScam(token, intel, security);
+      let signal = aiMap.get(key) ?? heuristicDecision(token, intel, macro, { security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
-      if (rank < 8) {
+      if (rank < 8 && !security.honeypotRisk && !scam.isScam) {
         const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
-        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed");
+        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed", {
+          securityLabel: security.label,
+        });
         signal = {
           ...signal,
           whyAction: narrativeToWhyAction(bundle, 170),

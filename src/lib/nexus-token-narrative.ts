@@ -93,6 +93,7 @@ export function buildTokenAgentNarrative(
     holderRows?: number;
     patternLabel?: string;
     researchThesis?: string;
+    securityLabel?: string;
   },
 ): TokenNarrativeBundle {
   const action = agent.action;
@@ -106,6 +107,18 @@ export function buildTokenAgentNarrative(
   const ta = taSnippet(intel);
   const top10 = intel.top10HolderPercent;
   const gmgnNotes = gmgnSkillNotes(intel, tier, opts?.smartMoneyRows ?? 0, opts?.holderRows ?? 0);
+
+  if (opts?.securityLabel?.toLowerCase().includes("honeypot")) {
+    const warn =
+      `${token.symbol} flags honeypot / exit-trap risk (${opts.securityLabel}) — ` +
+      `+${ch.toFixed(0)}% 24h is not a hunter long; agent says ${action} (${conf}% conf, risk ${risk}).`;
+    return {
+      narrative: warn,
+      coachLines: ["Do not size into honeypots — liquidity can be one-way."],
+      gmgnNotes: ["GMGN security check flagged honeypot — see risk badge on card"],
+      playbook: "Avoid chase — wait for clean security + two-sided liquidity.",
+    };
+  }
 
   const flowLine =
     flow === "buy"

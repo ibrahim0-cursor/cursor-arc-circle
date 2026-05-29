@@ -99,7 +99,7 @@ export function assessTokenScam(
   }
 
   if (security?.honeypotRisk) {
-    severity += 30;
+    severity = Math.max(severity, 52);
     scamType = scamType ?? "honeypot";
     flags.push(security.label);
     flags.push(...(security.flags ?? []));
@@ -162,13 +162,22 @@ export function applyScamAndSecurity(
     };
   }
 
-  if (security.honeypotRisk && signal.action === "BUY") {
+  if (security.honeypotRisk || scam.scamType === "honeypot") {
     return {
-      ...signal,
-      action: "HOLD",
-      confidence: Math.min(signal.confidence, 40),
-      riskScore: Math.max(signal.riskScore, 78),
-      whyAction: `Blocked BUY: ${security.label}. ${signal.whyAction}`,
+      action: "SELL",
+      confidence: Math.min(signal.confidence, 32),
+      riskScore: Math.max(signal.riskScore, 88),
+      reasoning: `Honeypot / exit-trap risk on ${token.symbol}: ${(security.flags ?? []).concat(scam.flags).join("; ") || security.label}. High 24h % is not a buy signal when you cannot safely sell.`,
+      whyAction: `${token.symbol}: ${scam.label || security.label} — do not chase "+${token.change24h.toFixed(0)}%" tape; treat as avoid/exit, not 100x hunter setup.`,
+      reasoningFactors: [
+        {
+          label: "Honeypot check",
+          detail: scam.flags.join(" · ") || security.label,
+          impact: "bearish",
+          weight: 55,
+        },
+        ...(signal.reasoningFactors ?? []).slice(0, 3),
+      ],
     };
   }
 
