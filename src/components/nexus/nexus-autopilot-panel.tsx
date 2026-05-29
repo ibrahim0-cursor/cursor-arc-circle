@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { NexusAgentProvider, type NexusAgentRuntime } from "@/components/nexus/nexus-agent-context";
+import { NexusCircleAgentCard } from "@/components/nexus/nexus-circle-agent-card";
 import { NexusExecutionPanel } from "@/components/nexus/nexus-execution-panel";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
@@ -469,6 +470,7 @@ export function NexusAutopilotPanel({
         <p className="text-sm text-white/55">Select a token from the feed, or use Custom Token mode.</p>
       ) : (
         <>
+          <NexusCircleAgentCard compact />
           <NexusExecutionPanel compact />
 
           {!hasDeposit && (

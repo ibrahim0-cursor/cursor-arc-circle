@@ -42,7 +42,9 @@ import { NexusMobileDock, type NexusMobilePanel } from "@/components/nexus/nexus
 import { NexusMobileContextBar } from "@/components/nexus/nexus-mobile-context-bar";
 import { NexusMobileTokenActions } from "@/components/nexus/nexus-mobile-token-actions";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { CircleAgentsFooter } from "@/components/layout/circle-agents-footer";
 import { MeridianFooter } from "@/components/layout/meridian-footer";
+import { meridianClientHeaders } from "@/lib/circle-agents";
 import { NexusTokenStrip } from "@/components/nexus/nexus-token-strip";
 import { NexusCenterTokenHeader } from "@/components/nexus/nexus-center-token-header";
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
@@ -330,7 +332,7 @@ export function NexusConsole() {
 
       const res = await fetch("/api/nexus/scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...meridianClientHeaders() },
         body: JSON.stringify({
           mode: "alpha",
           walletChainId,
@@ -785,7 +787,8 @@ export function NexusConsole() {
         </div>
 
         <NexusMobileDock active={mobilePanel} onChange={handleMobilePanel} />
-        <MeridianFooter className="hidden pb-3 pt-2 lg:block" />
+        <CircleAgentsFooter className="pb-1 pt-2" />
+        <MeridianFooter className="hidden pb-3 pt-1 lg:block" />
       </div>
     </div>
     </NexusAgentWalletProvider>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { meridianClientHeaders } from "@/lib/circle-agents";
 import type { TokenDossierPayload } from "@/lib/nexus-research-dossier";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
@@ -35,7 +36,9 @@ export function useTokenDossier(token: TrendingMarketToken | null, tier: "feed" 
       try {
         const params = new URLSearchParams(snap);
         params.set("tier", tier);
-        const res = await fetch(`/api/nexus/token/dossier?${params}`);
+        const res = await fetch(`/api/nexus/token/dossier?${params}`, {
+          headers: meridianClientHeaders(),
+        });
         const json = await res.json();
         if (!cancelled) {
           if (!res.ok) setError(json.error ?? "Dossier unavailable");

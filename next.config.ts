@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@circle-fin/x402-batching"],
   env: {
     NEXT_PUBLIC_MERIDIAN_BUILD:
       process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ??
