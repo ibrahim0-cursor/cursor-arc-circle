@@ -9,6 +9,7 @@ import { buildPrismMacroSnapshot, type PrismMacroSnapshot } from "./prism-macro-
 import { anchorDecisionPayload } from "./arc";
 import { calibratePrismForecast } from "./prism-calibration";
 import {
+  buildDeskResearchBrief,
   buildPrismEngineContext,
   computeQuantForecast,
   PRISM_ENGINE_SYSTEM_PROMPT,
@@ -17,7 +18,13 @@ import {
 import { getPrismMemoryCalibration } from "./prism-forecast-memory";
 import { addPrismPrediction, type PrismPrediction } from "./storage";
 import { getApeWisdomMentionMap } from "./apewisdom";
-import { fetchOpenNewsMacro, hasOpenNewsToken } from "./opennews-6551";
+import { fetchOpenNewsMacroWithStatus, hasOpenNewsToken, type OpenNewsItem } from "./opennews-6551";
+import {
+  buildIntelStatus,
+  extractEventKeywords,
+  mergeIntelSources,
+  type PrismIntelStatus,
+} from "./prism-intel-filter";
 
 type EventInput = {
   eventId?: string;
@@ -42,14 +49,23 @@ function parsePrismJson(raw: string, fallback: ReturnType<typeof computeQuantFor
     sources?: string[];
   };
 
+  let reasoning = (parsed.reasoning ?? fallback.reasoning).trim();
+  const thin =
+    reasoning.length < 160 ||
+    (!/\[/.test(reasoning) && fallback.sources.some((s) => s.includes(":")));
+  if (thin && fallback.reasoning) {
+    reasoning = `${fallback.reasoning.split(" Transmission:")[0] ?? fallback.reasoning} ${reasoning}`.trim();
+  }
+
   return {
     probability: Math.min(100, Math.max(0, parsed.probability ?? 50)),
     confidence: Math.min(100, Math.max(0, parsed.confidence ?? 60)),
     kellyFraction: Math.min(1, Math.max(0, parsed.kellyFraction ?? 0.05)),
     horizon: parsed.horizon ?? "30 days",
     summary: parsed.summary ?? fallback.summary,
-    reasoning: parsed.reasoning ?? fallback.reasoning,
-    sources: parsed.sources ?? fallback.sources,
+    reasoning,
+    sources:
+      parsed.sources && parsed.sources.length >= 2 ? parsed.sources : fallback.sources,
   };
 }
 
@@ -82,19 +98,25 @@ async function aiPrediction(input: {
       fred: input.macro.fred,
       dune: input.macro.dune,
     },
-    topHeadlines: input.engine.scoredHeadlines.slice(0, 6).map((h) => ({
+    topHeadlines: input.engine.scoredHeadlines.slice(0, 8).map((h) => ({
       title: h.title,
+      source: h.source,
       cryptoRelevance: h.cryptoRelevance,
+      eventMatchPct: h.eventMatchPct,
       impact: h.impact,
       transmission: h.transmission,
     })),
+    headlineCount: input.engine.scoredHeadlines.length,
+    instruction:
+      "Use topHeadlines as primary intel — cite 2+ by source in reasoning. Reject sensational single-source items.",
   });
 
   if (openai) {
     try {
       const completion = await openai.chat.completions.create({
         model: getAiModel(),
-        temperature: 0.15,
+        temperature: 0.12,
+        max_tokens: 1400,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: PRISM_ENGINE_SYSTEM_PROMPT },
@@ -114,8 +136,8 @@ async function aiPrediction(input: {
     try {
       const response = await anthropic.messages.create({
         model: process.env.ANTHROPIC_MODEL ?? "claude-3-5-haiku-latest",
-        max_tokens: 900,
-        temperature: 0.15,
+        max_tokens: 1400,
+        temperature: 0.12,
         system: PRISM_ENGINE_SYSTEM_PROMPT,
         messages: [{ role: "user", content: payload }],
       });
@@ -132,24 +154,46 @@ async function aiPrediction(input: {
   return fallback;
 }
 
+function inferEventCategory(event: string): PrismPrediction["category"] {
+  if (/war|sanction|conflict|missile|geopolit|tariff|strike|military/i.test(event)) return "geopolitical";
+  if (/btc|bitcoin|eth|ethereum|crypto|defi|token|solana|memecoin/i.test(event)) return "markets";
+  return "macro";
+}
+
+function buildSearchQuery(event: string, presetQuery?: string): string {
+  if (presetQuery) return presetQuery;
+  const keywords = extractEventKeywords(event);
+  return keywords.length >= 2 ? keywords.slice(0, 6).join(" ") : event;
+}
+
 export async function runPrismAnalysis(input: EventInput) {
   const preset = MACRO_EVENTS.find((item) => item.id === input.eventId);
   const event = input.customEvent?.trim() || preset?.label || "Global risk-off shock in Q2";
-  const category = preset?.category ?? "macro";
-  const query = preset?.query ?? event;
+  const category = preset?.category ?? inferEventCategory(event);
+  const query = buildSearchQuery(event, preset?.query);
   const eventKey = input.eventId ?? preset?.id ?? "fed-cut-june";
 
-  const [gdelt, news, eventRegistry, community, macro, memory, apeMap, openNewsMacro] =
+  const keywordQuery = extractEventKeywords(event, query).slice(0, 5).join(" ");
+
+  const [gdelt, news, eventRegistry, community, macro, memory, apeMap, openNewsResult, gdeltFallback] =
     await Promise.all([
-      fetchGdeltArticles(query, 8),
-      fetchNewsArticles(query, 6),
-      fetchEventRegistryArticles(query, 6),
+      fetchGdeltArticles(query, 10),
+      fetchNewsArticles(query, 8),
+      fetchEventRegistryArticles(query, 8),
       fetchMacroCommunityPulse(event, query),
       buildPrismMacroSnapshot(eventKey),
       getPrismMemoryCalibration(),
       getApeWisdomMentionMap(),
-      hasOpenNewsToken() ? fetchOpenNewsMacro(query, 6) : Promise.resolve([]),
+      hasOpenNewsToken()
+        ? fetchOpenNewsMacroWithStatus(keywordQuery || query, 10)
+        : Promise.resolve({ items: [] as OpenNewsItem[], quotaExhausted: false }),
+      input.customEvent?.trim() && keywordQuery !== query
+        ? fetchGdeltArticles(keywordQuery, 6)
+        : Promise.resolve([]),
     ]);
+
+  const openNewsMacro = openNewsResult.items;
+  const mergedGdelt = [...gdelt, ...gdeltFallback].slice(0, 14);
 
   const btcApe = apeMap.get("BTC");
   const ethApe = apeMap.get("ETH");
@@ -159,27 +203,35 @@ export async function runPrismAnalysis(input: EventInput) {
   if (ethApe?.mentions) {
     macro.factors.push(`ETH social rank #${ethApe.rank} · ${ethApe.mentions} mentions (ApeWisdom)`);
   }
-  if (openNewsMacro.length > 0) {
-    community.items = [
-      ...openNewsMacro.map((n) => ({
-        kind: "opennews" as const,
-        title: n.title,
-        source: n.source,
-        link: n.link,
-      })),
-      ...community.items,
-    ].slice(0, 16);
-    community.headlines = community.items.map((i) => i.title).slice(0, 8);
-  }
+
+  const intelPool = mergeIntelSources({
+    gdelt: mergedGdelt,
+    news,
+    eventRegistry,
+    openNews: openNewsMacro,
+    community: community.items,
+  });
 
   const engine = buildPrismEngineContext(
     event,
     category,
     query,
     macro,
-    { gdelt, news, eventRegistry },
+    {
+      gdelt: mergedGdelt,
+      news,
+      eventRegistry,
+      openNews: openNewsMacro,
+      community: community.items,
+    },
     memory.note,
   );
+
+  const intelStatus: PrismIntelStatus = buildIntelStatus(intelPool.length, engine.scoredHeadlines.length, {
+    openNewsQuotaExhausted: openNewsResult.quotaExhausted,
+    gdeltCount: mergedGdelt.length,
+    newsApiCount: news.length,
+  });
 
   const raw = await aiPrediction({ event, category, engine, macro });
   const core = calibratePrismForecast(raw, macro, engine, memory.maxAllowedConfidence);
@@ -204,13 +256,14 @@ export async function runPrismAnalysis(input: EventInput) {
   return {
     prediction,
     intelligence: {
-      gdelt,
+      gdelt: mergedGdelt,
       news,
       eventRegistry,
       community,
       macro,
       engine,
       scoredHeadlines: engine.scoredHeadlines,
+      intelStatus,
     },
     events: MACRO_EVENTS,
   };

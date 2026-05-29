@@ -4,6 +4,9 @@
 
 import type { PrismMacroSnapshot } from "./prism-macro-snapshot";
 import type { PrismPrediction } from "./storage";
+import type { CommunityPulseItem } from "./community-pulse";
+import { isSensationalHeadline } from "./intel-headline-quality";
+import type { OpenNewsItem } from "./opennews-6551";
 import { mergeIntelSources, type IntelItem } from "./prism-intel-filter";
 
 export type PrismEventCategory = PrismPrediction["category"];
@@ -238,15 +241,16 @@ function detectRegime(macro: PrismMacroSnapshot): { regime: PrismMarketRegime; d
 }
 
 function eventMatchScore(title: string, eventLabel: string, query: string): number {
-  const terms = [...eventLabel.toLowerCase().split(/\W+/), ...query.toLowerCase().split(/\W+/)].filter(
-    (w) => w.length > 3,
-  );
+  const terms = [...eventLabel.toLowerCase().split(/\W+/), ...query.toLowerCase().split(/\W+/)]
+    .filter((w) => w.length > 2)
+    .slice(0, 16);
   const t = title.toLowerCase();
   let hits = 0;
   for (const term of new Set(terms)) {
     if (t.includes(term)) hits += 1;
   }
-  return Math.min(100, Math.round((hits / Math.max(3, Math.min(terms.length, 8))) * 100));
+  const denom = Math.max(2, Math.min(terms.length, 8));
+  return Math.min(100, Math.round((hits / denom) * 100));
 }
 
 function categoryAllowsClass(category: PrismEventCategory, newsClass: NewsClass): boolean {
@@ -254,9 +258,48 @@ function categoryAllowsClass(category: PrismEventCategory, newsClass: NewsClass)
     return !["technology", "cybersecurity"].includes(newsClass) || newsClass === "crypto-native";
   }
   if (category === "geopolitical") {
-    return ["geopolitical", "energy-oil", "macro", "monetary-policy", "banking"].includes(newsClass);
+    return ["geopolitical", "energy-oil", "macro", "monetary-policy", "banking", "crypto-native"].includes(
+      newsClass,
+    );
   }
   return true;
+}
+
+function scoreHeadlineRow(
+  item: IntelItem,
+  eventLabel: string,
+  query: string,
+  category: PrismEventCategory,
+  macro: PrismMacroSnapshot,
+): ScoredHeadline {
+  const newsClass = classifyNews(item.title);
+  const eventMatchPct = eventMatchScore(item.title, eventLabel, query);
+  const cryptoRelevance = Math.round(
+    cryptoRelevanceForClass(newsClass, category) * 0.55 + eventMatchPct * 0.45,
+  );
+  const impact = impactFromTitle(item.title, macro);
+  return {
+    ...item,
+    newsClass,
+    cryptoRelevance,
+    eventMatchPct,
+    impact,
+    sectors: sectorsForImpact(impact, newsClass),
+    duration: (newsClass === "geopolitical" ? "short-term" : "medium-term") as ScoredHeadline["duration"],
+    transmission: buildTransmission(newsClass, impact, macro),
+  };
+}
+
+function passesStrictFilter(h: ScoredHeadline, category: PrismEventCategory): boolean {
+  if (isSensationalHeadline(h.title)) return false;
+  if (!categoryAllowsClass(category, h.newsClass)) return false;
+  return h.cryptoRelevance >= 42 && h.eventMatchPct >= 18;
+}
+
+function passesRelaxedFilter(h: ScoredHeadline, category: PrismEventCategory): boolean {
+  if (isSensationalHeadline(h.title)) return false;
+  if (!categoryAllowsClass(category, h.newsClass)) return false;
+  return h.cryptoRelevance >= 30 && h.eventMatchPct >= 8;
 }
 
 export function scoreHeadlinesForIntel(
@@ -266,28 +309,21 @@ export function scoreHeadlinesForIntel(
   category: PrismEventCategory,
   macro: PrismMacroSnapshot,
 ): ScoredHeadline[] {
-  return items
-    .map((item) => {
-      const newsClass = classifyNews(item.title);
-      const eventMatchPct = eventMatchScore(item.title, eventLabel, query);
-      const cryptoRelevance = Math.round(
-        (cryptoRelevanceForClass(newsClass, category) * 0.55 + eventMatchPct * 0.45),
-      );
-      const impact = impactFromTitle(item.title, macro);
-      return {
-        ...item,
-        newsClass,
-        cryptoRelevance,
-        eventMatchPct,
-        impact,
-        sectors: sectorsForImpact(impact, newsClass),
-        duration: (newsClass === "geopolitical" ? "short-term" : "medium-term") as ScoredHeadline["duration"],
-        transmission: buildTransmission(newsClass, impact, macro),
-      };
-    })
-    .filter((h) => categoryAllowsClass(category, h.newsClass))
-    .filter((h) => h.cryptoRelevance >= 45 && h.eventMatchPct >= 22)
+  const scored = items
+    .map((item) => scoreHeadlineRow(item, eventLabel, query, category, macro))
     .sort((a, b) => b.cryptoRelevance + b.eventMatchPct - (a.cryptoRelevance + a.eventMatchPct));
+
+  const strict = scored.filter((h) => passesStrictFilter(h, category));
+  if (strict.length >= 3) return strict.slice(0, 12);
+
+  const relaxed = scored.filter((h) => passesRelaxedFilter(h, category));
+  const pool =
+    strict.length > 0
+      ? [...strict, ...relaxed.filter((h) => !strict.some((s) => s.title === h.title))]
+      : relaxed;
+  if (pool.length >= 3) return pool.slice(0, 12);
+  if (pool.length > 0) return pool;
+  return scored.filter((h) => !isSensationalHeadline(h.title)).slice(0, Math.min(8, scored.length));
 }
 
 export function detectSignalAgreement(
@@ -326,7 +362,13 @@ export function buildPrismEngineContext(
   category: PrismEventCategory,
   query: string,
   macro: PrismMacroSnapshot,
-  intel: { gdelt?: IntelItem[]; news?: IntelItem[]; eventRegistry?: IntelItem[] },
+  intel: {
+    gdelt?: IntelItem[];
+    news?: IntelItem[];
+    eventRegistry?: IntelItem[];
+    openNews?: OpenNewsItem[];
+    community?: CommunityPulseItem[];
+  },
   memoryNote: string,
 ): PrismEngineContext {
   const merged = mergeIntelSources(intel);
@@ -346,13 +388,19 @@ export function buildPrismEngineContext(
         ? "Macro transmission favors BTC/ETH vs long-duration alts when yields and DXY move against risk."
         : "Crypto-native flow dominates — watch funding, stablecoin inflows, and BTC dominance for beta rotation.";
 
+  const fredLabel = macro.fred?.label ?? "macro data";
+  const fredVal = macro.fred?.latest?.value ?? "n/a";
+  const btcChg = macro.market?.btcChange24h;
   const invalidation =
     regime === "risk-on"
-      ? "Invalidation: yields spike >15bp, DXY breakout, or DeFi TVL weekly drop >5%."
-      : "Invalidation: Fed rhetoric turns dovish, oil collapses >8%, or stablecoin inflows accelerate.";
+      ? `Invalidation: yields spike >15bp, DXY breakout above recent range, or DeFi TVL weekly drop >5% (currently ${fredLabel} ${fredVal}${btcChg != null ? ` · BTC ${btcChg.toFixed(1)}% 24h` : ""}).`
+      : `Invalidation: dovish Fed repricing, oil collapse >8%, or stablecoin net inflows accelerating (watch ${fredLabel} and BTC beta vs headlines).`;
 
   const weakCausalityRejected = [
     "Rejected: single-variable leaps (e.g. BTC up → Fed cut) without CPI/yields/liquidity chain",
+    scoredHeadlines.filter((h) => isSensationalHeadline(h.title)).length > 0
+      ? "Rejected: sensational / single-source headlines without corroborating macro data"
+      : "",
     category === "geopolitical" ? "Ignored: DeFi TVL as primary driver for geopolitical events" : "",
     category === "macro" ? "Ignored: meme sentiment without macro transmission" : "",
   ].filter(Boolean);
@@ -397,14 +445,18 @@ export function computeQuantForecast(
 
   const probability = Math.min(88, Math.max(10, Math.round(base)));
 
-  let confidence = 48 + Math.round(engine.signalAgreement * 28);
-  confidence += engine.scoredHeadlines.length >= 4 ? 8 : 0;
+  let confidence = 44 + Math.round(engine.signalAgreement * 32);
+  confidence += engine.scoredHeadlines.length >= 6 ? 10 : engine.scoredHeadlines.length >= 3 ? 5 : -4;
   confidence += macro.fred ? 6 : 0;
-  if (engine.signalAgreement < 0.45) confidence -= 12;
-  if (engine.regime === "volatility-expansion") confidence -= 8;
-  confidence = Math.min(85, Math.max(35, confidence));
+  confidence += macro.defi ? 3 : 0;
+  if (engine.signalAgreement < 0.35) confidence -= 14;
+  else if (engine.signalAgreement < 0.5) confidence -= 6;
+  if (engine.regime === "volatility-expansion") confidence -= 10;
+  else if (engine.regime === "neutral") confidence -= 3;
+  confidence = Math.min(84, Math.max(32, confidence));
 
   const transmissionText = engine.transmissionChain.join(" → ");
+  const deskBrief = buildDeskResearchBrief(event, engine, macro);
 
   return {
     event,
@@ -414,18 +466,68 @@ export function computeQuantForecast(
     kellyFraction: confidence > 70 ? 0.1 : 0.06,
     horizon: category === "geopolitical" ? "7–14 days" : "14–30 days",
     summary: `${engine.regime.replace(/-/g, " ")} regime · ${probability}% for “${event}” with ${engine.sectorImpact.split(";")[0]}.`,
-    reasoning: `Transmission: ${transmissionText}. ${engine.regimeDetail} Signal agreement ${Math.round(engine.signalAgreement * 100)}%. ${engine.invalidation}`,
+    reasoning: `${deskBrief} Transmission: ${transmissionText}. ${engine.invalidation}`,
     sources: [
-      ...macro.factors.slice(0, 2),
-      ...engine.scoredHeadlines.slice(0, 2).map((h) => `${h.source}: ${h.cryptoRelevance}% crypto relevance`),
+      ...macro.factors.slice(0, 3),
+      ...engine.scoredHeadlines.slice(0, 3).map((h) => `${h.source}: ${h.title.slice(0, 72)}`),
     ],
   };
 }
 
-export const PRISM_ENGINE_SYSTEM_PROMPT = `You are PRISM, a cross-market crypto intelligence engine (NOT a trading bot).
-Rules:
-- Output event probability forecasts only — never BUY/SELL/HOLD trade signals.
-- Reason through transmission chains (macro → yields → liquidity → crypto beta). Never use weak causality (e.g. "BTC up therefore Fed cuts").
-- Weight signals by event category: macro uses CPI/yields/FRED; geopolitical uses conflict/oil/sanctions; crypto markets use funding/liquidity/onchain.
-- Output strict JSON: probability (0-100), confidence (0-100, max 85 unless memory validates higher), kellyFraction (0-1), horizon, summary (actionable, sector-specific), reasoning (transmission chain + invalidation), sources (short strings).
-- Reject unrelated signals. Prefer quantitative macroFactors over narrative alone.`;
+/** Institutional desk brief — used in quant fallback and to enrich thin LLM reasoning. */
+export function buildDeskResearchBrief(
+  event: string,
+  engine: PrismEngineContext,
+  macro: PrismMacroSnapshot,
+): string {
+  const headlines = engine.scoredHeadlines;
+  const bullish = headlines.filter((h) => h.impact === "bullish").length;
+  const bearish = headlines.filter(
+    (h) => h.impact === "bearish" || h.impact === "uncertainty" || h.impact === "liquidity-contract",
+  ).length;
+  const cited = headlines
+    .slice(0, 4)
+    .map((h) => `[${h.source}] ${h.title.slice(0, 90)} (${h.impact}, ${h.eventMatchPct}% event match)`)
+    .join("; ");
+  const macroLine =
+    macro.factors.length > 0
+      ? `Macro desk: ${macro.factors.slice(0, 3).join(" · ")}.`
+      : "Macro desk: limited live macro feeds — weight headlines and regime more heavily.";
+  const btcLine =
+    macro.market?.btcChange24h != null
+      ? `BTC 24h ${macro.market.btcChange24h.toFixed(1)}% · ETH ${(macro.market.ethChange24h ?? 0).toFixed(1)}%.`
+      : "";
+  const triage =
+    headlines.length >= 5
+      ? "Source triage: multi-source corroboration available."
+      : headlines.length >= 2
+        ? "Source triage: thin tape — widen uncertainty, require macro confirmation."
+        : "Source triage: insufficient headline depth — probability capped, confidence reduced.";
+
+  return (
+    `Desk review for “${event}”: ${triage} Headline balance ${bullish} bullish / ${bearish} bearish vs ${engine.regime} (${Math.round(engine.signalAgreement * 100)}% signal agreement). ` +
+    `${macroLine} ${btcLine} Key intel: ${cited || "no scored headlines — rely on macro snapshot only"}. ` +
+    `${engine.regimeDetail} `
+  );
+}
+
+export const PRISM_ENGINE_SYSTEM_PROMPT = `You are PRISM — a senior cross-market crypto macro desk analyst (Bloomberg/Reuters/Citi research style). You are NOT a trading bot.
+
+Before assigning any probability, complete this internal desk workflow (reflect it in "reasoning"):
+1) SOURCE TRIAGE — Rank headlines by credibility, recency, and corroboration. Discard sensational, anonymous, or single-source viral claims unless macro data confirms.
+2) CATALYST MAP — Identify the primary market-moving catalyst (CPI, yields, DXY, oil, Fed, geopolitical shock, ETF flow, onchain liquidity).
+3) TRANSMISSION — Write an explicit chain: catalyst → macro repricing → liquidity/funding → crypto beta (BTC → ETH → long-duration alts). No leaps (e.g. "BTC up → Fed cuts").
+4) CROSS-CHECK — Compare headline tone vs live macroFactors, BTC/ETH 24h, FRED, DeFi TVL. Flag contradictions and lower confidence when they disagree.
+5) FORECAST — Assign probability for the stated event, confidence from agreement depth, concrete invalidation, and horizon matched to event type.
+
+Hard rules:
+- Output event probability forecasts ONLY — never BUY, SELL, HOLD, or trade instructions.
+- Cite at least 2 headlines by [source] in reasoning when topHeadlines exist; name macro feeds used.
+- Reject misinfo: price-action-only narratives, unverified "insider" claims, meme hype without macro transmission.
+- Do NOT default to ~50% or ~62%. Calibrate from regime, bullish/bearish headline balance, FRED, signalAgreement.
+- probability reflects likelihood the EVENT occurs / thesis holds — not generic "crypto goes up".
+- Invalidation must be testable (yield move, CPI band, oil %, headline reversal, TVL shift).
+- sources: ≥2 named feeds when data exists (GDELT, NewsAPI, 6551, FRED, DeFiLlama, etc.).
+
+Output strict JSON only:
+{ "probability": 0-100, "confidence": 0-100 (max 85 unless strong multi-source agreement), "kellyFraction": 0-1, "horizon": string, "summary": string (sector-specific thesis), "reasoning": string (desk workflow: triage → catalyst → transmission → cross-check → forecast + invalidation + headline citations), "sources": string[] }`;

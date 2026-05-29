@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
-import { History, Radar, Target } from "lucide-react";
+import { History, Radar, Target, X } from "lucide-react";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
 import { PRISM_FORECAST_FEE_USD } from "@/lib/arc-chain";
 import { arcExplorerTx } from "@/lib/arc";
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { cn, truncateHash } from "@/lib/utils";
 import type { PrismMacroSnapshot } from "@/lib/prism-macro-snapshot";
-import { filterIntelForEvent, mergeIntelSources } from "@/lib/prism-intel-filter";
+import { filterIntelForEvent, mergeIntelSources, type PrismIntelStatus } from "@/lib/prism-intel-filter";
 import type { PrismEngineContext, ScoredHeadline } from "@/lib/prism-intelligence-engine";
 import { MACRO_EVENTS } from "@/lib/gdelt";
 import type { PrismPrediction } from "@/lib/storage";
@@ -53,6 +53,7 @@ export function PrismConsole() {
   const { isConnected } = useAccount();
   const { payArcFee, ensureArcNetwork, isPending: arcPending, feeUsd } = useArcSettlement();
   const [lastArcFeeTx, setLastArcFeeTx] = useState<string | null>(null);
+  const [feePaidDismissed, setFeePaidDismissed] = useState(false);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [selected, setSelected] = useState<string>("fed-cut-june");
   const [customEvent, setCustomEvent] = useState("");
@@ -70,6 +71,7 @@ export function PrismConsole() {
     macro?: PrismMacroSnapshot;
     engine?: PrismEngineContext;
     scoredHeadlines?: ScoredHeadline[];
+    intelStatus?: PrismIntelStatus;
   } | null>(null);
   const [latestEngine, setLatestEngine] = useState<PrismEngineContext | null>(null);
 
@@ -84,7 +86,7 @@ export function PrismConsole() {
 
   const scopedIntel = useMemo((): IntelFeedRow[] => {
     if (!latestIntel || intelScope !== eventScopeKey(selected, customEvent)) return [];
-    if (latestIntel.scoredHeadlines?.length) {
+    if (latestIntel.scoredHeadlines && latestIntel.scoredHeadlines.length > 0) {
       return latestIntel.scoredHeadlines.map((h) => ({
         source: h.source,
         title: h.title,
@@ -94,16 +96,24 @@ export function PrismConsole() {
       }));
     }
     return filterIntelForEvent(
-      mergeIntelSources(latestIntel),
+      mergeIntelSources({
+        gdelt: latestIntel.gdelt,
+        news: latestIntel.news,
+        eventRegistry: latestIntel.eventRegistry,
+        community: latestIntel.community?.items,
+      }),
       selectedLabel,
       selectedQuery,
-      0.25,
+      0.2,
     ).map((h) => ({
       source: h.source,
       title: h.title,
       relevancePct: h.relevancePct,
     }));
   }, [latestIntel, intelScope, selected, customEvent, selectedLabel, selectedQuery]);
+
+  const intelStatus = latestIntel?.intelStatus;
+  const intelRanForScope = intelScope === eventScopeKey(selected, customEvent);
 
   const loadMacro = useCallback(async (eventId: string) => {
     try {
@@ -157,6 +167,7 @@ export function PrismConsole() {
         `prism-${selected}-${customEvent.trim() || "preset"}-${Date.now()}`,
       );
       setLastArcFeeTx(fee.txHash);
+      setFeePaidDismissed(false);
       toast({
         type: "success",
         title: "Forecast fee paid",
@@ -406,8 +417,16 @@ export function PrismConsole() {
               </CardContent>
             </Card>
 
-            {lastArcFeeTx && (
-              <p className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2.5 text-center text-[11px] leading-relaxed text-emerald-100/90 sm:text-xs">
+            {lastArcFeeTx && !feePaidDismissed && (
+              <div className="relative rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2.5 pr-9 text-center text-[11px] leading-relaxed text-emerald-100/90 sm:text-xs">
+                <button
+                  type="button"
+                  onClick={() => setFeePaidDismissed(true)}
+                  aria-label="Dismiss"
+                  className="absolute right-2 top-2 rounded-md p-0.5 text-emerald-200/70 transition hover:bg-emerald-500/20 hover:text-emerald-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
                 Fee paid on Arc ·{" "}
                 <a
                   href={arcExplorerTx(lastArcFeeTx)}
@@ -417,7 +436,7 @@ export function PrismConsole() {
                 >
                   tx {truncateHash(lastArcFeeTx, 8, 6)}
                 </a>
-              </p>
+              </div>
             )}
 
             <PrismCollapsible
@@ -432,12 +451,29 @@ export function PrismConsole() {
               bodyClassName="overflow-hidden"
             >
               {!intelVisible ? (
-                <p className="py-3 text-center text-sm leading-relaxed text-white/55">
-                  Headlines appear here after <strong className="text-amber-200">Generate Forecast</strong>, filtered
-                  to your selected event only.
-                </p>
+                <div className="space-y-2 py-3 text-center text-sm leading-relaxed text-white/55">
+                  {intelRanForScope && intelStatus?.message ? (
+                    <p>{intelStatus.message}</p>
+                  ) : (
+                    <p>
+                      Headlines appear here after <strong className="text-amber-200">Generate Forecast</strong>, filtered
+                      to your selected event only.
+                    </p>
+                  )}
+                  {intelRanForScope && intelStatus && (
+                    <p className="text-[11px] text-white/40">
+                      Raw feeds: {intelStatus.totalRaw} · Matched: {intelStatus.feedCount}
+                      {intelStatus.openNewsQuotaExhausted ? " · 6551 quota limited" : ""}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-2 overflow-hidden">
+                  {intelStatus?.usingFallback && intelStatus.message && (
+                    <p className="rounded-lg border border-amber-400/20 bg-amber-500/8 px-3 py-2 text-[11px] leading-relaxed text-amber-100/85">
+                      {intelStatus.message}
+                    </p>
+                  )}
                   {intelPreview.map((item, index) => (
                     <IntelRow
                       key={`${item.source}-${index}`}

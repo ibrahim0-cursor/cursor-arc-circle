@@ -100,7 +100,28 @@ export async function fetchOpenNewsForSymbol(symbol: string, name?: string, limi
 }
 
 export async function fetchOpenNewsMacro(query: string, limit = 8): Promise<OpenNewsItem[]> {
-  return searchOpenNews({ q: query, limit });
+  const result = await fetchOpenNewsMacroWithStatus(query, limit);
+  return result.items;
+}
+
+export async function fetchOpenNewsMacroWithStatus(
+  query: string,
+  limit = 8,
+): Promise<{ items: OpenNewsItem[]; quotaExhausted: boolean; error?: string }> {
+  const t = token();
+  if (!t) return { items: [], quotaExhausted: false, error: "6551 key not set" };
+
+  const res = await fetch6551<unknown>("/open/news_search", t, {
+    limit: Math.min(100, Math.max(1, limit)),
+    page: 1,
+    q: query,
+  });
+
+  if (!res.ok) {
+    const quotaExhausted = /insufficient quota|quota exceeded|out of quota/i.test(res.error ?? "");
+    return { items: [], quotaExhausted, error: res.error };
+  }
+  return { items: mapOpenNewsRows(normalizeRows(res.data)), quotaExhausted: false };
 }
 
 export async function probeOpenNews(): Promise<{
