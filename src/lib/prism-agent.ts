@@ -11,6 +11,7 @@ import {
   type PrismMacroSnapshot,
 } from "./prism-macro-snapshot";
 import { anchorDecisionPayload } from "./arc";
+import { calibratePrismForecast } from "./prism-calibration";
 import { addPrismPrediction, type PrismPrediction } from "./storage";
 
 type EventInput = {
@@ -193,7 +194,10 @@ export async function runPrismAnalysis(input: EventInput) {
     buildPrismMacroSnapshot(eventKey),
   ]);
 
-  const core = await aiPrediction({
+  const headlineCount =
+    gdelt.length + news.length + eventRegistry.length + community.headlines.length;
+
+  const raw = await aiPrediction({
     event,
     category,
     gdelt,
@@ -202,6 +206,8 @@ export async function runPrismAnalysis(input: EventInput) {
     communityHeadlines: community.headlines,
     macro,
   });
+
+  const core = calibratePrismForecast(raw, macro, headlineCount);
   const payload = JSON.stringify({ product: "PRISM", ...core, at: new Date().toISOString() });
   const anchor = await anchorDecisionPayload(payload);
 

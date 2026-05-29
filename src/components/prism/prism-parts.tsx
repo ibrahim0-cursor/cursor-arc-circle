@@ -68,7 +68,15 @@ function sentimentFromTitle(title: string): "bullish" | "bearish" | "neutral" | 
   return "neutral";
 }
 
-export const IntelRow = memo(function IntelRow({ source, title }: { source: string; title: string }) {
+export const IntelRow = memo(function IntelRow({
+  source,
+  title,
+  relevancePct,
+}: {
+  source: string;
+  title: string;
+  relevancePct?: number;
+}) {
   const mood = sentimentFromTitle(title);
   const styles = {
     bullish: "border-emerald-400/30 bg-emerald-500/10",
@@ -101,7 +109,7 @@ export const HistoryRow = memo(function HistoryRow({
   const inner = (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-medium text-white">{prediction.event}</p>
+        <p className="break-words font-medium leading-snug text-white line-clamp-2">{prediction.event}</p>
         <Badge variant="prism">{prediction.probability}%</Badge>
       </div>
       <p className="mt-2 line-clamp-2 text-sm text-white/60">{prediction.summary}</p>

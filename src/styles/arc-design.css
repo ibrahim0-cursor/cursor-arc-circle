@@ -2239,6 +2239,25 @@ html[data-arc-theme="nexus"] .nexus-column-head {
   overscroll-behavior: contain;
 }
 
+.prism-section-card {
+  isolation: isolate;
+  contain: layout style;
+}
+
+.prism-section-card .prism-scroll-panel,
+.prism-collapsible-body {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.prism-collapsible-body .arc-glass-card-prism {
+  max-width: 100%;
+}
+
+[data-prism-page] {
+  isolation: isolate;
+}
+
 @media (max-width: 767px) {
   html[data-arc-theme="prism"] .arc-panel,
   html[data-prism-page] .arc-glass-card-prism {
