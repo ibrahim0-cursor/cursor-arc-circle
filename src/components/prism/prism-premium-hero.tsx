@@ -33,10 +33,11 @@ export function PrismPremiumHero({ loading, onAnalyze }: PrismPremiumHeroProps) 
             </Badge>
             <p className="arc-caption text-amber-200/85">MERIDIAN · PRISM</p>
             <h1 className="prism-workspace-title mt-1 text-xl font-semibold tracking-tight text-white sm:text-3xl md:text-4xl">
-              Macro <span className="arc-gradient-text">Oracle</span>
+              Cross-market <span className="arc-gradient-text">Intelligence</span>
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--arc-text-muted)]">
-              Pick an event → generate a calibrated forecast. Live BTC/ETH macro on tap.
+              Cross-market crypto intelligence engine — macro, geopolitics, liquidity, and onchain transmission
+              into calibrated crypto forecasts.
             </p>
             <button
               type="button"

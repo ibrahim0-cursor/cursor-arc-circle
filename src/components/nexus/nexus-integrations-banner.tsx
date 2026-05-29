@@ -33,7 +33,12 @@ export function NexusIntegrationsBanner() {
   const news6551Quota = /insufficient quota|quota exceeded|daily quota/i.test(
     status.opennewsProbe?.error ?? "",
   );
-  const gmgnRateLimited = /rate limit|rate limited|429/i.test(status.gmgnProbe?.error ?? "");
+  const gmgnRateLimited = /rate limit|rate limited|429|cooldown|slow or rate/i.test(
+    status.gmgnProbe?.error ?? "",
+  );
+  const gmgnProbeSlow = /probe timeout|skipped in quick|keys set — full/i.test(
+    status.gmgnProbe?.error ?? "",
+  );
   const keysConfigured =
     Boolean(status.gmgn) &&
     news6551Ok &&
@@ -61,7 +66,7 @@ export function NexusIntegrationsBanner() {
     );
   }
   const news6551Source = status.opennewsProbe?.tokenSource;
-  if (news6551KeyOnly) {
+  if (news6551KeyOnly && !news6551Quota) {
     const sourceHint =
       news6551Source && news6551Source !== "API_KEY_6551"
         ? ` (production is using ${news6551Source} — delete it or set to the new key)`
@@ -71,12 +76,10 @@ export function NexusIntegrationsBanner() {
     partialWarnings.push(
       news6551Rotated
         ? `6551: API token was rotated — paste the NEW key from 6551.io into Vercel API_KEY_6551${sourceHint}, then redeploy`
-        : news6551Quota
-          ? `6551: quota limit (key OK) — check points + 3,000 msgs/mo on 6551.io → Open API`
-          : `6551 news/X: ${status.opennewsProbe?.error ?? "not returning headlines"}${sourceHint}`,
+        : `6551 news/X: ${status.opennewsProbe?.error ?? "not returning headlines"}${sourceHint}`,
     );
   }
-  if (gmgnKeyOnly) {
+  if (gmgnKeyOnly && !gmgnProbeSlow) {
     partialWarnings.push(
       gmgnRateLimited
         ? `GMGN: rate limit (key OK) — Live Feed still uses Dex; GMGN refreshes when limit clears`
@@ -116,6 +119,11 @@ export function NexusIntegrationsBanner() {
             Recheck
           </button>
         </div>
+        {news6551Quota && (
+          <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/55">
+            6551 news quota paused (key valid) — resets on 6551.io; Live Feed and Birdeye intel are unaffected.
+          </p>
+        )}
         {partialWarnings.length > 0 && (
           <div className="rounded-xl border border-amber-400/35 bg-amber-500/[0.1] px-3 py-2.5 text-xs leading-relaxed text-amber-100/90">
             <p className="font-semibold text-amber-50">Also needs attention</p>

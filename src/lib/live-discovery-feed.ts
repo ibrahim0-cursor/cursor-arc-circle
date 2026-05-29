@@ -40,8 +40,16 @@ function mergeDiscoveryPools(...lists: TrendingToken[]): TrendingToken[] {
   return [...map.values()];
 }
 
+export type LiveDiscoveryOptions = {
+  /** Dex-first path for /api/nexus/feed?quick=1 — avoids blocking on GMGN. */
+  quick?: boolean;
+};
+
 /** Live Feed: new / pumping names with hunter scoring — separate from Alpha Scan universe. */
-export async function fetchLiveDiscoveryFeed(limit = STABLE_FEED_LIMIT): Promise<{
+export async function fetchLiveDiscoveryFeed(
+  limit = STABLE_FEED_LIMIT,
+  options?: LiveDiscoveryOptions,
+): Promise<{
   tokens: TrendingToken[];
   profile: LiveFeedProfile;
   sources: Record<string, number>;
@@ -64,14 +72,15 @@ export async function fetchLiveDiscoveryFeed(limit = STABLE_FEED_LIMIT): Promise
   let gmgnFromCache: boolean | undefined;
   let gmgnSkillsRefreshed: string[] | undefined;
 
-  if (hasGmgnApiKey()) {
+  const gmgnBudgetMs = options?.quick ? 6_000 : 20_000;
+  if (hasGmgnApiKey() && !options?.quick) {
     try {
       const gmgn = await Promise.race([
         fetchGmgnDiscoveryTokens("sol", { forceFull: false }),
         new Promise<Awaited<ReturnType<typeof fetchGmgnDiscoveryTokens>>>((resolve) =>
           setTimeout(
             () => resolve({ tokens: [], sources: {}, errors: ["GMGN discovery timeout"] }),
-            20_000,
+            gmgnBudgetMs,
           ),
         ),
       ]);

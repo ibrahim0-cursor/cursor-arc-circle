@@ -8,6 +8,7 @@ import { ArcBackground } from "@/components/layout/arc-background";
 import { cn, truncateHash } from "@/lib/utils";
 import type { PrismMacroSnapshot } from "@/lib/prism-macro-snapshot";
 import { filterIntelForEvent, mergeIntelSources } from "@/lib/prism-intel-filter";
+import type { PrismEngineContext, ScoredHeadline } from "@/lib/prism-intelligence-engine";
 import { MACRO_EVENTS } from "@/lib/gdelt";
 import type { PrismPrediction } from "@/lib/storage";
 import type { CommunityPulse } from "@/lib/community-pulse";
@@ -31,6 +32,14 @@ type EventOption = {
 
 const INTEL_PREVIEW = 3;
 
+type IntelFeedRow = {
+  source: string;
+  title: string;
+  relevancePct?: number;
+  cryptoRelevance?: number;
+  impact?: string;
+};
+
 function eventScopeKey(eventId: string, customEvent: string) {
   return `${eventId}::${customEvent.trim().toLowerCase()}`;
 }
@@ -52,7 +61,10 @@ export function PrismConsole() {
     eventRegistry?: Array<{ title: string; source: string }>;
     community?: CommunityPulse;
     macro?: PrismMacroSnapshot;
+    engine?: PrismEngineContext;
+    scoredHeadlines?: ScoredHeadline[];
   } | null>(null);
+  const [latestEngine, setLatestEngine] = useState<PrismEngineContext | null>(null);
 
   const selectedLabel =
     customEvent.trim() ||
@@ -63,14 +75,27 @@ export function PrismConsole() {
   const selectedQuery =
     MACRO_EVENTS.find((e) => e.id === selected)?.query ?? selectedLabel;
 
-  const scopedIntel = useMemo(() => {
+  const scopedIntel = useMemo((): IntelFeedRow[] => {
     if (!latestIntel || intelScope !== eventScopeKey(selected, customEvent)) return [];
+    if (latestIntel.scoredHeadlines?.length) {
+      return latestIntel.scoredHeadlines.map((h) => ({
+        source: h.source,
+        title: h.title,
+        relevancePct: h.eventMatchPct,
+        cryptoRelevance: h.cryptoRelevance,
+        impact: h.impact,
+      }));
+    }
     return filterIntelForEvent(
       mergeIntelSources(latestIntel),
       selectedLabel,
       selectedQuery,
       0.25,
-    );
+    ).map((h) => ({
+      source: h.source,
+      title: h.title,
+      relevancePct: h.relevancePct,
+    }));
   }, [latestIntel, intelScope, selected, customEvent, selectedLabel, selectedQuery]);
 
   const loadMacro = useCallback(async (eventId: string) => {
@@ -103,6 +128,7 @@ export function PrismConsole() {
 
   useEffect(() => {
     setLatestIntel(null);
+    setLatestEngine(null);
     setIntelScope(null);
     setIntelExpanded(false);
   }, [selected, customEvent]);
@@ -118,6 +144,7 @@ export function PrismConsole() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Forecast failed");
       setLatestIntel(data.intelligence);
+      setLatestEngine(data.intelligence?.engine ?? null);
       setIntelScope(eventScopeKey(selected, customEvent));
       setIntelExpanded(false);
       setPredictions((prev) => [data.prediction, ...prev]);
@@ -144,7 +171,7 @@ export function PrismConsole() {
   const latest = predictions[0];
   const intelVisible = scopedIntel.length > 0;
   const intelPreview = scopedIntel.slice(0, INTEL_PREVIEW);
-  const intelMore = scopedIntel.slice(INTEL_PREVIEW);
+  const intelMore = intelExpanded ? scopedIntel.slice(INTEL_PREVIEW) : [];
 
   return (
     <div className="relative isolate min-h-screen overflow-x-hidden text-white" data-prism-page data-arc-theme="prism">
@@ -260,6 +287,16 @@ export function PrismConsole() {
                   <p className="mt-3 break-words text-sm leading-relaxed text-white/85 sm:text-base">
                     {latest?.event ?? "Select an event, then tap Generate Forecast."}
                   </p>
+                  {latestEngine && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="prism" className="text-[10px] uppercase tracking-wide">
+                        {latestEngine.regime.replace(/-/g, " ")}
+                      </Badge>
+                      <span className="rounded-md border border-white/10 px-2 py-0.5 text-[10px] text-white/60">
+                        Signal agreement {Math.round(latestEngine.signalAgreement * 100)}%
+                      </span>
+                    </div>
+                  )}
                   {latest && (
                     <div className="mt-4 grid grid-cols-3 gap-2">
                       <MiniStat label="Confidence" value={`${latest.confidence}%`} />
@@ -271,6 +308,14 @@ export function PrismConsole() {
                 {latest && (
                   <div className="space-y-3 overflow-hidden border-t border-white/10 p-4 sm:p-6">
                     <p className="nexus-lead break-words text-sm leading-relaxed sm:text-base">{latest.summary}</p>
+                    {latestEngine && latestEngine.transmissionChain.length > 0 && (
+                      <p className="break-words text-xs leading-relaxed text-amber-200/80">
+                        Transmission: {latestEngine.transmissionChain.join(" → ")}
+                      </p>
+                    )}
+                    {latestEngine?.invalidation && (
+                      <p className="break-words text-xs text-white/55">{latestEngine.invalidation}</p>
+                    )}
                     <p className="break-words text-sm leading-relaxed text-white/70">{latest.reasoning}</p>
                     {latest.arcTxHash && (
                       <p className="text-xs text-white/45">Arc · {truncateHash(latest.arcTxHash, 10, 8)}</p>
@@ -304,33 +349,39 @@ export function PrismConsole() {
                       source={item.source}
                       title={item.title}
                       relevancePct={item.relevancePct}
+                      cryptoRelevance={item.cryptoRelevance}
+                      impact={item.impact}
                     />
                   ))}
-                  {intelMore.length > 0 && (
-                    <>
-                      {intelExpanded &&
-                        intelMore.map((item, index) => (
-                          <IntelRow
-                            key={`more-${item.source}-${index}`}
-                            source={item.source}
-                            title={item.title}
-                            relevancePct={item.relevancePct}
-                          />
-                        ))}
-                      <button
-                        type="button"
-                        onClick={() => setIntelExpanded((v) => !v)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/25 bg-amber-500/10 py-2 text-[11px] font-semibold uppercase tracking-wider text-amber-100/90 transition hover:bg-amber-500/18"
-                      >
-                        {intelExpanded ? "Show fewer" : `Show ${intelMore.length} more`}
-                      </button>
-                    </>
+                  {intelExpanded &&
+                    intelMore.map((item, index) => (
+                      <IntelRow
+                        key={`more-${item.source}-${index}`}
+                        source={item.source}
+                        title={item.title}
+                        relevancePct={item.relevancePct}
+                        cryptoRelevance={item.cryptoRelevance}
+                        impact={item.impact}
+                      />
+                    ))}
+                  {scopedIntel.length > INTEL_PREVIEW && (
+                    <button
+                      type="button"
+                      onClick={() => setIntelExpanded((v) => !v)}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/25 bg-amber-500/10 py-2 text-[11px] font-semibold uppercase tracking-wider text-amber-100/90 transition hover:bg-amber-500/18"
+                    >
+                      {intelExpanded
+                        ? "Show fewer"
+                        : `Show ${scopedIntel.length - INTEL_PREVIEW} more`}
+                    </button>
                   )}
-                  {latestIntel?.community && latestIntel.community.items.length > 0 && (
-                    <div className="mt-2 border-t border-white/10 pt-2">
-                      <CommunityPulsePanel pulse={latestIntel.community} title="Community pulse" compact />
-                    </div>
-                  )}
+                  {intelExpanded &&
+                    latestIntel?.community &&
+                    latestIntel.community.items.length > 0 && (
+                      <div className="mt-2 border-t border-white/10 pt-2">
+                        <CommunityPulsePanel pulse={latestIntel.community} title="Community pulse" compact />
+                      </div>
+                    )}
                 </div>
               )}
             </PrismCollapsible>

@@ -61,8 +61,8 @@ export type TrendingMarketToken = {
 const REFRESH_MS = 45_000;
 const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
-const QUICK_TIMEOUT_MS = 12_000;
-const FULL_TIMEOUT_MS = 25_000;
+const QUICK_TIMEOUT_MS = 22_000;
+const FULL_TIMEOUT_MS = 40_000;
 const FEED_SESSION_KEY = "nexus-feed-v7";
 const FEED_SESSION_TTL_MS = 90_000;
 
@@ -278,13 +278,24 @@ export function NexusTrendingFeed({
           })();
         }
       } catch (err) {
+        const cached = readFeedSession();
         const msg =
           err instanceof Error && err.name === "AbortError"
-            ? "Feed timed out — tap Retry (server may be busy)"
+            ? cached?.tokens?.length
+              ? "Refresh slow — showing your last loaded feed. Tap Retry."
+              : "Feed timed out — tap Retry (cold start or APIs busy)"
             : err instanceof Error
               ? err.message
               : "Feed load failed";
-        if (!hasTokens) setError(msg);
+        if (cached?.tokens?.length) {
+          setTokens(filterTradableTokens(cached.tokens));
+          setUpdatedAt(cached.updatedAt ?? null);
+          setCounts(cached.counts ?? { buy: 0, sell: 0, hold: 0 });
+          setFeedCycle(cached.feedCycle ?? 0);
+          setError(msg);
+        } else if (!hasTokens) {
+          setError(msg);
+        }
       } finally {
         loadInFlightRef.current = false;
         setLoading(false);

@@ -110,8 +110,10 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
   });
 }
 
+const QUICK_BUILD_BUDGET_MS = 10_500;
+
 async function buildFeed(quick: boolean, limit: number) {
-  const discovery = await fetchLiveDiscoveryFeed(limit);
+  const discovery = await fetchLiveDiscoveryFeed(limit, { quick });
   let tokens = discovery.tokens.slice(0, limit);
   const feedMeta = {
     profile: discovery.profile,
@@ -119,14 +121,14 @@ async function buildFeed(quick: boolean, limit: number) {
     gmgnErrors: discovery.gmgnErrors,
     gmgnFromCache: discovery.gmgnFromCache,
     gmgnSkillsRefreshed: discovery.gmgnSkillsRefreshed,
-    dataPolicy: "live-reads-only",
+    dataPolicy: quick ? "dex-first-quick" : "live-reads-only",
   };
-  tokens = await enrichTokensWithIcons(tokens, quick ? 4 : 8);
-  tokens = await enrichMissingPairs(tokens, quick ? 2 : 6);
+  tokens = await enrichTokensWithIcons(tokens, quick ? 3 : 8);
+  if (!quick) tokens = await enrichMissingPairs(tokens, 6);
   tokens = filterLiveFeedTokens(tokens);
 
   const analyzed = quick
-    ? await analyzeTrendingFeedQuick(tokens)
+    ? await analyzeTrendingFeedQuick(tokens, { birdeyeCap: 3, skipGmgnSecurity: true })
     : await analyzeTrendingFeed(tokens);
 
   return buildFeedPayload(
@@ -149,6 +151,26 @@ export async function GET(request: Request) {
 
     const fresh = getFeedCache(cacheKey, ttl);
     if (fresh) return feedResponse(fresh, quick, true);
+
+    const stale = getStaleFeedCache(cacheKey);
+    if (quick && stale) {
+      try {
+        const payload = await Promise.race([
+          buildFeed(true, limit),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("quick_build_budget")), QUICK_BUILD_BUDGET_MS),
+          ),
+        ]);
+        setFeedCache(cacheKey, payload);
+        return feedResponse(payload, quick, false);
+      } catch {
+        return feedResponse(
+          { ...stale, stale: true, refreshNote: "Cached feed — Dex data refreshing" },
+          quick,
+          true,
+        );
+      }
+    }
 
     const payload = await buildFeed(quick, limit);
     setFeedCache(cacheKey, payload);

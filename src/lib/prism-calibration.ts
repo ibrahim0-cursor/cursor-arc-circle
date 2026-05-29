@@ -1,40 +1,47 @@
-import { macroProbabilityAdjust, type PrismMacroSnapshot } from "./prism-macro-snapshot";
+import type { PrismEngineContext } from "./prism-intelligence-engine";
+import type { PrismMacroSnapshot } from "./prism-macro-snapshot";
 import type { PrismPrediction } from "./storage";
 
 type ForecastCore = Omit<PrismPrediction, "id" | "timestamp" | "arcTxHash">;
 
-/** Ground forecasts in live macro + headline depth — target up to ~90% model confidence when feeds are rich. */
+/** Institutional confidence calibration — max 85% unless memory allows 88. */
 export function calibratePrismForecast(
   core: ForecastCore,
   macro: PrismMacroSnapshot,
-  headlineCount: number,
+  engine: PrismEngineContext,
+  maxConfidence: number,
 ): ForecastCore {
   const feeds =
     (macro.market ? 1 : 0) +
     (macro.defi ? 1 : 0) +
     (macro.fred ? 1 : 0) +
     (macro.dune ? 1 : 0) +
-    (headlineCount >= 4 ? 2 : headlineCount >= 2 ? 1 : 0);
+    (engine.scoredHeadlines.length >= 3 ? 2 : 0);
 
-  const macroAdjusted = macroProbabilityAdjust(core.probability, core.category, macro);
-  const blend = feeds >= 4 ? 0.65 : feeds >= 3 ? 0.5 : 0.35;
-  const probability = Math.min(
-    92,
-    Math.max(8, Math.round(core.probability * (1 - blend) + macroAdjusted * blend)),
-  );
-
-  const confidence = Math.min(
-    90,
+  const agreementBoost = Math.round(engine.signalAgreement * 12);
+  let confidence = Math.min(
+    maxConfidence,
     Math.max(
       core.confidence,
-      58 + feeds * 5 + (macro.fred ? 8 : 0) + (headlineCount >= 3 ? 6 : 0),
+      42 + feeds * 4 + agreementBoost + (macro.fred ? 5 : 0),
     ),
   );
 
-  const summary =
-    feeds >= 3 && !core.summary.toLowerCase().includes("real-time")
-      ? `${core.summary} Grounded in real-time Binance, FRED, DefiLlama, and matched headlines.`
-      : core.summary;
+  if (engine.signalAgreement < 0.4) confidence = Math.min(confidence, 62);
+  if (engine.regime === "volatility-expansion") confidence = Math.min(confidence, 68);
 
-  return { ...core, probability, confidence, summary };
+  const bearish = engine.scoredHeadlines.filter(
+    (h) => h.impact === "bearish" || h.impact === "uncertainty",
+  ).length;
+  const bullish = engine.scoredHeadlines.filter((h) => h.impact === "bullish").length;
+  let probability = core.probability;
+  if (bullish > bearish + 2) probability = Math.min(88, probability + 4);
+  if (bearish > bullish + 2) probability = Math.max(10, probability - 4);
+
+  return {
+    ...core,
+    probability: Math.min(88, Math.max(8, Math.round(probability))),
+    confidence: Math.round(confidence),
+    reasoning: `${core.reasoning} Regime: ${engine.regime}. ${engine.memoryNote}`,
+  };
 }

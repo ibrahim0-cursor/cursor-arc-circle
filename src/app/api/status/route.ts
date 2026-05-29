@@ -71,6 +71,7 @@ export async function GET(request: Request) {
     process.env.STATUS_QUICK_DEFAULT?.trim() === "true";
 
   const premiumSocial = usePremiumSocialApis();
+  const gmgnBan = getGmgnBanStatus();
 
   const [
     arc,
@@ -116,11 +117,19 @@ export async function GET(request: Request) {
     ),
     probeWithTimeout(() => probeGeckoTerminal(), T.fast, { ok: false, error: "timeout" }),
     hasGmgnApiKey()
-      ? probeWithTimeout(() => probeGmgn(), T.gmgn, {
-          ok: false,
-          configured: true,
-          error: "GMGN probe timeout — keys set; try feed in a minute",
-        })
+      ? quick
+        ? Promise.resolve({
+            ok: true,
+            configured: true,
+            error: gmgnBan.banned
+              ? "GMGN cooldown — Live Feed uses Dex + cache"
+              : "Keys set — full GMGN probe on Recheck (skipped in quick status)",
+          })
+        : probeWithTimeout(() => probeGmgn(), T.gmgn, {
+            ok: false,
+            configured: true,
+            error: "GMGN slow or rate-limited — Live Feed still runs on Dex",
+          })
       : Promise.resolve({ ok: false, configured: false, error: "GMGN_API_KEY not set" }),
     hasOpenNewsToken()
       ? probeWithTimeout(() => probeOpenNews(), T.social, { ok: false, configured: true, error: "timeout" })
@@ -130,7 +139,6 @@ export async function GET(request: Request) {
       : Promise.resolve({ ok: false, configured: false }),
   ]);
 
-  const gmgnBan = getGmgnBanStatus();
   const gmgnAnalyticsProbe = quick
     ? {
         ok: Boolean(gmgnProbe.ok),

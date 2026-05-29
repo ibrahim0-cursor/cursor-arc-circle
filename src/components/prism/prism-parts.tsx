@@ -72,10 +72,14 @@ export const IntelRow = memo(function IntelRow({
   source,
   title,
   relevancePct,
+  cryptoRelevance,
+  impact,
 }: {
   source: string;
   title: string;
   relevancePct?: number;
+  cryptoRelevance?: number;
+  impact?: string;
 }) {
   const mood = sentimentFromTitle(title);
   const styles = {
@@ -89,9 +93,21 @@ export const IntelRow = memo(function IntelRow({
     <div className={`rounded-xl border px-3 py-2.5 ${styles[mood]}`}>
       <div className="flex flex-wrap items-center justify-between gap-1">
         <p className="text-[10px] font-medium uppercase tracking-wider text-white/45">{source}</p>
-        <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">
-          {labels[mood]}
-        </span>
+        <div className="flex flex-wrap items-center gap-1">
+          {(cryptoRelevance ?? relevancePct) != null && (cryptoRelevance ?? relevancePct ?? 0) >= 55 && (
+            <span className="rounded-md border border-emerald-400/35 bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-200">
+              {cryptoRelevance ?? relevancePct}% crypto
+            </span>
+          )}
+          {impact && impact !== "neutral" && (
+            <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] text-white/65">
+              {impact}
+            </span>
+          )}
+          <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">
+            {labels[mood]}
+          </span>
+        </div>
       </div>
       <p className="mt-1 text-sm leading-snug text-white/90">{title}</p>
     </div>

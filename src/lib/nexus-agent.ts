@@ -1113,10 +1113,18 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
   return { ...base, technical: technicalToIntel(ta) };
 }
 
+export type FeedQuickAnalyzeOptions = {
+  birdeyeCap?: number;
+  skipGmgnSecurity?: boolean;
+};
+
 /** Fast path: heuristic + security; Birdeye TA on top-volume slice */
-export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
-  const { scoreTokenSecurity } = await import("./token-security");
+export async function analyzeTrendingFeedQuick(
+  tokens: TrendingToken[],
+  options?: FeedQuickAnalyzeOptions,
+) {
   const { scoreDiscoveryHunterToken } = await import("./feed-curation");
+  const { mapWithConcurrency } = await import("./async-pool");
   const macro = await getMacroRegime();
   const sorted = [...tokens].sort(
     (a, b) => scoreDiscoveryHunterToken(b) - scoreDiscoveryHunterToken(a),
@@ -1124,15 +1132,19 @@ export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
   const rankOf = new Map(
     sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
   );
-  const birdeyeCap = 5;
-  return Promise.all(
-    tokens.map(async (token) => {
+  const birdeyeCap = options?.birdeyeCap ?? 5;
+  const skipGmgn = options?.skipGmgnSecurity ?? false;
+  return mapWithConcurrency(
+    tokens,
+    async (token) => {
       const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
       const intel =
         rank < birdeyeCap
           ? await intelForFeedRank(token, rank)
           : (token.intel ?? buildLocalTokenIntel(token));
-      const security = await feedTokenSecurity(token, intel, rank);
+      const security = skipGmgn
+        ? (await import("./token-security")).scoreTokenSecurity(token, intel)
+        : await feedTokenSecurity(token, intel, rank);
       const scam = assessTokenScam(token, intel, security);
       let signal = heuristicDecision(token, intel, macro, { security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
@@ -1148,7 +1160,8 @@ export async function analyzeTrendingFeedQuick(tokens: TrendingToken[]) {
         };
       }
       return { token: { ...token, intel }, intel, signal, security };
-    }),
+    },
+    5,
   );
 }
 
