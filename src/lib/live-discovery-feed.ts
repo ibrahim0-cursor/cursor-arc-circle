@@ -4,7 +4,7 @@
 
 import type { TrendingToken } from "./dexscreener";
 import { fetchStableMarketFeed, fetchTrendingMarketTokens } from "./dexscreener";
-import { curateDiscoveryFeed, discoveryHunterLabel, tokenKey } from "./feed-curation";
+import { curateDiscoveryFeed, dedupeFeedTokens, discoveryHunterLabel, tokenKey } from "./feed-curation";
 import { FEED_DISCOVERY_GMGN_LIMIT, STABLE_FEED_LIMIT } from "./feed-config";
 import { filterLiveFeedTokens } from "./token-filters";
 import { fetchGmgnDiscoveryTokens } from "./gmgn-discovery";
@@ -100,7 +100,7 @@ export async function fetchLiveDiscoveryFeed(
     }
   }
 
-  const merged = mergeDiscoveryPools(...pools);
+  const merged = dedupeFeedTokens(mergeDiscoveryPools(...pools));
   const curated = curateDiscoveryFeed(filterLiveFeedTokens(merged), limit).map((t) => ({
     ...t,
     discoveryTag: t.discoveryTag ?? discoveryHunterLabel(t),

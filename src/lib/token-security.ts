@@ -144,9 +144,19 @@ export function mergeFeedTokensStable<
 
   if (refreshed.length >= max) return refreshed;
 
+  const symbolKey = (t: T) =>
+    `${t.chainId}:${(t.symbol ?? "").replace(/^\$/, "").trim().toUpperCase()}`;
+
   for (const t of drop(incoming)) {
     if (refreshed.length >= max) break;
-    if (!refreshed.some((r) => feedKey(r) === feedKey(t))) refreshed.push(t);
+    if (refreshed.some((r) => feedKey(r) === feedKey(t))) continue;
+    const sym = symbolKey(t);
+    const dupIdx = refreshed.findIndex((r) => symbolKey(r) === sym);
+    if (dupIdx >= 0) {
+      refreshed[dupIdx] = { ...refreshed[dupIdx], ...t } as T;
+      continue;
+    }
+    refreshed.push(t);
   }
   return drop(refreshed);
 }

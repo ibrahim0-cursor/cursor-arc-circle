@@ -51,6 +51,7 @@ import { NexusCenterTokenHeader } from "@/components/nexus/nexus-center-token-he
 import { NexusTokenChatButton } from "@/components/nexus/nexus-token-chat";
 import { useToast } from "@/components/ui/toast-provider";
 import { useArcSettlement } from "@/hooks/use-arc-settlement";
+import { dedupeFeedTokens } from "@/lib/feed-curation";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import type { NexusDecision } from "@/lib/storage";
 import { cn } from "@/lib/utils";
@@ -244,7 +245,9 @@ export function NexusConsole() {
         priceUsd: t.priceUsd,
         change24h: t.change24h,
       });
-    setFeedTokens((prev) => mergeFeedTokensStable(prev, tradable, STABLE_FEED_LIMIT, feedExcluded));
+    setFeedTokens((prev) =>
+      dedupeFeedTokens(mergeFeedTokensStable(prev, tradable, STABLE_FEED_LIMIT, feedExcluded)),
+    );
     setSelectedToken((prev) => {
       if (!prev) return tradable[0] ?? null;
       if (

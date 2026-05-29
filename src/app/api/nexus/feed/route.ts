@@ -16,7 +16,7 @@ import { trendingToDemoToken } from "@/lib/demo-trading";
 import { enrichTokensWithIcons } from "@/lib/token-icons";
 import { mapWithConcurrency } from "@/lib/async-pool";
 import { sanitizeAgentReasoningFactors } from "@/lib/reasoning-factors";
-import { discoveryHunterLabel } from "@/lib/feed-curation";
+import { dedupeFeedTokens, discoveryHunterLabel } from "@/lib/feed-curation";
 import { assessTokenScam } from "@/lib/scam-detection";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,8 @@ function buildFeedPayload(
     dataPolicy?: string;
   },
 ) {
-  const feed = filterLiveFeedTokens(
+  const feed = dedupeFeedTokens(
+    filterLiveFeedTokens(
     analyzed.map(({ token, intel, signal, security }) => {
       const scam = assessTokenScam(token, intel, security);
       return {
@@ -74,6 +75,7 @@ function buildFeedPayload(
       updatedAt: new Date().toISOString(),
     };
     }),
+    ),
   );
 
   const counts = {
@@ -118,7 +120,7 @@ async function buildFeed(
   opts?: { birdeyeCap?: number },
 ) {
   const discovery = await fetchLiveDiscoveryFeed(limit, { quick });
-  let tokens = discovery.tokens.slice(0, limit);
+  let tokens = dedupeFeedTokens(discovery.tokens).slice(0, limit);
   const feedMeta = {
     profile: discovery.profile,
     sources: discovery.sources,

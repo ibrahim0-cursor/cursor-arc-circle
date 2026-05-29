@@ -52,6 +52,27 @@ export function tokenKey(t: { chainId: string; tokenAddress: string }): string {
   return `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
 }
 
+function symbolChainKey(t: { chainId: string; symbol: string }): string {
+  return `${t.chainId}:${t.symbol.replace(/^\$/, "").trim().toUpperCase()}`;
+}
+
+/** One row per symbol per chain — keeps highest-volume pair (fixes duplicate SAOS / PEPE rows). */
+export function dedupeFeedTokens<T extends TrendingToken>(tokens: T[]): T[] {
+  const ranked = [...tokens].sort((a, b) => b.volume24h - a.volume24h);
+  const bySymbol = new Map<string, T>();
+  const byAddress = new Set<string>();
+
+  for (const t of ranked) {
+    const addr = tokenKey(t);
+    if (byAddress.has(addr)) continue;
+    const sym = symbolChainKey(t);
+    if (bySymbol.has(sym)) continue;
+    bySymbol.set(sym, t);
+    byAddress.add(addr);
+  }
+  return [...bySymbol.values()];
+}
+
 export function isBlueChip(symbol: string, name?: string): boolean {
   const sym = symbol.replace(/^\$/, "").trim().toLowerCase();
   if (BLUE_CHIP_SYMBOLS.has(sym)) return true;

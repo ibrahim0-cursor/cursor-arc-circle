@@ -22,6 +22,7 @@ import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCompact, formatPct, formatTokenPrice } from "@/lib/utils";
+import { dedupeFeedTokens } from "@/lib/feed-curation";
 import { mergeFeedTokensStable } from "@/lib/token-security";
 import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
@@ -63,7 +64,7 @@ const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
 const QUICK_TIMEOUT_MS = 42_000;
 const FULL_TIMEOUT_MS = 40_000;
-const FEED_SESSION_KEY = "nexus-feed-v7";
+const FEED_SESSION_KEY = "nexus-feed-v8";
 const FEED_SESSION_TTL_MS = 90_000;
 
 function isFeedExcluded(t: TrendingMarketToken): boolean {
@@ -90,7 +91,7 @@ function readFeedSession(): FeedSessionCache | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as FeedSessionCache;
     if (!parsed?.tokens?.length || Date.now() - parsed.at > FEED_SESSION_TTL_MS) return null;
-    parsed.tokens = filterTradableTokens(parsed.tokens);
+    parsed.tokens = dedupeFeedTokens(filterTradableTokens(parsed.tokens));
     if (!parsed.tokens.length) return null;
     return parsed;
   } catch {
@@ -201,7 +202,7 @@ export function NexusTrendingFeed({
   }, [selectedAddress]);
 
   const applyFeed = useCallback((list: TrendingMarketToken[], data: { feedCycle?: number; updatedAt?: string; counts?: typeof counts }) => {
-    const tradable = filterTradableTokens(list);
+    const tradable = dedupeFeedTokens(filterTradableTokens(list));
     setFeedCycle(data.feedCycle ?? 0);
     setUpdatedAt(data.updatedAt ?? new Date().toISOString());
     setCounts(data.counts ?? { buy: 0, sell: 0, hold: 0 });
@@ -386,10 +387,16 @@ export function NexusTrendingFeed({
                 {agent && (
                   <Badge
                     variant={
-                      agent.action === "BUY" ? "buy" : agent.action === "SELL" ? "sell" : "hold"
+                      agent.deskVerdict === "AVOID" || agent.deskVerdict === "EXIT"
+                        ? "sell"
+                        : agent.action === "BUY"
+                          ? "buy"
+                          : agent.action === "SELL"
+                            ? "sell"
+                            : "hold"
                     }
                   >
-                    {agent.action}
+                    {agent.deskVerdict ?? agent.action}
                   </Badge>
                 )}
                 {sec && (
