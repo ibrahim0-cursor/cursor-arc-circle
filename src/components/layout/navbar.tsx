@@ -37,11 +37,12 @@ export function Navbar() {
       <div className="arc-nav-glass mx-auto flex h-[62px] max-w-5xl items-center justify-between rounded-2xl px-3 sm:px-5">
         <Link href="/" className="group flex items-center gap-2.5">
           <ArcLogoMark className="h-10 w-10" />
-          <div className="hidden sm:block">
+          <div className="min-w-0">
             <p className="text-sm font-bold tracking-[0.12em] text-white">{MERIDIAN_NAME}</p>
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/45">
+            <p className="hidden text-[10px] font-medium uppercase tracking-[0.2em] text-white/45 sm:block">
               {MERIDIAN_TAGLINE} · {MERIDIAN_MODULES}
             </p>
+            <p className="text-[9px] text-white/30 sm:hidden">{MERIDIAN_BUILT_FOR}</p>
             <p className="hidden text-[9px] text-white/30 lg:block">{MERIDIAN_BUILT_FOR}</p>
           </div>
         </Link>

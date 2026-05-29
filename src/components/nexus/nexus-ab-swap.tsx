@@ -88,7 +88,7 @@ function TokenPicker({
 export function NexusAbSwap({
   tokens,
   onComplete,
-  defaultOpen = true,
+  defaultOpen = false,
 }: {
   tokens: TrendingMarketToken[];
   onComplete?: () => void;

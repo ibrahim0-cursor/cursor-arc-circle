@@ -26,5 +26,5 @@ export function setFeedCache(key: string, payload: Record<string, unknown>) {
 }
 
 export function feedCacheKey(quick: boolean, limit: number) {
-  return `feed:v5:${quick ? "q" : "f"}:${limit}`;
+  return `feed:v6:${quick ? "q" : "f"}:${limit}`;
 }

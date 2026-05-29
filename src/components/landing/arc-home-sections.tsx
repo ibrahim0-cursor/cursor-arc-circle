@@ -220,7 +220,15 @@ export function ArcHomeFooter() {
           <ArcIcon3d icon={Sparkles} theme="home" size="md" />
           <div>
             <p className="font-mono text-sm font-semibold tracking-[0.18em] text-white">MERIDIAN</p>
-            <p className="arc-caption mt-1">NEXUS + PRISM · Built for ARC Circle · Arc Testnet</p>
+            <p className="arc-caption mt-1">
+              NEXUS + PRISM · Built for ARC Circle · Arc Testnet
+              {process.env.NEXT_PUBLIC_MERIDIAN_BUILD &&
+              process.env.NEXT_PUBLIC_MERIDIAN_BUILD !== "dev" ? (
+                <span className="ml-1 font-mono text-white/30">
+                  · {process.env.NEXT_PUBLIC_MERIDIAN_BUILD}
+                </span>
+              ) : null}
+            </p>
           </div>
         </div>
         <nav className="flex flex-wrap gap-6 font-mono text-xs uppercase tracking-widest text-white/50">
