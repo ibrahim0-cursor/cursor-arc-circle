@@ -5,6 +5,7 @@ import {
   birdeyeChainFor,
   birdeyeFetchJson,
   hasBirdeyeKey,
+  isBirdeyeUsable,
   isSolanaChain,
   normalizeTokenAddress,
 } from "./birdeye-client";
@@ -55,7 +56,7 @@ export async function fetchBirdeyeOverview(
   address: string,
   sourceChain: string,
 ): Promise<BirdeyeTokenOverview | null> {
-  if (!hasBirdeyeKey()) return null;
+  if (!isBirdeyeUsable()) return null;
 
   const chain = birdeyeChainFor(sourceChain);
   const addr = normalizeTokenAddress(address, chain);
@@ -104,7 +105,7 @@ export async function fetchBirdeyeSecurity(
   address: string,
   sourceChain: string,
 ): Promise<BirdeyeSecurity | null> {
-  if (!hasBirdeyeKey()) return null;
+  if (!isBirdeyeUsable()) return null;
 
   const chain = birdeyeChainFor(sourceChain);
   const addr = normalizeTokenAddress(address, chain);
@@ -209,7 +210,7 @@ export async function fetchBirdeyeTrades(
   sourceChain: string,
   limit = 12,
 ): Promise<TokenTx[]> {
-  if (!hasBirdeyeKey()) return [];
+  if (!isBirdeyeUsable()) return [];
 
   const chain = birdeyeChainFor(sourceChain);
   const addr = normalizeTokenAddress(address, chain);
@@ -335,7 +336,7 @@ export async function fetchBirdeyeWhales(
   sourceChain: string,
   limit = 12,
 ): Promise<TokenWhale[]> {
-  if (!hasBirdeyeKey()) return [];
+  if (!isBirdeyeUsable()) return [];
 
   const chain = birdeyeChainFor(sourceChain);
   const holders = await fetchBirdeyeHolders(address, chain, limit);
@@ -403,7 +404,7 @@ export async function fetchTokenDetection(
   const hit = detectionCache.get(cacheKey);
   if (hit && Date.now() - hit.at < DETECTION_CACHE_MS) return hit.data;
 
-  if (!hasBirdeyeKey() || mode === "off") {
+  if (!isBirdeyeUsable() || mode === "off") {
     return emptyDetection(chain, mode === "off" ? [] : ["BIRDEYE_API_KEY missing on server"]);
   }
 

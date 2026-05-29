@@ -8,6 +8,30 @@ const NEGATIVE_CACHE_MS = 120_000;
 
 let probeCache: { at: number; result: { ok: boolean; error?: string } } | null = null;
 const PROBE_CACHE_MS = 300_000;
+/** After quota/429, skip Birdeye calls until cooldown (saves CU, keeps Dex/GMGN path fast). */
+let birdeyeQuotaUntil = 0;
+const BIRDEYE_QUOTA_COOLDOWN_MS = 3_600_000;
+
+export function isBirdeyeQuotaPaused(): boolean {
+  return Date.now() < birdeyeQuotaUntil;
+}
+
+export function markBirdeyeQuotaExhausted() {
+  birdeyeQuotaUntil = Date.now() + BIRDEYE_QUOTA_COOLDOWN_MS;
+  probeCache = {
+    at: Date.now(),
+    result: {
+      ok: false,
+      error:
+        "API quota reached — Alpha Scan still runs on market + signal data until Birdeye resets.",
+    },
+  };
+}
+
+/** Key present and not in quota cooldown */
+export function isBirdeyeUsable(): boolean {
+  return hasBirdeyeKey() && !isBirdeyeQuotaPaused();
+}
 
 type CacheEntry<T> = { at: number; data: T };
 
@@ -100,6 +124,8 @@ export async function probeBirdeyeHealth(): Promise<{ ok: boolean; error?: strin
   const unauthorized =
     probe.status === 401 || /unauthorized|invalid api key|forbidden/i.test(err);
 
+  if (quotaHit) markBirdeyeQuotaExhausted();
+
   const result =
     probe.ok && hasOverview
       ? { ok: true }
@@ -143,6 +169,15 @@ export async function birdeyeFetchJson<T>(
   if (!apiKey) {
     return { ok: false, status: 0, data: null, error: "BIRDEYE_API_KEY not set" };
   }
+  if (isBirdeyeQuotaPaused()) {
+    return {
+      ok: false,
+      status: 429,
+      data: null,
+      error: "Birdeye quota cooldown — using Dex/GMGN until reset",
+      rateLimited: true,
+    };
+  }
 
   const xChain = birdeyeChainFor(chain);
   const cacheKey = `${xChain}:${path}`;
@@ -169,12 +204,16 @@ export async function birdeyeFetchJson<T>(
 
           if (!res.ok || json.success === false) {
             const errMsg = json?.message ?? `HTTP ${res.status}`;
+            const rateLimited =
+              res.status === 429 ||
+              /compute units|usage limit|rate limit|quota/i.test(errMsg);
+            if (rateLimited) markBirdeyeQuotaExhausted();
             return {
               ok: false,
               status: res.status,
               data: null,
               error: errMsg,
-              rateLimited: res.status === 429 || /compute units/i.test(errMsg),
+              rateLimited,
             };
           }
 

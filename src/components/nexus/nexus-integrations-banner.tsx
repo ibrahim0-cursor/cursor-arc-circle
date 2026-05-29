@@ -30,7 +30,7 @@ export function NexusIntegrationsBanner() {
   const news6551Live = Boolean(status.opennews && status.opennewsProbe?.ok);
   const news6551KeyOnly = Boolean(status.opennews && status.opennewsProbe?.configured && !status.opennewsProbe?.ok);
   const news6551Rotated = /refreshed|new token/i.test(status.opennewsProbe?.error ?? "");
-  const news6551Quota = /insufficient quota|quota exceeded|daily quota/i.test(
+  const news6551Quota = /insufficient quota|quota exceeded|daily quota|quota limit hit/i.test(
     status.opennewsProbe?.error ?? "",
   );
   const gmgnRateLimited = /rate limit|rate limited|429|cooldown|slow or rate/i.test(
@@ -147,7 +147,7 @@ export function NexusIntegrationsBanner() {
               <strong>API keys connected on Vercel</strong>
               <span className="text-cyan-100/85">
                 {" "}
-                — some providers hit daily or rate limits. NEXUS still runs on Dex, Gecko, and agent logic.
+                — some providers hit daily limits. NEXUS still runs on DexScreener, Groq AI, ApeWisdom, Telegram, Discord, and GeckoTerminal.
               </span>
             </p>
             <button

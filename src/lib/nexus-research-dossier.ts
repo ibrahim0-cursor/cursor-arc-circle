@@ -1,6 +1,7 @@
 import type { TrendingToken } from "./dexscreener";
 import { fetchBirdeyeOhlcv } from "./birdeye-ohlcv";
-import { hasBirdeyeKey } from "./birdeye-client";
+import { hasBirdeyeKey, isBirdeyeUsable } from "./birdeye-client";
+import { getBirdeyePlan } from "./birdeye-policy";
 import {
   dexChainIdToGmgn,
   gmgnSmartMoneyHolders,
@@ -600,7 +601,13 @@ export async function buildTokenDossierPayload(
         sells: token.txns24h?.sells ?? 0,
         volume: token.volume24h,
       },
-      { birdeyeMode: "full" },
+      {
+        birdeyeMode: (() => {
+          if (!isBirdeyeUsable()) return "off" as const;
+          const plan = getBirdeyePlan(tier === "alpha" ? "alpha" : "feed", 0);
+          return plan.detection === "full" ? "full" : plan.detection === "lite" ? "lite" : "off";
+        })(),
+      },
     );
 
   const [detection, technicalBlocks, gmgnHolders, gmgnSmart] = await Promise.all([

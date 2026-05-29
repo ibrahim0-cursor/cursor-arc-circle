@@ -2,7 +2,7 @@
  * When to call Birdeye (rate-limited). DexScreener + GMGN cover most feed/scan needs.
  */
 
-import { hasBirdeyeKey } from "./birdeye-client";
+import { hasBirdeyeKey, isBirdeyeUsable } from "./birdeye-client";
 
 export type BirdeyeScanKind = "memory" | "alpha" | "analyze" | "feed";
 
@@ -25,7 +25,7 @@ export function getBirdeyePlan(
   kind: BirdeyeScanKind,
   tokenIndex = 0,
 ): BirdeyeUsagePlan {
-  if (!hasBirdeyeKey()) {
+  if (!isBirdeyeUsable()) {
     return { detection: "off", ohlcv: false };
   }
 
