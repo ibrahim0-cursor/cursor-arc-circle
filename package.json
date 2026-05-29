@@ -16,7 +16,8 @@
     "finish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/complete-pending.ps1",
     "setup:portfolio": "node scripts/apply-demo-portfolios.mjs",
     "setup:supabase": "node scripts/setup-supabase.mjs",
-    "sync:supabase": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-supabase-vercel.ps1"
+    "sync:supabase": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-supabase-vercel.ps1",
+    "deploy:arc-counter": "node scripts/deploy-arc-counter.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
@@ -49,6 +50,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "pg": "^8.21.0",
+    "solc": "^0.8.24",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
