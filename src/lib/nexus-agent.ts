@@ -254,12 +254,37 @@ function buildWhyAction(
   const cites = top.map((f) => `${f.label}: ${f.detail}`).join(" · ");
 
   if (action === "HOLD") {
-    return `${token.symbol} @ ${formatTokenPrice(token.priceUsd)} — ${cites}. Net edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)}: mixed signals, no A+ entry.`;
+    return `${token.symbol} @ ${formatTokenPrice(token.priceUsd)} — ${cites}. Desk WATCH: edge ${edge > 0 ? "+" : ""}${edge.toFixed(0)} — wait for liq + 1h structure + flow alignment.`;
   }
   if (action === "BUY") {
-    return `${token.symbol} — ${cites}. Edge +${edge.toFixed(0)}, 24h ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}%, liq $${(token.liquidityUsd / 1000).toFixed(0)}K: tactical long only if flow holds.`;
+    return `${token.symbol} — ${cites}. Desk entry edge +${edge.toFixed(0)} · 24h ${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(1)}% · liq $${(token.liquidityUsd / 1000).toFixed(0)}K — tactical clip only if gate holds.`;
   }
-  return `${token.symbol} — ${cites}. Edge ${edge.toFixed(0)}, 24h ${token.change24h.toFixed(1)}%: reduce exposure — chart/flow does not support holding for upside.`;
+  return `${token.symbol} — ${cites}. Desk risk-off edge ${edge.toFixed(0)} · 24h ${token.change24h.toFixed(1)}% — cut exposure; flow/chart against upside.`;
+}
+
+async function applyFeedDeskNarrative(
+  token: TrendingToken,
+  intel: TokenIntel,
+  signal: AgentSignal,
+  security: import("./token-security").TokenSecurityReport,
+  scam: ScamAssessment,
+  macro: MacroRegime | null,
+): Promise<AgentSignal> {
+  if (security.honeypotRisk || scam.isScam) return signal;
+  const { buildTokenAgentNarrative, narrativeToWhyAction, edgeFromReasoningFactors } =
+    await import("./nexus-token-narrative");
+  const { evaluateTradeSetup } = await import("./signal-gate");
+  const edge = edgeFromReasoningFactors(signal.reasoningFactors);
+  const gate = evaluateTradeSetup({ token, intel, edge, macro, security, scam });
+  const bundle = buildTokenAgentNarrative(token, intel, signal, "feed", {
+    securityLabel: security.label,
+    gate,
+  });
+  return {
+    ...signal,
+    whyAction: narrativeToWhyAction(bundle, 220),
+    reasoning: bundle.narrative.slice(0, 480),
+  };
 }
 
 function heuristicDecision(
@@ -1115,17 +1140,7 @@ export async function analyzeTrendingFeedQuick(
       let signal = heuristicDecision(token, intel, macro, { security, scam });
       signal = enforceSignalGate(token, intel, signal, { macro, security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
-      if (rank < 6 && !security.honeypotRisk && !scam.isScam) {
-        const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
-        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed", {
-          securityLabel: security.label,
-        });
-        signal = {
-          ...signal,
-          whyAction: narrativeToWhyAction(bundle, 170),
-          reasoning: bundle.narrative.slice(0, 400),
-        };
-      }
+      signal = await applyFeedDeskNarrative(token, intel, signal, security, scam, macro);
       return { token: { ...token, intel }, intel, signal, security };
     },
     5,
@@ -1171,17 +1186,7 @@ export async function analyzeTrendingFeed(tokens: TrendingToken[]) {
       let signal = aiMap.get(key) ?? heuristicDecision(token, intel, macro, { security, scam });
       signal = enforceSignalGate(token, intel, signal, { macro, security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
-      if (rank < 8 && !security.honeypotRisk && !scam.isScam) {
-        const { buildTokenAgentNarrative, narrativeToWhyAction } = await import("./nexus-token-narrative");
-        const bundle = buildTokenAgentNarrative(token, intel, signal, "feed", {
-          securityLabel: security.label,
-        });
-        signal = {
-          ...signal,
-          whyAction: narrativeToWhyAction(bundle, 170),
-          reasoning: bundle.narrative.slice(0, 400),
-        };
-      }
+      signal = await applyFeedDeskNarrative(token, intel, signal, security, scam, macro);
       return { token: { ...token, intel }, intel, signal, security };
     }),
   );

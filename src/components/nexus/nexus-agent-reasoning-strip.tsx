@@ -126,7 +126,9 @@ export function NexusAgentReasoningStrip({
         {loading && !narrative ? (
           <p className="flex items-center gap-2 text-xs text-white/55">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {isAlpha ? "Deep scan: holders · flow · TA · contract risk…" : "Dex-verified agent pass…"}
+            {isAlpha
+              ? "Deep scan: holders · flow · TA · contract risk…"
+              : "Desk scout: Dex flow · Birdeye TA · entry gate — not AI signal spam…"}
           </p>
         ) : (
           <p className="text-sm leading-relaxed text-white/90">{narrative}</p>

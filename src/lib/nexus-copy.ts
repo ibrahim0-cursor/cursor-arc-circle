@@ -94,7 +94,7 @@ export function publicSentimentSummary(label: string, score: number): string {
   return `${tone} (index ${score}).`;
 }
 
-export const FEED_INTEL_LABEL = "Live feed";
+export const FEED_INTEL_LABEL = "Desk scout pass";
 export const ALPHA_INTEL_LABEL = "Alpha deep intel";
 
 export const REASONING_HEADLINE =
@@ -104,7 +104,7 @@ export const LIVE_FEED_INTRO =
   "Discovery hunter — fresh launches & 2x–100x bands. Scout pass: BUY only when liquidity, flow, TA & intraday structure align (most rows WATCH). Alpha Scan = pro desk.";
 
 export const FEED_ROW_HINT =
-  "Dex-verified price & flow · scout pass for new movers — run Alpha Scan for the pro desk";
+  "Desk scout: liq · 5m/1h · buy/sell flow · entry gate — BUY rare, WATCH default · Alpha Scan for holder depth";
 
 export const ALPHA_TAB_SUBTITLE =
   "Paid pro desk — unique ranked picks (not your Live Feed list)";
