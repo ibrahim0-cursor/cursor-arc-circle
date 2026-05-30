@@ -46,7 +46,7 @@ export function NexusAgentWalletProvider({ children }: { children: ReactNode }) 
     try {
       const res = await fetch(
         `/api/nexus/agent/vault?owner=${encodeURIComponent(owner)}`,
-        { cache: "no-store", signal: AbortSignal.timeout(12_000) },
+        { cache: "no-store", signal: AbortSignal.timeout(8_000) },
       );
       const data = await res.json();
       const next: AgentWallet = {
@@ -70,6 +70,7 @@ export function NexusAgentWalletProvider({ children }: { children: ReactNode }) 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ owner, action: "sync" }),
+      signal: AbortSignal.timeout(12_000),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? "Sync failed");

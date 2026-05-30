@@ -45,9 +45,9 @@ export function useArcSettlement() {
     await new Promise((r) => setTimeout(r, 400));
   }, [chainId, isConnected, switchChainAsync]);
 
-  /** Records action on Arc testnet — waits for on-chain confirmation */
+  /** Records action on Arc testnet. Default waits for receipt; autopilot uses waitReceipt: false for speed. */
   const payArcFee = useCallback(
-    async (action: string, payload: string) => {
+    async (action: string, payload: string, opts?: { waitReceipt?: boolean }) => {
       await ensureArcNetwork();
       if (!address) throw new Error("Wallet not connected");
 
@@ -63,26 +63,29 @@ export function useArcSettlement() {
         data,
       });
 
-      if (!publicClient) {
-        return { txHash, payloadHash: hash, feeUsd: ARC_FEE_USD, chain: arcTestnet.name };
+      const base = {
+        txHash,
+        payloadHash: hash,
+        feeUsd: ARC_FEE_USD,
+        chain: arcTestnet.name,
+        blockNumber: undefined as number | undefined,
+      };
+
+      const waitReceipt = opts?.waitReceipt !== false;
+      if (!waitReceipt || !publicClient) {
+        return base;
       }
 
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
-        timeout: 120_000,
+        timeout: 45_000,
       });
 
       if (receipt.status !== "success") {
         throw new Error("Arc transaction failed on-chain. Check testnet.arcscan.app.");
       }
 
-      return {
-        txHash,
-        payloadHash: hash,
-        feeUsd: ARC_FEE_USD,
-        chain: arcTestnet.name,
-        blockNumber: Number(receipt.blockNumber),
-      };
+      return { ...base, blockNumber: Number(receipt.blockNumber) };
     },
     [address, ensureArcNetwork, publicClient, sendTransactionAsync],
   );

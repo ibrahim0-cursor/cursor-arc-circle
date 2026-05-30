@@ -9,6 +9,7 @@ import {
   autopilotIntervalMs,
   autopilotOnceDelayMs,
   estimateRequiredUsdc,
+  minVaultUsdcForAutopilot,
   onceScheduleLabel,
   loadAutopilot,
   saveAutopilot,
@@ -122,6 +123,7 @@ export function NexusAutopilotPanel({
   const [permissionOpen, setPermissionOpen] = useState(false);
   const [permissionIntent, setPermissionIntent] = useState<"recurring" | "once">("recurring");
   const [granting, setGranting] = useState(false);
+  const [awaitingWallet, setAwaitingWallet] = useState(false);
   const [agentRuntime, setAgentRuntime] = useState<NexusAgentRuntime>(defaultRuntime);
 
   const getValidSessionHash = useCallback((): string | null => {
@@ -147,8 +149,8 @@ export function NexusAutopilotPanel({
     sessionRef.current = loadAutopilotSession();
   }, [address]);
 
-  const requiredUsdc = estimateRequiredUsdc(config, agentUsdc);
-  const hasDeposit = agentUsdc >= requiredUsdc;
+  const requiredUsdc = minVaultUsdcForAutopilot(config, agentUsdc);
+  const hasDeposit = config.mode === "sell_only" || agentUsdc >= requiredUsdc;
 
   const persist = useCallback((next: AutopilotConfig) => {
     configRef.current = next;
@@ -300,6 +302,7 @@ export function NexusAutopilotPanel({
               deep: false,
               save: false,
             }),
+            signal: AbortSignal.timeout(20_000),
           });
           const { ok, data: analyzeJson, error } = await readApiJson<{
             agent?: typeof agent;
@@ -363,7 +366,7 @@ export function NexusAutopilotPanel({
         vaultBal = refreshed.balanceUsdc;
         agentUsdcRef.current = vaultBal;
       }
-      const need = estimateRequiredUsdc(cfg, vaultBal);
+      const need = minVaultUsdcForAutopilot(cfg, vaultBal);
       if (side === "buy" && vaultBal < need) {
         try {
           await syncDeposits();
@@ -552,36 +555,53 @@ export function NexusAutopilotPanel({
     setPermissionOpen(false);
     setGranting(true);
     try {
-      try {
-        await syncDeposits();
-      } catch {
-        /* continue */
-      }
-      const w = await refreshBalance();
-      const vaultBal = w?.balanceUsdc ?? agentUsdcRef.current;
-      agentUsdcRef.current = vaultBal;
       const cfgNow = configRef.current;
-      const need = estimateRequiredUsdc(cfgNow, vaultBal);
-      if (vaultBal < need) {
-        toast({
-          type: "error",
-          title: "Fund agent vault first",
-          message: `Deposit at least $${need.toFixed(2)} USDC to the vault address above, tap Sync, then Authorize. Current vault: $${vaultBal.toFixed(2)}.`,
-        });
-        return;
+      let vaultBal = agentUsdcRef.current;
+      const need = minVaultUsdcForAutopilot(cfgNow, vaultBal);
+
+      if (cfgNow.mode !== "sell_only" && vaultBal < need) {
+        try {
+          const w = await Promise.race([
+            refreshBalance(),
+            new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error("balance_timeout")), 5_000),
+            ),
+          ]);
+          if (w) {
+            vaultBal = w.balanceUsdc;
+            agentUsdcRef.current = vaultBal;
+          }
+        } catch {
+          /* use cached balance */
+        }
+        if (vaultBal < need) {
+          toast({
+            type: "error",
+            title: "Fund agent vault first",
+            message: `Need ~$${need.toFixed(2)} in vault for buys. Balance $${vaultBal.toFixed(2)} — deposit, Sync, then try again.`,
+          });
+          return;
+        }
       }
+
+      void syncDeposits().catch(() => {});
 
       const cfg = configRef.current;
       let sessionTx = getValidSessionHash();
 
       if (!sessionTx) {
+        setAwaitingWallet(true);
+        setGranting(false);
         await ensureArcNetwork();
         toast({
           type: "info",
-          title: "One signature required",
-          message: `Approve on Arc Testnet (~$${feeUsd}). ${intent === "recurring" ? "Recurring trades then run from your vault automatically." : "Then your one-time trade runs without another prompt."}`,
+          title: "Check your wallet",
+          message: `Approve the Arc Testnet transaction (~$${feeUsd}) to start the agent.`,
         });
-        const fee = await payArcFee("AUTOPILOT_SESSION", buildSessionPayload(cfg, address));
+        const fee = await payArcFee("AUTOPILOT_SESSION", buildSessionPayload(cfg, address), {
+          waitReceipt: false,
+        });
+        setAwaitingWallet(false);
         const grant: AutopilotSessionGrant = {
           arcFeeTxHash: fee.txHash,
           owner: address,
@@ -646,6 +666,7 @@ export function NexusAutopilotPanel({
       }
     } finally {
       setGranting(false);
+      setAwaitingWallet(false);
     }
   }, [
     address,
@@ -752,9 +773,18 @@ export function NexusAutopilotPanel({
 
           {!hasDeposit && (
             <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-100">
-              <strong className="text-amber-50">Deposit to agent vault first.</strong> Send ~$
-              {requiredUsdc.toFixed(2)} USDC on Arc Testnet to the vault below, then Sync. Balance: $
-              {agentUsdc.toFixed(2)}. After that, Run Agent needs only <strong>one</strong> wallet signature.
+              {config.mode === "sell_only" ? (
+                <>
+                  <strong className="text-amber-50">Sell mode.</strong> You need an open position in this
+                  token. Wallet will only sign once to authorize (~${feeUsd} on Arc).
+                </>
+              ) : (
+                <>
+                  <strong className="text-amber-50">Deposit to agent vault first.</strong> Send ~$
+                  {requiredUsdc.toFixed(2)} USDC on Arc Testnet to the vault below, then Sync. Balance: $
+                  {agentUsdc.toFixed(2)}. Then one wallet signature to start.
+                </>
+              )}
             </div>
           )}
 
@@ -1143,6 +1173,7 @@ export function NexusAutopilotPanel({
               !isConnected ||
               running ||
               granting ||
+              awaitingWallet ||
               arcPending ||
               (config.scheduleMode === "recurring" && config.recurringEnabled)
             }
@@ -1163,16 +1194,18 @@ export function NexusAutopilotPanel({
               setPermissionOpen(true);
             }}
           >
-            {running || granting || arcPending ? (
+            {running || granting || awaitingWallet || arcPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Play className="h-4 w-4" />
             )}
-            {config.scheduleMode === "recurring" && config.recurringEnabled
-              ? "Recurring running…"
-              : config.scheduleMode === "once"
-                ? `Run one trade${config.onceRunWhen === "scheduled" ? ` (${onceScheduleLabel(config)})` : ""}`
-                : "Start recurring agent"}
+            {awaitingWallet || arcPending
+              ? "Confirm in wallet…"
+              : config.scheduleMode === "recurring" && config.recurringEnabled
+                ? "Recurring running…"
+                : config.scheduleMode === "once"
+                  ? `Run one trade${config.onceRunWhen === "scheduled" ? ` (${onceScheduleLabel(config)})` : ""}`
+                  : "Start recurring agent"}
           </button>
           <p className="text-center text-[10px] text-white/45">
             {config.scheduleMode === "recurring"

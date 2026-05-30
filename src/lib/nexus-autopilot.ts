@@ -132,6 +132,12 @@ export function onceScheduleLabel(cfg: AutopilotConfig): string {
   return `after ${AUTOPILOT_INTERVALS[cfg.interval as Exclude<AutopilotInterval, "custom">]?.label ?? cfg.interval}`;
 }
 
+/** Vault USDC needed before starting autopilot (sells do not debit vault) */
+export function minVaultUsdcForAutopilot(config: AutopilotConfig, balance: number): number {
+  if (config.mode === "sell_only") return 0;
+  return estimateRequiredUsdc(config, balance);
+}
+
 /** Minimum vault balance to run one buy (trade size only — Arc network fee is paid from wallet, ~$0.01) */
 export function estimateRequiredUsdc(config: AutopilotConfig, balance: number): number {
   const arcBuffer = 0.005;
