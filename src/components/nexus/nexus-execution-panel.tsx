@@ -40,7 +40,10 @@ export function NexusExecutionPanel({ compact = false }: { compact?: boolean }) 
                 Executing current signal…
               </span>
             ) : (
-              <>Next run in <strong className="text-white">{agent.nextIn}s</strong> · recurring on your schedule</>
+              <>
+                Next run in <strong className="text-white">{agent.nextIn}s</strong> · vault only (no wallet
+                prompts)
+              </>
             )}
           </p>
           <Button

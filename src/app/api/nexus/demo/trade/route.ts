@@ -18,6 +18,8 @@ export async function POST(request: Request) {
       priceUsd: number;
       arcFeeTxHash: string;
       useAgentVault?: boolean;
+      /** Set when trade is part of an authorized autopilot session (reuses one arcFeeTxHash) */
+      autopilotSession?: boolean;
     };
 
     if (!body.wallet || !body.arcFeeTxHash) {
