@@ -22,6 +22,7 @@ import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcGlassPreview } from "@/components/landing/arc-glass-preview";
 import { ArcLivePulseCard } from "@/components/landing/arc-live-pulse-card";
 import { ArcPortalHero } from "@/components/landing/arc-portal-hero";
+import { ArcDeployedBadge } from "@/components/landing/arc-deployed-badge";
 
 const metrics = [
   { icon: ScanLine, label: "Narrative layers", value: "06", sub: "Acceleration · flow · risk" },
@@ -61,6 +62,8 @@ export function ArcEcosystemHero() {
           <p className="mt-5 max-w-xl text-left text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
             Watch live assets route through the AI portal — scanned, scored, and released as institutional-grade signals for NEXUS and PRISM.
           </p>
+
+          <ArcDeployedBadge />
 
           <ul className="arc-hero-bullets mt-6 max-w-lg space-y-2 text-left text-sm text-white/55">
             <li>BTC · ETH · SOL · USDC orbit the AI core in real time</li>

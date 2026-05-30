@@ -9,8 +9,6 @@ import {
 const ITEMS = [
   { label: "Circle Agents", href: CIRCLE_AGENTS_MARKETPLACE_URL, accent: "text-cyan-200" },
   { label: "x402", href: CIRCLE_AGENTS_DOCS_URL, accent: "text-violet-200" },
-  { label: "Arc Testnet", href: "https://docs.arc.network/", accent: "text-emerald-200/90" },
-  { label: "Marketplace", href: CIRCLE_AGENTS_MARKETPLACE_URL, accent: "text-white/90" },
 ] as const;
 
 export function NexusCircleAgentsTopBanner() {

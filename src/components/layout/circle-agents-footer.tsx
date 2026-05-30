@@ -28,15 +28,7 @@ export function CircleAgentsFooter({ className = "" }: { className?: string }) {
       >
         x402
       </a>
-      {" USDC on Arc Testnet · "}
-      <a
-        href={CIRCLE_AGENTS_MARKETPLACE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-white/55 underline-offset-2 hover:text-white/75 hover:underline"
-      >
-        Agent Marketplace
-      </a>
+      {" · USDC on Arc Testnet"}
     </p>
   );
 }
