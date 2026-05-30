@@ -28,7 +28,8 @@ export function buildSessionPayload(cfg: AutopilotConfig, owner: string): string
       : cfg.interval === "custom"
         ? `custom:${cfg.customIntervalMinutes}m`
         : cfg.interval;
-  return `${owner.toLowerCase()}|${cfg.scheduleMode}|${interval}|${cfg.mode}|${Date.now()}`;
+  const when = cfg.scheduleMode === "once" ? cfg.onceRunWhen : "recurring";
+  return `${owner.toLowerCase()}|${cfg.scheduleMode}|${interval}|${when}|${cfg.mode}|${Date.now()}`;
 }
 
 export function saveAutopilotSession(session: AutopilotSessionGrant) {
@@ -59,7 +60,9 @@ export function isAutopilotSessionValid(
 }
 
 export function sessionIntervalLabel(cfg: AutopilotConfig): string {
-  if (cfg.scheduleMode === "once") return "one trade";
+  if (cfg.scheduleMode === "once") {
+    return cfg.onceRunWhen === "now" ? "one trade (now)" : `one trade (${cfg.interval === "custom" ? `${cfg.customIntervalMinutes}m` : cfg.interval})`;
+  }
   if (cfg.interval === "custom") return `${cfg.customIntervalMinutes || "60"} min`;
   const labels: Record<string, string> = {
     "1m": "1 min",

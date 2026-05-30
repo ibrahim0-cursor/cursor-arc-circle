@@ -32,9 +32,15 @@ export type AutopilotScheduleMode = "recurring" | "once";
 /** When desk signal is HOLD/WATCH — user decides whether to still trade */
 export type AutopilotHoldAction = "skip" | "buy" | "sell";
 
+/** One-time: run immediately or after the configured interval */
+export type AutopilotOnceRunWhen = "now" | "scheduled";
+
 export type AutopilotConfig = {
-  enabled: boolean;
+  /** Recurring agent loop — independent from one-time runs */
+  recurringEnabled: boolean;
+  /** UI tab: configure recurring vs one-time (does not stop the other) */
   scheduleMode: AutopilotScheduleMode;
+  onceRunWhen: AutopilotOnceRunWhen;
   interval: AutopilotInterval;
   customIntervalMinutes: string;
   percent: number;
@@ -61,8 +67,9 @@ const STORAGE_KEY = "nexus-autopilot-v2";
 
 export function defaultAutopilot(): AutopilotConfig {
   return {
-    enabled: false,
+    recurringEnabled: false,
     scheduleMode: "recurring",
+    onceRunWhen: "now",
     interval: "15m",
     customIntervalMinutes: "60",
     percent: 25,
@@ -82,8 +89,13 @@ export function loadAutopilot(): AutopilotConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("nexus-autopilot-v1");
     if (!raw) return defaultAutopilot();
-    const merged = { ...defaultAutopilot(), ...JSON.parse(raw) } as AutopilotConfig;
+    const parsed = JSON.parse(raw) as AutopilotConfig & { enabled?: boolean };
+    const merged = { ...defaultAutopilot(), ...parsed } as AutopilotConfig;
+    if (typeof parsed.enabled === "boolean" && parsed.recurringEnabled === undefined) {
+      merged.recurringEnabled = parsed.enabled;
+    }
     if (!merged.scheduleMode) merged.scheduleMode = "recurring";
+    if (!merged.onceRunWhen) merged.onceRunWhen = "now";
     merged.mode = merged.mode ?? "follow_agent";
     if (!merged.holdAction) merged.holdAction = "skip";
     return merged;
@@ -106,6 +118,18 @@ export function autopilotIntervalMs(config: AutopilotConfig): number {
     return minutes * 60_000;
   }
   return AUTOPILOT_INTERVALS[config.interval].ms;
+}
+
+/** Delay before a one-time trade when onceRunWhen is scheduled */
+export function autopilotOnceDelayMs(config: AutopilotConfig): number {
+  if (config.onceRunWhen === "now") return 0;
+  return autopilotIntervalMs(config);
+}
+
+export function onceScheduleLabel(cfg: AutopilotConfig): string {
+  if (cfg.onceRunWhen === "now") return "immediately";
+  if (cfg.interval === "custom") return `after ${cfg.customIntervalMinutes || "60"} min`;
+  return `after ${AUTOPILOT_INTERVALS[cfg.interval as Exclude<AutopilotInterval, "custom">]?.label ?? cfg.interval}`;
 }
 
 /** Minimum vault balance to run one buy (trade size only — Arc network fee is paid from wallet, ~$0.01) */

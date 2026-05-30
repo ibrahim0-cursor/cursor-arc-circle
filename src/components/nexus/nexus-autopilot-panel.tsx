@@ -7,7 +7,9 @@ import {
   AutopilotAmountMode,
   AUTOPILOT_INTERVALS,
   autopilotIntervalMs,
+  autopilotOnceDelayMs,
   estimateRequiredUsdc,
+  onceScheduleLabel,
   loadAutopilot,
   saveAutopilot,
   tokenKey,
@@ -105,16 +107,20 @@ export function NexusAutopilotPanel({
   const [nextIn, setNextIn] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [resolvedToken, setResolvedToken] = useState<TrendingMarketToken | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recurringTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedRef = useRef(false);
+  const startIntentRef = useRef<"recurring" | "once">("recurring");
+  const onceRunningRef = useRef(false);
   const configRef = useRef(config);
   const tokenRef = useRef(token);
   const resolvedRef = useRef(resolvedToken);
-  const runCycleRef = useRef<() => Promise<void>>(async () => {});
+  const runCycleRef = useRef<(trigger?: "recurring" | "once") => Promise<void>>(async () => {});
   const agentUsdcRef = useRef(agentUsdc);
   const sessionRef = useRef<AutopilotSessionGrant | null>(null);
   const [permissionOpen, setPermissionOpen] = useState(false);
+  const [permissionIntent, setPermissionIntent] = useState<"recurring" | "once">("recurring");
   const [granting, setGranting] = useState(false);
   const [agentRuntime, setAgentRuntime] = useState<NexusAgentRuntime>(defaultRuntime);
 
@@ -249,7 +255,7 @@ export function NexusAutopilotPanel({
     [agentUsdc],
   );
 
-  const runCycle = useCallback(async () => {
+  const runCycle = useCallback(async (trigger: "recurring" | "once" = "recurring") => {
     const t = activeToken();
     const cfg = configRef.current;
     if (!address) {
@@ -267,13 +273,14 @@ export function NexusAutopilotPanel({
       });
       return;
     }
-    if (!cfg.enabled) return;
+    if (trigger === "recurring" && !cfg.recurringEnabled) return;
 
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
+    if (trigger === "recurring" && recurringTimerRef.current) {
+      clearTimeout(recurringTimerRef.current);
+      recurringTimerRef.current = null;
     }
 
+    if (trigger === "once") onceRunningRef.current = true;
     setRunning(true);
     try {
       let agent: { action?: string; confidence?: number; whyAction?: string; reasoning?: string } | null =
@@ -372,21 +379,29 @@ export function NexusAutopilotPanel({
       if (side === "buy" && vaultBal < need) {
         const msg = `Vault $${vaultBal.toFixed(2)} — need $${need.toFixed(2)}. Deposit USDC to vault and Sync, or Stop the agent.`;
         pushLog(msg, "error");
-        if (cfg.scheduleMode === "once") {
+        if (trigger === "once") {
           toast({ type: "error", title: "Vault balance low", message: msg });
+        } else {
+          persist({ ...configRef.current, recurringEnabled: false });
+          startedRef.current = false;
+          if (recurringTimerRef.current) clearTimeout(recurringTimerRef.current);
+          pushLog("Recurring stopped — vault balance too low", "error");
+          toast({ type: "error", title: "Recurring paused", message: msg });
         }
         return;
       }
 
       const sessionTx = getValidSessionHash();
       if (!sessionTx) {
-        persist({ ...configRef.current, enabled: false });
-        startedRef.current = false;
-        pushLog("Session expired — tap Run Agent to authorize again (one wallet signature)", "error");
+        if (trigger === "recurring") {
+          persist({ ...configRef.current, recurringEnabled: false });
+          startedRef.current = false;
+        }
+        pushLog("Session expired — authorize again (one wallet signature)", "error");
         toast({
           type: "error",
           title: "Authorization required",
-          message: "Tap Run Agent and sign once on Arc Testnet to restart the agent.",
+          message: "Tap Run Agent and sign once on Arc Testnet.",
         });
         return;
       }
@@ -469,24 +484,24 @@ export function NexusAutopilotPanel({
       agentUsdcRef.current = Number(tradeData.agentBalanceUsdc ?? vaultBal);
       toast({ type: "success", title: "Autopilot trade", message: `${side.toUpperCase()} ${t.symbol}` });
       onTradeComplete?.();
-      if (cfg.scheduleMode === "once") {
-        clearAutopilotSession();
-        sessionRef.current = null;
-        persist({ ...configRef.current, enabled: false });
-        pushLog("One-time run complete — agent stopped", "info");
+      if (trigger === "once") {
+        pushLog("One-time trade complete — recurring agent unchanged", "info");
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Autopilot failed";
       pushLog(msg, "error");
       toast({ type: "error", title: "Autopilot error", message: msg });
     } finally {
+      if (trigger === "once") onceRunningRef.current = false;
       setRunning(false);
       const live = configRef.current;
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (live.enabled && live.scheduleMode === "recurring") {
+      if (trigger === "recurring" && live.recurringEnabled) {
         const wait = autopilotIntervalMs(live);
         setNextIn(Math.floor(wait / 1000));
-        timerRef.current = setTimeout(() => void runCycleRef.current(), wait);
+        recurringTimerRef.current = setTimeout(
+          () => void runCycleRef.current("recurring"),
+          wait,
+        );
       }
     }
   }, [
@@ -504,14 +519,21 @@ export function NexusAutopilotPanel({
 
   runCycleRef.current = runCycle;
 
-  const stopAgent = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+  const stopRecurring = useCallback(() => {
+    if (recurringTimerRef.current) clearTimeout(recurringTimerRef.current);
     startedRef.current = false;
-    clearAutopilotSession();
-    sessionRef.current = null;
-    persist({ ...configRef.current, enabled: false });
-    pushLog("Stopped — wallet authorization cleared", "info");
-    toast({ type: "success", title: "Agent stopped", message: "No more automatic trades until you authorize again." });
+    setNextIn(0);
+    persist({ ...configRef.current, recurringEnabled: false });
+    if (!onceRunningRef.current && !onceTimerRef.current) {
+      clearAutopilotSession();
+      sessionRef.current = null;
+    }
+    pushLog("Recurring agent stopped", "info");
+    toast({
+      type: "success",
+      title: "Recurring stopped",
+      message: "Interval trades paused. One-time runs can still be started.",
+    });
   }, [persist, pushLog, toast]);
 
   const authorizeAndStart = useCallback(async () => {
@@ -526,6 +548,7 @@ export function NexusAutopilotPanel({
       return;
     }
 
+    const intent = startIntentRef.current;
     setPermissionOpen(false);
     setGranting(true);
     try {
@@ -548,51 +571,79 @@ export function NexusAutopilotPanel({
         return;
       }
 
-      await ensureArcNetwork();
-      toast({
-        type: "info",
-        title: "One signature required",
-        message: `Approve on Arc Testnet (~$${feeUsd}). After this, the agent runs on its own using your vault.`,
-      });
-
       const cfg = configRef.current;
-      const fee = await payArcFee("AUTOPILOT_SESSION", buildSessionPayload(cfg, address));
-      const grant: AutopilotSessionGrant = {
-        arcFeeTxHash: fee.txHash,
-        owner: address,
-        scheduleMode: cfg.scheduleMode,
-        intervalLabel: sessionIntervalLabel(cfg),
-        grantedAt: Date.now(),
-        expiresAt: Date.now() + autopilotSessionExpiryMs(cfg.scheduleMode),
-      };
-      saveAutopilotSession(grant);
-      sessionRef.current = grant;
+      let sessionTx = getValidSessionHash();
 
-      const next = { ...cfg, enabled: true };
-      persist(next);
-      startedRef.current = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (!sessionTx) {
+        await ensureArcNetwork();
+        toast({
+          type: "info",
+          title: "One signature required",
+          message: `Approve on Arc Testnet (~$${feeUsd}). ${intent === "recurring" ? "Recurring trades then run from your vault automatically." : "Then your one-time trade runs without another prompt."}`,
+        });
+        const fee = await payArcFee("AUTOPILOT_SESSION", buildSessionPayload(cfg, address));
+        const grant: AutopilotSessionGrant = {
+          arcFeeTxHash: fee.txHash,
+          owner: address,
+          scheduleMode: intent === "once" ? "once" : "recurring",
+          intervalLabel: sessionIntervalLabel(cfg),
+          grantedAt: Date.now(),
+          expiresAt: Date.now() + autopilotSessionExpiryMs(intent === "once" ? "once" : "recurring"),
+        };
+        saveAutopilotSession(grant);
+        sessionRef.current = grant;
+        sessionTx = fee.txHash;
+      }
 
+      if (intent === "recurring") {
+        const next = { ...cfg, recurringEnabled: true };
+        persist(next);
+        startedRef.current = true;
+        if (recurringTimerRef.current) clearTimeout(recurringTimerRef.current);
+        pushLog(
+          `Recurring authorized · every ${sessionIntervalLabel(cfg)} · vault $${vaultBal.toFixed(2)}`,
+          "info",
+        );
+        toast({
+          type: "success",
+          title: "Recurring agent live",
+          message: `Trades every ${sessionIntervalLabel(cfg)} from vault — no more wallet prompts.`,
+        });
+        await runCycleRef.current("recurring");
+        return;
+      }
+
+      const delay = autopilotOnceDelayMs(cfg);
       pushLog(
-        `Authorized · ${sessionIntervalLabel(cfg)} · vault $${vaultBal.toFixed(2)} · no more wallet prompts until Stop`,
+        `One-time scheduled ${onceScheduleLabel(cfg)} · vault $${vaultBal.toFixed(2)}${cfg.recurringEnabled ? " · recurring still active" : ""}`,
         "info",
       );
       toast({
         type: "success",
-        title: "Agent authorized",
+        title: delay > 0 ? "One-time scheduled" : "Running one-time trade",
         message:
-          cfg.scheduleMode === "once"
-            ? "Running your one-time trade now…"
-            : `Autopilot active every ${sessionIntervalLabel(cfg)} using vault USDC.`,
+          delay > 0
+            ? `Trade ${onceScheduleLabel(cfg)}. ${cfg.recurringEnabled ? "Recurring agent keeps running." : ""}`
+            : `Executing now. ${cfg.recurringEnabled ? "Recurring agent keeps running." : ""}`,
       });
 
-      await runCycleRef.current();
+      if (delay > 0) {
+        if (onceTimerRef.current) clearTimeout(onceTimerRef.current);
+        onceTimerRef.current = setTimeout(() => {
+          onceTimerRef.current = null;
+          void runCycleRef.current("once");
+        }, delay);
+      } else {
+        await runCycleRef.current("once");
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not authorize agent";
       pushLog(msg, "error");
       toast({ type: "error", title: "Authorization failed", message: msg });
-      persist({ ...configRef.current, enabled: false });
-      startedRef.current = false;
+      if (startIntentRef.current === "recurring") {
+        persist({ ...configRef.current, recurringEnabled: false });
+        startedRef.current = false;
+      }
     } finally {
       setGranting(false);
     }
@@ -601,6 +652,7 @@ export function NexusAutopilotPanel({
     activeToken,
     ensureArcNetwork,
     feeUsd,
+    getValidSessionHash,
     payArcFee,
     persist,
     pushLog,
@@ -616,9 +668,9 @@ export function NexusAutopilotPanel({
 
   /** Resume agent after page reload (Run Agent sets startedRef so this does not double-fire) */
   useEffect(() => {
-    if (!config.enabled || !isConnected) {
-      if (!config.enabled) {
-        if (timerRef.current) clearTimeout(timerRef.current);
+    if (!config.recurringEnabled || !isConnected) {
+      if (!config.recurringEnabled) {
+        if (recurringTimerRef.current) clearTimeout(recurringTimerRef.current);
         startedRef.current = false;
         setNextIn(0);
       }
@@ -627,14 +679,14 @@ export function NexusAutopilotPanel({
     const t = activeToken();
     if (!t || startedRef.current) return;
     if (!getValidSessionHash()) {
-      persist({ ...configRef.current, enabled: false });
+      persist({ ...configRef.current, recurringEnabled: false });
       pushLog("Session expired after reload — tap Run Agent to sign once again", "info");
       return;
     }
     startedRef.current = true;
-    void runCycleRef.current();
+    void runCycleRef.current("recurring");
   }, [
-    config.enabled,
+    config.recurringEnabled,
     isConnected,
     token?.tokenAddress,
     resolvedToken?.tokenAddress,
@@ -647,7 +699,7 @@ export function NexusAutopilotPanel({
 
   useEffect(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
-    if (!config.enabled || config.scheduleMode === "once") {
+    if (!config.recurringEnabled) {
       setNextIn(0);
       return;
     }
@@ -659,24 +711,31 @@ export function NexusAutopilotPanel({
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [config.enabled, config.scheduleMode, config.interval, config.customIntervalMinutes]);
+  }, [config.recurringEnabled, config.interval, config.customIntervalMinutes]);
 
   useEffect(() => {
-    onAgentLiveChange?.(config.enabled);
-  }, [config.enabled, onAgentLiveChange]);
+    onAgentLiveChange?.(config.recurringEnabled);
+  }, [config.recurringEnabled, onAgentLiveChange]);
 
   useEffect(() => {
     setAgentRuntime({
-      enabled: config.enabled,
+      enabled: config.recurringEnabled,
       nextIn,
       running,
       logs,
       lastReasoning,
       displaySymbol,
-      stop: stopAgent,
-      runNow: () => void runCycleRef.current(),
+      stop: stopRecurring,
+      runNow: () => void runCycleRef.current("recurring"),
     });
-  }, [config.enabled, nextIn, running, logs, lastReasoning, displaySymbol, stopAgent]);
+  }, [config.recurringEnabled, nextIn, running, logs, lastReasoning, displaySymbol, stopRecurring]);
+
+  useEffect(() => {
+    return () => {
+      if (onceTimerRef.current) clearTimeout(onceTimerRef.current);
+      if (recurringTimerRef.current) clearTimeout(recurringTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (token) persist({ ...config, tokenKey: tokenKey(token.chainId, token.tokenAddress) });
@@ -735,41 +794,82 @@ export function NexusAutopilotPanel({
             </button>
           </div>
 
-          {config.scheduleMode === "recurring" && (
-            <>
+          {config.recurringEnabled && (
+            <p className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+              <strong className="text-emerald-50">Recurring agent is live.</strong> You can still run one-time
+              trades — they will not stop the interval agent.
+            </p>
+          )}
+
           <p className="nexus-caption flex items-center gap-1.5">
             <Timer className="h-3.5 w-3.5" />
-            Interval
+            {config.scheduleMode === "recurring" ? "Interval (between trades)" : "When to run (one-time)"}
           </p>
-          <div className="grid grid-cols-5 gap-1.5">
-            {INTERVAL_KEYS.map((key) => (
+          {config.scheduleMode === "once" && (
+            <div className="mb-2 grid grid-cols-2 gap-2">
               <button
-                key={key}
                 type="button"
-                onClick={() => persist({ ...config, interval: key })}
-                className={`min-h-[40px] rounded-lg border text-[9px] font-bold leading-tight ${
-                  config.interval === key
-                    ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
-                    : "border-white/10 bg-black/20 text-white/55"
+                onClick={() => persist({ ...config, onceRunWhen: "now" })}
+                className={`min-h-[40px] rounded-xl border text-xs font-bold ${
+                  config.onceRunWhen === "now"
+                    ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                    : "border-white/10 text-white/55"
                 }`}
               >
-                {key === "custom" ? "Custom" : AUTOPILOT_INTERVALS[key as Exclude<AutopilotInterval, "custom">]?.label ?? key}
+                Run now
               </button>
-            ))}
-          </div>
-          {config.interval === "custom" && (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-violet-300" />
-              <input
-                inputMode="numeric"
-                value={config.customIntervalMinutes}
-                onChange={(e) => persist({ ...config, customIntervalMinutes: e.target.value })}
-                placeholder="Minutes between trades"
-                className="min-h-[44px] flex-1 rounded-xl border border-white/15 bg-black/30 px-3 text-white"
-              />
-              <span className="text-xs text-white/50">min</span>
+              <button
+                type="button"
+                onClick={() => persist({ ...config, onceRunWhen: "scheduled" })}
+                className={`min-h-[40px] rounded-xl border text-xs font-bold ${
+                  config.onceRunWhen === "scheduled"
+                    ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                    : "border-white/10 text-white/55"
+                }`}
+              >
+                Run after delay
+              </button>
             </div>
           )}
+          {(config.scheduleMode === "recurring" || config.onceRunWhen === "scheduled") && (
+            <>
+              <div className="grid grid-cols-5 gap-1.5">
+                {INTERVAL_KEYS.map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => persist({ ...config, interval: key })}
+                    className={`min-h-[40px] rounded-lg border text-[9px] font-bold leading-tight ${
+                      config.interval === key
+                        ? config.scheduleMode === "recurring"
+                          ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                          : "border-cyan-400/50 bg-cyan-500/20 text-cyan-100"
+                        : "border-white/10 bg-black/20 text-white/55"
+                    }`}
+                  >
+                    {key === "custom"
+                      ? "Custom"
+                      : AUTOPILOT_INTERVALS[key as Exclude<AutopilotInterval, "custom">]?.label ?? key}
+                  </button>
+                ))}
+              </div>
+              {config.interval === "custom" && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-violet-300" />
+                  <input
+                    inputMode="numeric"
+                    value={config.customIntervalMinutes}
+                    onChange={(e) => persist({ ...config, customIntervalMinutes: e.target.value })}
+                    placeholder={
+                      config.scheduleMode === "recurring"
+                        ? "Minutes between trades"
+                        : "Minutes until one trade"
+                    }
+                    className="min-h-[44px] flex-1 rounded-xl border border-white/15 bg-black/30 px-3 text-white"
+                  />
+                  <span className="text-xs text-white/50">min</span>
+                </div>
+              )}
             </>
           )}
 
@@ -985,15 +1085,17 @@ export function NexusAutopilotPanel({
                 <p className="mt-2 text-sm leading-relaxed text-white/70">
                   You will <strong className="text-white">sign once</strong> on Arc Testnet (~${feeUsd}). After
                   that, trades use your <strong className="text-cyan-200">agent vault</strong> automatically
-                  {config.scheduleMode === "recurring"
-                    ? ` every ${sessionIntervalLabel(config)}`
-                    : " for this one trade"}
-                  — no more wallet popups until you tap Stop.
+                  {permissionIntent === "recurring"
+                    ? ` every ${sessionIntervalLabel(config)} from your vault`
+                    : ` — one trade ${onceScheduleLabel(config)}`}
+                  . {permissionIntent === "recurring"
+                    ? "No more wallet prompts until you tap Stop recurring."
+                    : "Does not stop a recurring agent if one is already running."}
                 </p>
                 <ul className="mt-3 space-y-1 text-xs text-white/55">
                   <li>· Deposit USDC to the vault above, then Sync</li>
                   <li>· Buys debit vault balance (demo ledger on Arc)</li>
-                  <li>· Stop anytime to end automatic trading</li>
+                  <li>· Recurring and one-time runs are independent</li>
                 </ul>
                 <div className="mt-4 flex gap-2">
                   <button
@@ -1034,14 +1136,15 @@ export function NexusAutopilotPanel({
                 ? Number(config.customUsdc) > 0
                 : config.amountMode === "custom_token"
                   ? Number(config.customToken) > 0
-                  : config.percent > 0) && !config.enabled,
+                  : config.percent > 0) &&
+                !(config.scheduleMode === "recurring" && config.recurringEnabled),
             )}
             disabled={
               !isConnected ||
               running ||
               granting ||
               arcPending ||
-              (config.enabled && config.scheduleMode === "recurring")
+              (config.scheduleMode === "recurring" && config.recurringEnabled)
             }
             onClick={() => {
               const picked = activeToken();
@@ -1050,10 +1153,13 @@ export function NexusAutopilotPanel({
                   type: "error",
                   title: "Select a token",
                   message:
-                    "Choose a token from the live feed (or set Custom token), then tap Run Agent again.",
+                    "Choose a token from the live feed (or set Custom token), then try again.",
                 });
                 return;
               }
+              const intent = config.scheduleMode === "once" ? "once" : "recurring";
+              startIntentRef.current = intent;
+              setPermissionIntent(intent);
               setPermissionOpen(true);
             }}
           >
@@ -1062,15 +1168,16 @@ export function NexusAutopilotPanel({
             ) : (
               <Play className="h-4 w-4" />
             )}
-            {config.enabled && config.scheduleMode === "recurring"
-              ? "Agent running…"
+            {config.scheduleMode === "recurring" && config.recurringEnabled
+              ? "Recurring running…"
               : config.scheduleMode === "once"
-                ? "Run one trade"
-                : "Run Agent"}
+                ? `Run one trade${config.onceRunWhen === "scheduled" ? ` (${onceScheduleLabel(config)})` : ""}`
+                : "Start recurring agent"}
           </button>
           <p className="text-center text-[10px] text-white/45">
-            One wallet signature to start. Recurring runs ({sessionIntervalLabel(config)}) use vault USDC only —
-            no repeated wallet prompts.
+            {config.scheduleMode === "recurring"
+              ? `Recurring uses vault every ${sessionIntervalLabel(config)} after one signature. Stop only pauses recurring.`
+              : `One-time: ${onceScheduleLabel(config)}. Won't stop recurring if it's already running.`}
           </p>
         </>
       )}
@@ -1088,13 +1195,13 @@ export function NexusAutopilotPanel({
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-violet-200" />
           <span className="text-base font-semibold text-white">NEXUS Autopilot</span>
-          {config.enabled && (
+          {config.recurringEnabled && (
             <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
-              LIVE
+              RECURRING LIVE
             </span>
           )}
         </div>
-        {config.enabled && nextIn > 0 && (
+        {config.recurringEnabled && nextIn > 0 && (
           <span className="flex items-center gap-1 text-xs text-violet-200/80">
             <Calendar className="h-3.5 w-3.5" />
             Next {nextIn}s

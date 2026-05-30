@@ -27,10 +27,11 @@ export function NexusExecutionPanel({ compact = false }: { compact?: boolean }) 
             <button
               type="button"
               onClick={agent.stop}
+            title="Stops recurring interval only"
               className="inline-flex items-center gap-1 rounded-lg border border-rose-400/50 bg-black/30 px-3 py-1.5 text-xs font-bold text-rose-100"
             >
               <XCircle className="h-3.5 w-3.5" />
-              Stop
+              Stop recurring
             </button>
           </div>
           <p className="text-xs text-white/70">
