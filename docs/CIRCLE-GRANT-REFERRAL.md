@@ -1,30 +1,81 @@
 # Circle grant referral — `#circle-grant-referral-requests`
 
-Post in **#circle-grant-referral-requests** (not DMs).
+Post in **#circle-grant-referral-requests** (not DMs). Copy the **recommended block** below.
 
 ---
 
-## Short paste (mods read this — ~30 sec)
+## Recommended Discord paste (copy this)
 
 ```
-MERIDIAN — live Agora desk on Arc testnet (not a mockup)
-Ibrahim · ibrahim0-cursor · MERIDIAN = NEXUS (meme agent desk) + PRISM (macro oracle)
+**MERIDIAN** — Live agentic desk on **Arc Testnet** · Circle RPC **v0.7.1** · not a deck, not a mockup
+**Builder:** Ibrahim · GitHub **ibrahim0-cursor** · Agora submission, still shipping post-hackathon
 
-Contact: abdullahlp114@gmail.com · X @velz_noct
-🌐 https://trader-arc.vercel.app · 📦 https://github.com/ibrahim0-cursor/cursor-arc-circle
+**Contact**
+📧 abdullahlp114@gmail.com · X **@velz_noct**
+🌐 https://trader-arc.vercel.app
+📦 https://github.com/ibrahim0-cursor/cursor-arc-circle
 
-Why refer: Real USDC flows on Arc 5042002 via Circle RPC v0.7.1 — x402 APIs (/api/nexus/scan, dossier), Counter lab, holder intel cascade, wallet connect + fee txs you can tie to my GitHub.
+---
 
-Verify: /nexus · /prism · /arc · testnet.arcscan after PRISM/NEXUS fee
-Stage: MVP testnet only · building post-hackathon · grant → agent vault + audit path
+**What I built (verify in ~2 min)**
 
-Building in public on Arc. Refer MERIDIAN 🟢
-(Optional reply: fresh Arcscan tx from your wallet)
+Two agents, one Arc-native stack — **real USDC** on chain **5042002** (fees + Counter) tied to my public repo.
+
+**NEXUS — meme-coin agent desk**
+• Live feed: DexScreener + Gecko discovery, boosts & profiles, buy/sell txn flow
+• **Wallet-first Edge Score** — whale/holder spread, Blockscout + Moralis + GMGN cascade, GoPlus + honeypot.is security — TA is reference only, not hype RSI spam
+• Alpha scan + per-token dossier (holders, rug gate, macro tie-in from PRISM)
+• Explicit desk signals: **BUY / SELL / HOLD** with entry-gate checks (liquidity, flow skew, concentration, security)
+• Wallet connect + Arc testnet USDC fees · mobile UX on production Vercel
+
+**PRISM — macro / geopolitical oracle**
+• GDELT + news layers · probability forecasts
+• **USDC fee settlement on Arc** per paid run — reviewer can match tx → GitHub handle
+
+**Reusable Arc engineering (for other builders)**
+• **x402 seller APIs** — `/api/nexus/scan` + `/api/nexus/token/dossier` on `eip155:5042002` (Gateway-compatible; external agents pay USDC, humans use UI)
+• **Foundry Counter** at `/arc` — deploy + increment from wallet (reference contract pattern)
+• Circle **App Kit / sandbox** · USDC-native gas · connect safety + security headers on live app
+
+---
+
+**Why refer me**
+I ship **agentic commerce + market intelligence** on Arc in public — verifiable txs via Circle RPC, open patterns (x402, Counter, holder intel), not a wrapper around ChatGPT. Grant → harden **agent vault**, production x402, audits, more on-chain telemetry — same primitives Circle cares about (USDC, Arc, agents, prediction-style signals).
+
+**Stage**
+✅ Working MVP on testnet — full UI live
+⏳ Testnet only · no mainnet funds · not audited yet
+Path: agent treasury on Arc → contract audit → non-custodial keys → mainnet when Arc GA
+
+**Circle / Arc products in use**
+Now: Arc **5042002** · **USDC** gas + settlement · **Circle RPC** v0.7.1 · **App Kit** · **x402** (Gateway facilitator) · Arcscan-verifiable fees
+Next: CCTP · Bridge Kit · Gateway SDK · USYC treasury · agent identity for external desk APIs
+
+**Verify**
+→ NEXUS https://trader-arc.vercel.app/nexus
+→ PRISM https://trader-arc.vercel.app/prism
+→ Arc lab https://trader-arc.vercel.app/arc
+Connect wallet → run PRISM or pay NEXUS fee → **testnet.arcscan.app**
+(Optional reply: paste your latest Arcscan tx — helps mods)
+
+Building in public on Arc. **Refer MERIDIAN** 🟢
 ```
 
 ---
 
-## Full Discord form (copy if they want detail)
+## Ultra-short paste (only if channel has a character cap)
+
+```
+MERIDIAN — live NEXUS + PRISM on Arc 5042002 (Circle RPC v0.7.1), USDC fees, x402 APIs, Counter lab
+Ibrahim · ibrahim0-cursor · abdullahlp114@gmail.com · @velz_noct
+https://trader-arc.vercel.app · https://github.com/ibrahim0-cursor/cursor-arc-circle
+Wallet-first desk (Dex + GoPlus + holder cascade) — verify /nexus /prism /arc + Arcscan tx
+Refer MERIDIAN 🟢
+```
+
+---
+
+## Full form (if Canteen asks for each field separately)
 
 **Company name**  
 Individual / solo builder — Ibrahim (GitHub: [ibrahim0-cursor](https://github.com/ibrahim0-cursor))
@@ -33,38 +84,37 @@ Individual / solo builder — Ibrahim (GitHub: [ibrahim0-cursor](https://github.
 MERIDIAN — **NEXUS** (meme-coin agent desk) + **PRISM** (macro / geopolitical oracle)
 
 **Contact**  
-GitHub: https://github.com/ibrahim0-cursor · Live app: https://trader-arc.vercel.app · Repo: https://github.com/ibrahim0-cursor/cursor-arc-circle
-
-*(Add your email + X handle on the Discord post if you want Canteen to reach you directly.)*
+Email: abdullahlp114@gmail.com · X: [@velz_noct](https://x.com/velz_noct)  
+Live: https://trader-arc.vercel.app · Repo: https://github.com/ibrahim0-cursor/cursor-arc-circle
 
 **What makes you high-signal? Why should we refer you?**
 
 MERIDIAN is a **live Agora submission**, not a deck — production UI, public repo, and **verifiable Arc testnet activity** on Circle’s RPC (**v0.7.1**, `https://rpc.testnet.arc.network`).
 
-**NEXUS** — autonomous trading desk for meme alts: live DexScreener + GeckoTerminal discovery, Alpha Scan (GMGN + Dex + Birdeye + 6551 layers), per-token dossier (holders, TA, entry gate), wallet connect, demo trade + portfolio. Agent outputs are **BUY / SELL / HOLD / WATCH** with explicit entry-gate factors (flow, TA, PRISM macro regime, scam/rug heuristics) — not generic chat spam.
+**NEXUS** — autonomous trading desk for meme alts: live DexScreener + GeckoTerminal discovery, Alpha Scan (GMGN + Dex + Birdeye + 6551), per-token dossier (holders, wallet-first Edge Score, entry gate), wallet connect, demo trade + portfolio. Agent outputs are **BUY / SELL / HOLD / WATCH** with explicit gates (Dex flow, holder concentration, GoPlus/honeypot security, PRISM macro) — not generic AI spam.
 
 **PRISM** — macro oracle: GDELT + NewsAPI + Event Registry + community intel, probability forecasts, **Arc USDC fee settlement** on paid runs.
 
 **Reusable engineering (not a thin wrapper):**
-- **x402 seller routes** on `/api/nexus/scan` and `/api/nexus/token/dossier` (Circle Gateway–compatible nanopayments on `eip155:5042002`; internal UI bypass via `x-meridian-client` for humans, paid path for external agents).
-- **Foundry Counter** on Arc testnet — wallet deploy + increment from `/arc` (reference contract for builders).
-- **Multi-source on-chain intel cascade** when Birdeye rate-limits: GMGN (Sol/Base/BSC/ETH), **Blockscout** (free EVM holders), Moralis, DexPaprika pool txs.
-- Fast feed dossier path + server cache so chart/TA/holder panels load in seconds on Vercel.
+- **x402 seller routes** on `/api/nexus/scan` and `/api/nexus/token/dossier` (Circle Gateway–compatible on `eip155:5042002`).
+- **Foundry Counter** on Arc testnet — wallet deploy + increment from `/arc`.
+- **Holder intel cascade:** Blockscout → Moralis → GMGN → Birdeye when rate-limited.
+- **Free security stack:** GoPlus + honeypot.is + connect safety on trader-arc.vercel.app.
 - Circle **App Kit / sandbox wallets**, USDC-native gas, Arc-anchored agent decisions.
 
-**Why refer us:** We ship **agentic commerce + market intelligence** on Arc in public, keep building post-hackathon (mobile UX, feed reliability, holder fallbacks), and give Arc reviewers a **single GitHub handle** tied to on-chain txs via your RPC. Grant funds → production agent vault, hardened x402, more anchored calldata, and open reference patterns other Arc teams can fork.
+**Why refer us:** We ship **agentic commerce + market intelligence** on Arc in public and give reviewers a **single GitHub handle** tied to on-chain txs. Grant funds → agent vault, hardened x402, audits, open reference patterns for other Arc teams.
 
 **What stage are you at?**
 
-**Working MVP**, deployed end-to-end on Arc testnet — https://trader-arc.vercel.app (NEXUS, PRISM, `/arc` Counter lab). Testnet only; no real funds; not revenue-generating.
+**Working MVP**, deployed on Arc testnet — https://trader-arc.vercel.app. Testnet only; not mainnet-ready.
 
-**Path:** hardened oracle + agent treasury on Arc → audit Foundry contracts → non-custodial agent keys → production infra → compliance review → mainnet when Arc GA. Not mainnet-ready yet.
+**Path:** agent treasury on Arc → audit → non-custodial keys → mainnet when Arc GA.
 
 **Which Circle / Arc products are you using?**
 
-**Live today:** Arc Testnet (`5042002`) · **USDC** (native gas + settlement) · **Circle RPC** (v0.7.1) · Circle **sandbox / App Kit** (wallet connect) · **x402** seller pattern (Gateway facilitator URL, Arc network) · Arcscan for fee + deploy txs.
+**Live today:** Arc Testnet (`5042002`) · **USDC** · **Circle RPC** (v0.7.1) · **App Kit** · **x402** · Arcscan for fee + deploy txs.
 
-**Roadmap:** CCTP + **Bridge Kit** (cross-chain agent funding) · deeper **Gateway SDK** when we migrate off custom x402 guard · **USYC** for agent treasury yield · ERC-8004-style agent identity for external desk APIs.
+**Roadmap:** CCTP · Bridge Kit · Gateway SDK · USYC · agent identity for external APIs.
 
 ---
 
@@ -79,10 +129,11 @@ MERIDIAN is a **live Agora submission**, not a deck — production UI, public re
 | Repo | https://github.com/ibrahim0-cursor/cursor-arc-circle |
 | Arc node | https://github.com/circlefin/arc-node/releases/tag/v0.7.1 |
 
-**On-chain (verify on testnet.arcscan.app):** PRISM/NEXUS Arc fee txs from connected wallet · Counter contract at `NEXT_PUBLIC_ARC_COUNTER_ADDRESS` on Vercel (user-deployed example discussed in repo: `0x290c302a33434d85b6406c5347f47395e2aea0b7`)
+**On-chain:** Connect wallet → PRISM/NEXUS fee or Counter increment → **testnet.arcscan.app**  
+Example Counter (deploy yours from `/arc`): `0x290c302a33434d85b6406c5347f47395e2aea0b7`
 
 ---
 
-## One-liner (thread reply)
+## Thread reply one-liner
 
-> MERIDIAN — live NEXUS + PRISM on Arc v0.7.1 (Circle RPC), x402 desk APIs, Foundry Counter, trader-arc.vercel.app · @ibrahim0-cursor · building past Agora in public.
+> MERIDIAN — live NEXUS + PRISM on Arc v0.7.1, wallet-first desk, x402 APIs, USDC fees · trader-arc.vercel.app · ibrahim0-cursor · abdullahlp114@gmail.com · @velz_noct
