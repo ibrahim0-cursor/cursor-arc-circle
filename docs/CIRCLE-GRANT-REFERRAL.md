@@ -1,8 +1,76 @@
 # Circle grant referral — `#circle-grant-referral-requests`
 
-Post in **#circle-grant-referral-requests** (not DMs). Copy the **recommended block** below.
+Post in **#circle-grant-referral-requests** (not DMs).
+
+**Discord free limit = 2,000 characters per message.** Use the **2-message paste** below (send Msg 1, then Msg 2).
 
 ---
+
+## Discord paste — MESSAGE 1 of 2 (send first)
+
+```
+🟢 **MERIDIAN** — Fully autonomous desk · **Arc Testnet** · RPC v0.7.1
+
+**Live:** https://trader-arc.vercel.app
+**Repo:** https://github.com/ibrahim0-cursor/cursor-arc-circle
+**GitHub:** ibrahim0-cursor · Agora · shipping in public
+
+**Building (not a mockup)**
+2 autonomous agents · 1 Arc stack · **USDC on 5042002** (fees + Counter) tied to repo
+
+**NEXUS** meme desk
+• Dex/Gecko feed · wallet Edge Score (holders, GoPlus, honeypot) · BUY/SELL/HOLD gates
+• x402 `/api/nexus/scan` + dossier — agents pay USDC on Arc
+
+**PRISM** macro oracle
+• GDELT/news · forecasts · **USDC fee** per run on Arc
+
+**Arc kit:** x402 · Counter `/arc` · App Kit · USDC gas
+```
+
+---
+
+## Discord paste — MESSAGE 2 of 2 (send right after)
+
+```
+**Why refer**
+Autonomous commerce + intel on Arc — live product, open repo, Arcscan-proof txs. Grant → agent vault, prod x402, audit.
+
+**Stage:** MVP testnet live · pre-audit
+
+**Verify (~2 min)**
+https://trader-arc.vercel.app/nexus · /prism · /arc
+Connect wallet → fee or Counter → **testnet.arcscan.app**
+Reply with your tx link ✅
+
+**Circle:** 5042002 · USDC · RPC v0.7.1 · App Kit · x402
+
+**Refer MERIDIAN** 🟢
+
+abdullahlp114@gmail.com
+@velz_noct · https://x.com/velz_noct
+```
+
+---
+
+## Single message (only if under 2,000 chars — verify in Discord box)
+
+```
+🟢 **MERIDIAN** — Fully autonomous desk · Arc Testnet · RPC v0.7.1
+https://trader-arc.vercel.app · https://github.com/ibrahim0-cursor/cursor-arc-circle · **ibrahim0-cursor**
+
+2 autonomous agents · USDC on **5042002** (fees + Counter). **NEXUS:** Dex feed, wallet Edge Score, BUY/SELL/HOLD, x402 scan APIs. **PRISM:** macro forecasts, USDC/run. x402 · Counter /arc · App Kit.
+
+Why refer: live Arc product + open repo + Arcscan txs. MVP testnet. Verify /nexus /prism /arc → wallet → Arcscan. Refer MERIDIAN 🟢
+abdullahlp114@gmail.com · @velz_noct
+```
+
+---
+
+## Long paste (Nitro / file only — too long for free Discord)
+
+<details>
+<summary>Full pitch — do not paste into one free message</summary>
 
 ## Recommended Discord paste (copy this)
 
@@ -60,6 +128,8 @@ Connect wallet → PRISM forecast or NEXUS fee → check **testnet.arcscan.app**
 📧 abdullahlp114@gmail.com
 🐦 https://x.com/velz_noct (@velz_noct)
 ```
+
+</details>
 
 ---
 
