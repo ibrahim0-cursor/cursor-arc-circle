@@ -1,4 +1,5 @@
 import { mapWithConcurrency } from "./async-pool";
+import { pairAgeHoursFromCreatedAt } from "./dexscreener-market";
 import { WALLET_SWAP_CHAINS, SWAP_CRITERIA, checkSwappable, filterSwappableTokens, type WalletSwapChain } from "./swappable";
 import { isEvmChain } from "./swap";
 import { buildLocalTokenIntel } from "./token-intel-local";
@@ -25,6 +26,8 @@ export type TrendingToken = {
   icon?: string;
   url: string;
   txns24h?: { buys: number; sells: number };
+  /** Hours since best pair was created (DexScreener pairCreatedAt). */
+  pairAgeHours?: number;
   quoteSymbol?: string;
   swappable?: boolean;
   demoTradeable?: boolean;
@@ -50,8 +53,13 @@ type DexPair = {
   fdv?: number;
   marketCap?: number;
   txns?: { h24?: { buys?: number; sells?: number } };
+  pairCreatedAt?: number;
   info?: { imageUrl?: string };
 };
+
+export function mapPairFromDexPair(pair: DexPair): TrendingToken {
+  return mapPair(pair);
+}
 
 function mapPair(pair: DexPair): TrendingToken {
   const token: TrendingToken = {
@@ -78,6 +86,7 @@ function mapPair(pair: DexPair): TrendingToken {
       buys: pair.txns?.h24?.buys ?? 0,
       sells: pair.txns?.h24?.sells ?? 0,
     },
+    pairAgeHours: pairAgeHoursFromCreatedAt(pair.pairCreatedAt),
     quoteSymbol: pair.quoteToken.symbol,
   };
   token.swappable = checkSwappable(token).ok;
@@ -246,15 +255,25 @@ export async function fetchTrendingMarketTokens(
 
   const results = await Promise.allSettled(fetches);
   const boostCandidates: Array<{ chainId: string; tokenAddress: string }> = [];
+  const profileByKey = new Map<string, { icon?: string; description?: string }>();
 
   for (const result of results) {
     if (result.status !== "fulfilled" || !result.value.ok) continue;
     const json = await result.value.json();
 
     if (Array.isArray(json)) {
-      for (const item of json as Array<{ chainId?: string; tokenAddress?: string }>) {
+      for (const item of json as Array<{
+        chainId?: string;
+        tokenAddress?: string;
+        icon?: string;
+        description?: string;
+      }>) {
         if (item.chainId && item.tokenAddress && isEvmChain(item.chainId)) {
           boostCandidates.push({ chainId: item.chainId, tokenAddress: item.tokenAddress });
+          const pk = `${item.chainId}:${item.tokenAddress.toLowerCase()}`;
+          if (item.icon || item.description) {
+            profileByKey.set(pk, { icon: item.icon, description: item.description });
+          }
         }
       }
       continue;
@@ -299,10 +318,14 @@ export async function fetchTrendingMarketTokens(
           change24h: token.change24h,
         }),
     )
-    .map((token) => ({
-      ...token,
-      intel: buildLocalTokenIntel(token),
-    }));
+    .map((token) => {
+      const prof = profileByKey.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`);
+      const enriched = prof?.icon ? { ...token, icon: token.icon ?? prof.icon } : token;
+      return {
+        ...enriched,
+        intel: buildLocalTokenIntel(enriched),
+      };
+    });
 }
 
 /** @deprecated use fetchSwappableTokens */

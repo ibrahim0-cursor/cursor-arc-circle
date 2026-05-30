@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { buildDecision, buildDeskAgentSignal } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
-import { scoreTokenSecurity } from "@/lib/token-security";
+import { fetchExternalTokenSecurity } from "@/lib/external-token-security";
 import { buildResearchReport } from "@/lib/nexus-research";
 import { buildDossierGlance } from "@/lib/nexus-research-dossier";
 import { addNexusDecision } from "@/lib/storage";
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const agent = body.deep
       ? await buildDecision(token)
       : await buildDeskAgentSignal(token, intelWithTa);
-    const security = scoreTokenSecurity(token, intelWithTa);
+    const security = await fetchExternalTokenSecurity(token, intelWithTa);
     const research = buildResearchReport({
       token,
       agent,

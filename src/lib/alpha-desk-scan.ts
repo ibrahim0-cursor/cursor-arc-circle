@@ -7,7 +7,8 @@ import { buildLocalTokenIntel } from "./token-intel-local";
 import { getBirdeyePlan } from "./birdeye-policy";
 import { fetchMergedTokenDetection } from "./token-detection";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
-import { scoreTokenSecurity } from "./token-security";
+import { fetchHolderCascade } from "./holder-fallback";
+import { enrichIntelFromHolders } from "./nexus-edge-score";
 import { mergeGmgnIntoSecurityReport } from "./gmgn-enrichment";
 import { enrichTokenIntelWithGmgn } from "./gmgn-enrichment";
 import { hasGmgnApiKey } from "./gmgn-client";
@@ -84,6 +85,19 @@ export async function buildAlphaDeskIntel(
     intel.sniperCount = det.sniperCount ?? intel.sniperCount;
   }
   if (ta) intel = { ...intel, technical: technicalToIntel(ta) };
+
+  if (tokenIndex < 8) {
+    const cascade = await withBudget(
+      fetchHolderCascade(token.chainId, token.tokenAddress, {
+        birdeyeMode: tokenIndex < 4 ? plan.detection : "off",
+      }),
+      6_000,
+      { holders: [], traders: [], source: "birdeye" as const, notes: [] },
+    );
+    if (cascade.holders.length) {
+      intel = enrichIntelFromHolders(intel, cascade.holders);
+    }
+  }
 
   let gmgnLines: string[] | undefined;
   let gmgnSecurity: unknown;

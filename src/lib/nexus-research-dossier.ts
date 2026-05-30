@@ -25,6 +25,7 @@ import { buildTokenOnlySocialNews } from "./token-social-news";
 import { buildProfitableCopyTradeWallets } from "./gmgn-copy-trade";
 import { is6551TokenRotated } from "./6551-errors";
 import { hasOpenNewsToken, probeOpenNews } from "./opennews-6551";
+import { computeNexusEdgeScore, edgeFactorsToReasoning } from "./nexus-edge-score";
 
 export type HolderTableRow = {
   rank: number;
@@ -438,31 +439,16 @@ function synthesizeFactors(
   technical: TaTimeframeBlock[],
   pattern: { label: string; detail: string },
 ): LiveReasoningFactor[] {
-  const factors: LiveReasoningFactor[] = [];
-  const h1 = technical.find((t) => t.timeframe === "1h");
-  const m15 = technical.find((t) => t.timeframe === "15m");
-  const taParts: string[] = [];
-  if (m15) {
-    taParts.push(`15m RSI ${m15.rsi14} (${m15.rsiSignal}) · MACD ${m15.macdSignal}`);
-  }
-  if (h1) {
-    taParts.push(
-      `1h RSI ${h1.rsi14} · MACD ${h1.macdSignal}${h1.ma20 != null ? ` · MA20 ${formatMa(h1.ma20)}` : ""} (${h1.source === "birdeye_ohlcv" ? "Birdeye" : "Dex"})`,
-    );
-  }
-  if (taParts.length > 0) {
-    const bear =
-      (h1?.macdSignal === "bearish" ? 1 : 0) + (m15?.rsiSignal === "bearish" ? 1 : 0);
-    const bull =
-      (h1?.macdSignal === "bullish" ? 1 : 0) + (m15?.rsiSignal === "bullish" ? 1 : 0);
-    factors.push({
-      label: "Technical setup",
-      detail: taParts.join(" · "),
-      impact: bear > bull ? "bearish" : bull > bear ? "bullish" : "neutral",
-    });
-  }
+  const scam = assessTokenScam(token, intel);
+  const breakdown = computeNexusEdgeScore({ token, intel, scam });
+  const factors: LiveReasoningFactor[] = edgeFactorsToReasoning(breakdown.factors, 5).map((f) => ({
+    label: f.label,
+    detail: f.detail,
+    impact: f.impact,
+  }));
+
   factors.push({
-    label: "Structure",
+    label: "Market structure",
     detail: `${pattern.label} — ${pattern.detail}`,
     impact: pattern.label.includes("Breakout") || pattern.label.includes("Higher")
       ? "bullish"
@@ -470,14 +456,16 @@ function synthesizeFactors(
         ? "bearish"
         : "neutral",
   });
-  if (intel.top10HolderPercent != null) {
+
+  const h1 = technical.find((t) => t.timeframe === "1h");
+  if (h1) {
     factors.push({
-      label: "Concentration",
-      detail: `Top 10 wallets ~${intel.top10HolderPercent.toFixed(0)}% of supply`,
-      impact: intel.top10HolderPercent > 55 ? "bearish" : intel.top10HolderPercent < 35 ? "bullish" : "neutral",
+      label: "TA reference",
+      detail: `1h RSI ${h1.rsi14} · MACD ${h1.macdSignal} (secondary)`,
+      impact: h1.macdSignal === "bearish" ? "bearish" : h1.macdSignal === "bullish" ? "bullish" : "neutral",
     });
   }
-  const scam = assessTokenScam(token, intel);
+
   if (scam.flags.length > 0) {
     factors.push({
       label: "Risk scan",
@@ -531,7 +519,7 @@ export function buildLiveReasoning(
   const sources: string[] = [];
   if (hasBirdeyeKey()) sources.push("Birdeye");
   if (hasGmgnApiKey()) sources.push("GMGN");
-  sources.push("DexScreener", "Agent stack");
+  sources.push("DexScreener", "GoPlus", "Blockscout/Moralis", "Agent stack");
   if (dossier?.dataNotes?.some((n) => n.includes("6551") || n.includes("OpenNews"))) sources.push("6551 news");
 
   const custom = buildTokenAgentNarrative(

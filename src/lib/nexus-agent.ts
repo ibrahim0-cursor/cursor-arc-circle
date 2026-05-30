@@ -24,207 +24,27 @@ import { formatTokenPrice } from "./utils";
 import { filterReasoningFactorsForDisplay } from "./reasoning-factors";
 import type { ScamAssessment } from "./scam-detection";
 import type { TokenSecurityReport } from "./token-security";
+import { computeNexusEdgeScore, edgeFactorsToReasoning } from "./nexus-edge-score";
 
-
+/** Wallet-first edge factors — DexScreener structure + holders + GoPlus/honeypot + narrative; TA secondary. */
 function buildReasoningFactors(
   token: TrendingToken,
   intel: TokenIntel,
-  action: NexusDecision["action"],
+  _action: NexusDecision["action"],
   macro?: MacroRegime | null,
   risk?: {
     security?: TokenSecurityReport;
     scam?: ScamAssessment;
   },
 ): ReasoningFactor[] {
-  const factors: ReasoningFactor[] = [];
-
-  if (risk?.security?.honeypotRisk || risk?.scam?.scamType === "honeypot") {
-    factors.push({
-      label: "Honeypot check",
-      detail:
-        risk.scam?.flags?.join(" · ") ||
-        risk.security?.flags?.join(" · ") ||
-        risk.security?.label ||
-        "Cannot safely exit — GMGN/Dex flags honeypot",
-      impact: "bearish",
-      weight: 55,
-    });
-  } else if (risk?.scam?.isScam) {
-    factors.push({
-      label: "Scam pattern",
-      detail: risk.scam.flags.join(" · ") || risk.scam.label,
-      impact: "bearish",
-      weight: 48,
-    });
-  } else if (risk?.security?.grade === "D" || risk?.security?.grade === "F") {
-    factors.push({
-      label: "Security grade",
-      detail: `${risk.security.grade} — ${risk.security.flags.join(", ") || risk.security.label}`,
-      impact: "bearish",
-      weight: 32,
-    });
-  }
-
-  if (macro) {
-    const macroImpact =
-      macro.label === "risk-on"
-        ? action === "BUY"
-          ? "bullish"
-          : "neutral"
-        : macro.label === "risk-off"
-          ? action === "BUY"
-            ? "bearish"
-            : "neutral"
-          : "neutral";
-    factors.push({
-      label: "Macro regime (PRISM)",
-      detail: macroRegimeGuidance(macro),
-      impact: macroImpact,
-      weight: macro.label === "risk-off" ? 18 : macro.label === "risk-on" ? 12 : 8,
-    });
-  }
-
-  if (intel.sniperCount !== undefined && intel.sniperCount > 0) {
-    factors.push({
-      label: "Sniper Activity",
-      detail: `${intel.sniperCount} sniper wallets (Birdeye)`,
-      impact: intel.sniperCount > 10 ? "bearish" : intel.sniperCount > 3 ? "neutral" : "bullish",
-      weight: intel.sniperCount * 2,
-    });
-  }
-
-  if (intel.holderCount && intel.holderCount > 0) {
-    factors.push({
-      label: "Holder Base",
-      detail: `${intel.holderCount.toLocaleString()} unique holders`,
-      impact: intel.holderCount > 1000 ? "bullish" : intel.holderCount < 100 ? "bearish" : "neutral",
-      weight: 10,
-    });
-  }
-
-  if (intel.top10HolderPercent !== undefined) {
-    factors.push({
-      label: "Concentration Risk",
-      detail: `Top 10 wallets hold ${intel.top10HolderPercent.toFixed(1)}%`,
-      impact: intel.top10HolderPercent > 40 ? "bearish" : "neutral",
-      weight: intel.top10HolderPercent > 40 ? 20 : 8,
-    });
-  }
-
-  if (token.txns24h) {
-    const ratio = token.txns24h.buys / Math.max(token.txns24h.sells, 1);
-    if (ratio > 1.15 || ratio < 0.85) {
-      factors.push({
-        label: "Order flow skew",
-        detail:
-          ratio > 1
-            ? `Buy-heavy swap flow (~${((ratio - 1) * 100).toFixed(0)}% more buy txs than sells)`
-            : `Sell-heavy swap flow (~${((1 - ratio) * 100).toFixed(0)}% more sell txs than buys)`,
-        impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
-        weight: 14,
-      });
-    }
-  }
-
-  if (intel.isMintable || intel.isFreezable) {
-    factors.push({
-      label: "Contract Risk",
-      detail: `${intel.isMintable ? "Mintable" : "No mint"} · ${intel.isFreezable ? "Freezable" : "No freeze"}`,
-      impact: intel.isMintable || intel.isFreezable ? "bearish" : "bullish",
-      weight: 18,
-    });
-  }
-
-  if (intel.technical) {
-    const ta = intel.technical;
-    const src = ta.taSource === "birdeye_ohlcv" ? "Birdeye" : "Dex";
-    const taImpact =
-      ta.trend.includes("down") || ta.macdSignal === "bearish"
-        ? "bearish"
-        : ta.trend.includes("up") || ta.macdSignal === "bullish"
-          ? "bullish"
-          : ta.rsiSignal === "oversold"
-            ? "bullish"
-            : ta.rsiSignal === "overbought"
-              ? "bearish"
-              : "neutral";
-    factors.push({
-      label: "Technical setup",
-      detail: `${src} · RSI ${ta.rsi.toFixed(0)} (${ta.rsiSignal}) · MACD ${ta.macdSignal} · ${ta.trendLine}`,
-      impact: taImpact,
-      weight: 20,
-    });
-  }
-
-  if (intel.insiderCount && intel.insiderCount > 3) {
-    factors.push({
-      label: "Insider Risk",
-      detail: `${intel.insiderCount} insider wallets with large allocations`,
-      impact: "bearish",
-      weight: 22,
-    });
-  }
-
-  if (intel.sell24h && intel.buy24h && !token.txns24h) {
-    const ratio = intel.buy24h / Math.max(intel.sell24h, 1);
-    if (ratio > 1.15 || ratio < 0.85) {
-      factors.push({
-        label: "Order flow skew",
-        detail:
-          ratio > 1
-            ? `Buy-heavy on-chain flow (~${((ratio - 1) * 100).toFixed(0)}% more buys than sells)`
-            : `Sell-heavy on-chain flow (~${((1 - ratio) * 100).toFixed(0)}% more sells than buys)`,
-        impact: ratio > 1.2 ? "bullish" : ratio < 0.8 ? "bearish" : "neutral",
-        weight: 16,
-      });
-    }
-  }
-
-  const lc = intel.social?.lunarcrush;
-  if (lc?.degraded) {
-    factors.push({
-      label: "Social (LunarCrush)",
-      detail: lc.reason ?? "Subscription required",
-      impact: "neutral",
-      weight: 4,
-    });
-  } else if (lc?.galaxyScore != null) {
-    factors.push({
-      label: "Social Galaxy Score",
-      detail: `LunarCrush ${lc.galaxyScore}${lc.sentiment != null ? ` · sentiment ${lc.sentiment}` : ""}`,
-      impact: lc.galaxyScore >= 65 ? "bullish" : lc.galaxyScore < 40 ? "bearish" : "neutral",
-      weight: lc.galaxyScore >= 65 ? 14 : 8,
-    });
-  }
-
-  const rd = intel.social?.reddit;
-  if (rd?.topTitle) {
-    factors.push({
-      label: "Reddit buzz",
-      detail: `r/${rd.subreddit ?? "crypto"}: ${rd.topTitle.slice(0, 90)}`,
-      impact: "bullish",
-      weight: 12,
-    });
-  }
-
-  const fc = intel.social?.farcaster;
-  if (fc?.topCast) {
-    factors.push({
-      label: "Farcaster Buzz",
-      detail: `@${fc.author ?? "user"}: ${fc.topCast.slice(0, 80)}`,
-      impact: "bullish",
-      weight: 10,
-    });
-  } else if (fc?.degraded && fc.reason) {
-    factors.push({
-      label: "Farcaster",
-      detail: fc.reason,
-      impact: "neutral",
-      weight: 3,
-    });
-  }
-
-  return filterReasoningFactorsForDisplay(factors, 8);
+  const breakdown = computeNexusEdgeScore({
+    token,
+    intel,
+    macro,
+    security: risk?.security,
+    scam: risk?.scam,
+  });
+  return filterReasoningFactorsForDisplay(edgeFactorsToReasoning(breakdown.factors, 8), 8);
 }
 
 function normalizePct(n: number | undefined, fallback: number) {
@@ -1088,8 +908,8 @@ async function feedTokenSecurity(
   intel: TokenIntel,
   rank: number,
 ): Promise<import("./token-security").TokenSecurityReport> {
-  const { scoreTokenSecurity } = await import("./token-security");
-  let security = scoreTokenSecurity(token, intel);
+  const { fetchExternalTokenSecurity } = await import("./external-token-security");
+  let security = await fetchExternalTokenSecurity(token, intel);
   if (rank >= 6) return security;
 
   const { hasGmgnApiKey } = await import("./gmgn-client");
@@ -1130,8 +950,29 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
   const base = token.intel ?? buildLocalTokenIntel(token);
   const { getBirdeyePlan } = await import("./birdeye-policy");
   const { fetchMergedTokenDetection } = await import("./token-detection");
+  const { fetchHolderCascade } = await import("./holder-fallback");
+  const { enrichIntelFromHolders } = await import("./nexus-edge-score");
+  const { fetchGoPlusTokenSecurity } = await import("./goplus-security");
   const plan = getBirdeyePlan("feed", rank);
   let intel = base;
+
+  if (rank < 10) {
+    const cascade = await fetchHolderCascade(token.chainId, token.tokenAddress, {
+      birdeyeMode: rank < 4 ? plan.detection : "off",
+    });
+    if (cascade.holders.length) {
+      intel = enrichIntelFromHolders(intel, cascade.holders);
+    }
+    const goplus = await fetchGoPlusTokenSecurity(token.chainId, token.tokenAddress);
+    if (goplus.holderCount && goplus.holderCount > 0) {
+      intel = { ...intel, holderCount: goplus.holderCount };
+    }
+    if (goplus.top10HolderPercent != null) {
+      intel = { ...intel, top10HolderPercent: goplus.top10HolderPercent };
+    }
+    if (goplus.isMintable != null) intel = { ...intel, isMintable: goplus.isMintable };
+  }
+
   if (plan.detection !== "off" && rank < 4) {
     const det = await fetchMergedTokenDetection(
       token.tokenAddress,
@@ -1148,6 +989,8 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
     if (det.summary.buy24h != null) intel = { ...intel, buy24h: det.summary.buy24h };
     if (det.summary.sell24h != null) intel = { ...intel, sell24h: det.summary.sell24h };
   }
+
+  if (rank >= 2) return intel;
   if (!plan.ohlcv) return intel;
   const ta = await resolveTokenTechnical(token, { allowBirdeyeOhlcv: true });
   return { ...intel, technical: technicalToIntel(ta) };
@@ -1183,7 +1026,9 @@ export async function analyzeTrendingFeedQuick(
           ? await intelForFeedRank(token, rank)
           : (token.intel ?? buildLocalTokenIntel(token));
       const security = skipGmgn
-        ? (await import("./token-security")).scoreTokenSecurity(token, intel)
+        ? await (
+            await import("./external-token-security")
+          ).fetchExternalTokenSecurity(token, intel)
         : await feedTokenSecurity(token, intel, rank);
       const scam = assessTokenScam(token, intel, security);
       let signal = heuristicDecision(token, intel, macro, { security, scam });

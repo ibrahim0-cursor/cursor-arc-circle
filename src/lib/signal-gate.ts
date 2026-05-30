@@ -72,28 +72,36 @@ function buildChecks(input: {
     ? !(m5 <= -18 && h1 <= -22)
     : h24 <= 0 || (m5 >= -10 && h1 >= -14);
   const macroOk = macro?.label !== "risk-off" || edge >= (established ? 32 : 40);
-  const taPass = established
-    ? taScore >= 55 && rsi <= 82 && rsi >= 18
-    : taScore >= 62 && rsi <= 78 && rsi >= 22;
+  const taPass = taScore >= 45 || flowRatio >= 1.1;
+  const walletPass =
+    ((intel.holderCount ?? 0) >= 80 || top10 === 0) &&
+    (top10 === 0 || top10 < 72) &&
+    snipers < 10;
   const turnoverMax = established ? 25 : 18;
 
   return [
     {
       id: "liquidity",
-      label: "Liquidity ≥ $45K",
+      label: "Liquidity ≥ $45K (Dex)",
       weight: 12,
       pass: token.liquidityUsd >= 45_000,
     },
     {
       id: "flow",
-      label: "Buy flow > sells (≥1.12×)",
+      label: "Buy flow > sells (≥1.12× Dex txns)",
       weight: 14,
       pass: flowRatio >= 1.12,
     },
     {
+      id: "wallet",
+      label: "Wallet intel — holders + concentration",
+      weight: 14,
+      pass: walletPass,
+    },
+    {
       id: "ta",
-      label: established ? "TA score ≥ 55, RSI not extreme" : "TA score ≥ 62, RSI not extreme",
-      weight: 12,
+      label: "TA reference only (secondary)",
+      weight: 4,
       pass: taPass,
     },
     {
@@ -189,7 +197,7 @@ export function evaluateTradeSetup(input: {
       gaps: ["Chart/flow shows exit liquidity or rug pattern"],
       thesis: `${token.symbol}: AVOID — rug/pump-dump or honeypot structure; no entry.`,
       checksPassed: 0,
-      checksTotal: 10,
+      checksTotal: 11,
     };
   }
 
@@ -344,10 +352,11 @@ export function enforceSignalGate(
   };
 }
 
-export const NEXUS_SIGNAL_GATE_PROMPT = `You are NEXUS — a pro meme-coin researcher and desk trader, not a hype bot.
+export const NEXUS_SIGNAL_GATE_PROMPT = `You are NEXUS — wallet-first meme desk, not a TA bot.
 Rules:
-- Default action is HOLD. BUY only when liquidity, buy/sell flow, TA, intraday structure (5m/1h), and security align — cite specific numbers.
-- Never BUY on 24h % alone, social buzz alone, or green tape with collapsing 5m/1h (pump-dump).
-- crime dump / pump-dump / honeypot → SELL, confidence under 40.
-- BUY confidence cap 76 (A+ setup) or 66 (A setup); most tokens should be HOLD 38–52.
-- Return JSON with action, confidence, riskScore, reasoning, whyAction.`;
+- Default HOLD. BUY only when DexScreener liquidity + buy/sell flow, holder spread, GoPlus/honeypot security, and narrative align — cite numbers.
+- Prioritize whale/holder intelligence over RSI/MACD (TA is secondary reference only).
+- Never BUY on 24h % alone or social buzz alone; avoid pump-dump (green 24h, collapsing 5m/1h).
+- honeypot / crime dump → SELL.
+- BUY confidence cap 76 (A+) or 66 (A); most tokens HOLD 38–52.
+- Return JSON: action, confidence, riskScore, reasoning, whyAction.`;
