@@ -49,7 +49,7 @@ Without API keys, both agents still run in **heuristic demo mode** using live De
 - **Arc settlement** — decision payloads anchored on Arc testnet (**v0.7.1**, Circle RPC for reviewable on-chain activity)
 - **Traction-ready UI** — premium glass interface built for demo video + live users
 
-**Circle grant referral pitch** (for Agora Discord `#circle-grant-referral-requests`): see [docs/CIRCLE-GRANT-REFERRAL.md](docs/CIRCLE-GRANT-REFERRAL.md)
+**Circle grant referral** (paste into Discord `#circle-grant-referral-requests`): [docs/CIRCLE-GRANT-REFERRAL.md](docs/CIRCLE-GRANT-REFERRAL.md) — formatted like AUREUS / DealARC / AuraPredict submissions
 
 ## NEXUS v2 features
 
