@@ -60,11 +60,18 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: visible;
   }
 
   [data-nexus-easy-mode] .nexus-feed-scroll {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+  }
+
+  [data-nexus-easy-mode] .nexus-mobile-panel .nexus-feed-scroll,
+  [data-nexus-easy-mode] .nexus-mobile-panel .nexus-center-scroll {
+    overflow: visible;
+    overscroll-behavior: auto;
+    flex: none;
   }
 
   [data-nexus-easy-mode] .nexus-panel-body {
@@ -83,7 +90,6 @@ body {
 
   [data-prism-page] .prism-scroll-panel {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
   }
 }
 

@@ -437,12 +437,12 @@ export function NexusConsole() {
   }
 
   const feedPanel = (
-    <div className="nexus-feed-panel flex min-h-0 flex-1 flex-col max-lg:!border-0 max-lg:!bg-transparent">
+    <div className="nexus-feed-panel flex min-h-0 flex-1 flex-col max-lg:!border-0 max-lg:!bg-transparent max-lg:min-h-0">
       <NexusFeedTabs active={feedTab} onChange={setFeedTab} alphaCount={alphaOpportunities.length} />
-      <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-[280px] lg:min-h-0">
+      <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-0 lg:min-h-0">
         {feedTab === "live" && (
           <NexusTrendingFeed
-            className="h-full min-h-0"
+            className="lg:h-full lg:min-h-0"
             cleanFeed
             selectedAddress={selectedToken?.tokenAddress}
             onSelect={(t, opts) => handleTokenSelect(t, opts?.openChart ?? true)}
@@ -456,7 +456,7 @@ export function NexusConsole() {
           />
         )}
         {feedTab === "alpha" && (
-          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1 max-lg:overflow-visible max-lg:flex-none">
             <NexusAlphaList
               opportunities={alphaOpportunities}
               scanIntel={alphaScanIntel}
@@ -468,7 +468,7 @@ export function NexusConsole() {
           </div>
         )}
         {feedTab === "swap" && (
-          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto pr-1 max-lg:overflow-visible max-lg:flex-none">
             <NexusQuickSwap
               tokens={feedTokens}
               alphaTokens={alphaOpportunities}
@@ -486,7 +486,7 @@ export function NexusConsole() {
       <p className="text-sm text-[var(--arc-text-muted)]">Select a token from the feed to view chart &amp; analysis.</p>
     </div>
   ) : (
-    <div className="nexus-center-layout flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-4">
+    <div className="nexus-center-layout flex min-h-0 flex-1 flex-col overflow-hidden max-lg:overflow-visible max-lg:pb-4">
       <div className="nexus-center-toolbar shrink-0 space-y-2 lg:space-y-2.5 lg:border-b lg:border-white/[0.06] lg:pb-2">
         <NexusCenterTokenHeader
           token={selectedToken}
@@ -541,7 +541,7 @@ export function NexusConsole() {
         />
       </div>
 
-      <div className="nexus-center-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 pr-1">
+      <div className="nexus-center-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 pr-1 max-lg:overflow-visible max-lg:flex-none">
         <div id="nexus-chart-panel" className="nexus-center-chart shrink-0">
           <NexusTokenChart
             compact
@@ -606,7 +606,7 @@ export function NexusConsole() {
   );
 
   const tradePanel = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-4">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:overflow-visible max-lg:pb-4">
       <div className="lg:hidden mb-2 shrink-0 space-y-2">
         <NexusTokenStrip
           tokens={feedTokens}
@@ -637,7 +637,7 @@ export function NexusConsole() {
   );
 
   const portfolioPanel = (
-    <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto p-1 max-lg:pb-24">
+    <div className="nexus-feed-scroll min-h-0 flex-1 overflow-y-auto p-1 max-lg:overflow-visible max-lg:flex-none max-lg:pb-4">
       <NexusPortfolio
         refreshKey={portfolioKey}
         livePrices={livePrices}
@@ -698,14 +698,7 @@ export function NexusConsole() {
           <NexusPremiumHero stableCount={STABLE_FEED_LIMIT} />
         </div>
 
-        <NexusMobileContextBar
-          selectedToken={selectedToken}
-          activePanel={mobilePanel}
-          onPanelChange={(p) => {
-            setMobilePanel(p);
-            scrollToMobileContent();
-          }}
-        />
+        <NexusMobileContextBar selectedToken={selectedToken} />
 
         <ArcSettlementBanner txHash={lastArcFeeTx ?? undefined} />
         {actionBanner && (
@@ -736,7 +729,7 @@ export function NexusConsole() {
 
         <div
           id="nexus-mobile-content"
-          className="nexus-mobile-panel nexus-mobile-scroll scroll-mt-36 max-lg:min-h-[50vh] max-lg:overflow-y-auto lg:hidden"
+          className="nexus-mobile-panel scroll-mt-36 max-lg:overflow-visible max-lg:pb-2 lg:hidden"
         >
           {mobilePanel === "feed" && feedPanel}
           {mobilePanel === "chart" && chartPanel}

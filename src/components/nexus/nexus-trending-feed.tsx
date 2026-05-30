@@ -64,7 +64,7 @@ const MAX_FEED = STABLE_FEED_LIMIT;
 const FEED_PREVIEW = 8;
 const QUICK_TIMEOUT_MS = 42_000;
 const FULL_TIMEOUT_MS = 40_000;
-const FEED_SESSION_KEY = "nexus-feed-v8";
+const FEED_SESSION_KEY = "nexus-feed-v9";
 const FEED_SESSION_TTL_MS = 90_000;
 
 function isFeedExcluded(t: TrendingMarketToken): boolean {
@@ -574,10 +574,10 @@ export function NexusTrendingFeed({
 
       <div
         className={cn(
-          "nexus-feed-scroll min-h-0 flex-1 space-y-1.5 overscroll-contain pr-1",
+          "nexus-feed-scroll min-h-0 flex-1 space-y-1.5 pr-1",
           compactDesktop || feedExpanded
-            ? "overflow-y-auto pb-2"
-            : "overflow-hidden pb-1 max-lg:overflow-hidden",
+            ? "overflow-y-auto overscroll-contain pb-2 max-lg:overflow-visible max-lg:flex-none"
+            : "overflow-hidden pb-1 max-lg:overflow-visible max-lg:flex-none",
         )}
       >
         {visibleTokens.map((token) => renderTokenRow(token))}

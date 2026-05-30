@@ -4,7 +4,13 @@
 
 import type { TrendingToken } from "./dexscreener";
 import { fetchStableMarketFeed, fetchTrendingMarketTokens } from "./dexscreener";
-import { curateDiscoveryFeed, dedupeFeedTokens, discoveryHunterLabel, tokenKey } from "./feed-curation";
+import {
+  ensureDiscoveryFeedMin,
+  dedupeFeedTokens,
+  discoveryHunterLabel,
+  tokenKey,
+} from "./feed-curation";
+import { fetchGeckoTrendingForNetwork } from "./geckoterminal";
 import { FEED_DISCOVERY_GMGN_LIMIT, STABLE_FEED_LIMIT } from "./feed-config";
 import { filterLiveFeedTokens } from "./token-filters";
 import { fetchGmgnDiscoveryTokens } from "./gmgn-discovery";
@@ -60,13 +66,16 @@ export async function fetchLiveDiscoveryFeed(
   const sources: Record<string, number> = {};
   const pools: TrendingToken[] = [];
 
-  const [dexDiscovery, dexLatest] = await Promise.all([
+  const [dexDiscovery, dexLatest, geckoBase, geckoArb] = await Promise.all([
     fetchStableMarketFeed(limit * 2),
     fetchTrendingMarketTokens(limit, { stable: false, discovery: true }),
+    fetchGeckoTrendingForNetwork("base", 1),
+    fetchGeckoTrendingForNetwork("arbitrum", 1),
   ]);
   sources.dexStable = dexDiscovery.length;
   sources.dexRotate = dexLatest.length;
-  pools.push(...dexDiscovery, ...dexLatest);
+  sources.gecko = geckoBase.length + geckoArb.length;
+  pools.push(...dexDiscovery, ...dexLatest, ...geckoBase, ...geckoArb);
 
   let gmgnErrors: string[] | undefined;
   let gmgnFromCache: boolean | undefined;
@@ -101,7 +110,7 @@ export async function fetchLiveDiscoveryFeed(
   }
 
   const merged = dedupeFeedTokens(mergeDiscoveryPools(...pools));
-  const curated = curateDiscoveryFeed(filterLiveFeedTokens(merged), limit).map((t) => ({
+  const curated = ensureDiscoveryFeedMin(filterLiveFeedTokens(merged), limit).map((t) => ({
     ...t,
     discoveryTag: t.discoveryTag ?? discoveryHunterLabel(t),
   }));

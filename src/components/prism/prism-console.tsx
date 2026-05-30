@@ -258,14 +258,14 @@ export function PrismConsole() {
           </div>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-2 lg:gap-6 lg:items-start">
+        <div className="grid gap-5 max-lg:gap-4 lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* Left: choose event + history */}
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4 max-lg:gap-3">
             <Card className="arc-glass-card-prism prism-section-card overflow-hidden">
               <CardHeader className="shrink-0 border-b border-white/10 pb-2">
                 <PrismSectionHead icon={Target} title="Choose event" />
               </CardHeader>
-              <CardContent className="prism-scroll-panel max-h-[42vh] space-y-2 overflow-y-auto overflow-x-hidden lg:max-h-[38vh]">
+              <CardContent className="prism-scroll-panel max-h-[42vh] space-y-2 overflow-y-auto overflow-x-hidden max-lg:max-h-none max-lg:overflow-visible lg:max-h-[38vh]">
                 {events.map((event) => (
                   <button
                     key={event.id}
@@ -300,7 +300,7 @@ export function PrismConsole() {
               hint={`${predictions.length} forecast${predictions.length === 1 ? "" : "s"}`}
               icon={History}
               defaultOpen
-              bodyClassName="prism-scroll-panel max-h-[40vh] overflow-y-auto overflow-x-hidden"
+              bodyClassName="prism-scroll-panel max-h-[40vh] overflow-y-auto overflow-x-hidden max-lg:max-h-none max-lg:overflow-visible"
             >
               {predictions.length === 0 ? (
                 <p className="text-sm text-white/55">No forecasts yet — generate one above.</p>
@@ -319,13 +319,13 @@ export function PrismConsole() {
           </div>
 
           {/* Right: forecast + intel (replaces old history column) */}
-          <div id="prism-forecast" className="flex min-w-0 scroll-mt-28 flex-col gap-4">
+          <div id="prism-forecast" className="flex min-w-0 scroll-mt-28 flex-col gap-4 max-lg:gap-3">
             <Card className="arc-glass-card-prism prism-forecast-card overflow-hidden">
               <CardContent className="overflow-hidden p-0">
-                <div className="overflow-hidden bg-gradient-to-br from-amber-500/18 via-violet-600/10 to-transparent p-5 sm:p-7">
+                <div className="overflow-hidden bg-gradient-to-br from-amber-500/18 via-violet-600/10 to-transparent p-4 sm:p-7">
                   <p className="text-xs font-medium uppercase tracking-widest text-amber-200/80">Probability</p>
                   <div className="mt-2 flex items-end gap-2">
-                    <p className="text-5xl font-bold leading-none tabular-nums sm:text-6xl">
+                    <p className="text-4xl font-bold leading-none tabular-nums sm:text-5xl lg:text-6xl">
                       {latest?.probability ?? "—"}
                     </p>
                     {latest && <p className="pb-2 text-lg text-white/50">%</p>}
@@ -390,7 +390,7 @@ export function PrismConsole() {
                       icon={Brain}
                       defaultOpen={false}
                       className="border-amber-400/15"
-                      bodyClassName="max-h-[min(52vh,420px)] overflow-y-auto"
+                      bodyClassName="max-h-[min(52vh,420px)] overflow-y-auto max-lg:max-h-none max-lg:overflow-visible"
                     >
                       <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-white/80">
                         {latest.reasoning}
@@ -453,7 +453,7 @@ export function PrismConsole() {
               }
               icon={Radar}
               defaultOpen={intelVisible}
-              bodyClassName="overflow-hidden"
+              bodyClassName="overflow-hidden max-lg:overflow-visible"
             >
               {!intelVisible ? (
                 <div className="space-y-2 py-3 text-center text-sm leading-relaxed text-white/55">

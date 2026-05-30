@@ -121,6 +121,12 @@ async function buildFeed(
 ) {
   const discovery = await fetchLiveDiscoveryFeed(limit, { quick });
   let tokens = dedupeFeedTokens(discovery.tokens).slice(0, limit);
+  if (tokens.length === 0) {
+    const { fetchTrendingMarketTokens } = await import("@/lib/dexscreener");
+    const { filterLiveFeedTokens } = await import("@/lib/token-filters");
+    const raw = await fetchTrendingMarketTokens(limit * 2, { stable: true, discovery: true });
+    tokens = filterLiveFeedTokens(dedupeFeedTokens(raw)).slice(0, limit);
+  }
   const feedMeta = {
     profile: discovery.profile,
     sources: discovery.sources,

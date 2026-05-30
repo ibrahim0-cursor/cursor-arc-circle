@@ -642,8 +642,18 @@ export async function buildTokenDossierPayload(
     topHolders = holdersFromDetection(detection.holders, detection.whales, src);
   }
   if (topHolders.length === 0) {
+    const { fetchHolderCascade } = await import("./holder-fallback");
+    const cascade = await fetchHolderCascade(token.tokenAddress, token.chainId, {
+      birdeyeMode: "off",
+    });
+    if (cascade.holders.length) {
+      topHolders = holdersFromDetection(cascade.holders, cascade.traders, cascade.source);
+      dataNotes.push(...cascade.notes);
+    }
+  }
+  if (topHolders.length === 0) {
     dataNotes.push(
-      "Top holders: no live rows returned (Birdeye/GMGN/DexPaprika) — expand again after feed refresh",
+      "Top holders: no live rows returned (Birdeye/GMGN/Blockscout/Moralis/DexPaprika) — tap Retry",
     );
   } else if (gmgnHolders.length > 0) {
     dataNotes.push("Top holders: GMGN OpenAPI");

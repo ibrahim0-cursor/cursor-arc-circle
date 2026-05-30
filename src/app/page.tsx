@@ -8,7 +8,7 @@ import {
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden text-white" data-arc-theme="home">
+    <div className="relative min-h-screen overflow-x-hidden text-white max-lg:overflow-y-auto lg:overflow-hidden" data-arc-theme="home">
       <ArcBackground theme="home" />
       <div className="relative">
         <ArcEcosystemHero />

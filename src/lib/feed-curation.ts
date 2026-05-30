@@ -235,6 +235,36 @@ export function curateDiscoveryFeed<T extends TrendingToken>(tokens: T[], limit:
     .slice(0, limit);
 }
 
+/** Never return an empty live feed when Dex/Gecko returned tradable rows. */
+export function ensureDiscoveryFeedMin<T extends TrendingToken>(tokens: T[], limit: number): T[] {
+  const curated = curateDiscoveryFeed(tokens, limit);
+  const min = Math.min(6, limit);
+  if (curated.length >= min) return curated;
+
+  const fallback = [...tokens]
+    .filter((t) => !isFeedExcluded(t) && t.priceUsd > 0 && (t.liquidityUsd >= 3_000 || t.volume24h >= 8_000))
+    .sort((a, b) => b.volume24h - a.volume24h || b.liquidityUsd - a.liquidityUsd)
+    .slice(0, limit);
+
+  if (fallback.length === 0) {
+    return [...tokens]
+      .filter((t) => !isFeedExcluded(t) && t.priceUsd > 0)
+      .sort((a, b) => b.volume24h - a.volume24h)
+      .slice(0, limit);
+  }
+
+  const seen = new Set(curated.map((t) => tokenKey(t)));
+  const merged = [...curated];
+  for (const t of fallback) {
+    if (merged.length >= limit) break;
+    const k = tokenKey(t);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    merged.push(t);
+  }
+  return merged.length ? merged : fallback;
+}
+
 export function curateAlphaCandidates<T extends TrendingToken>(
   tokens: T[],
   liveKeys: Set<string>,

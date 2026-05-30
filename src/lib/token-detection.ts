@@ -1,5 +1,6 @@
 import { fetchTokenDetection } from "./birdeye";
 import { hasBirdeyeKey } from "./birdeye-client";
+import { fetchHolderCascade } from "./holder-fallback";
 import {
   fetchDexPaprikaToken,
   fetchDexPaprikaTopPool,
@@ -70,11 +71,30 @@ export async function fetchMergedTokenDetection(
     }
   }
 
-  const whales = birdeye.whales.length ? birdeye.whales : paprikaWhales;
-  const holders =
+  let whales = birdeye.whales.length ? birdeye.whales : paprikaWhales;
+  let holders =
     birdeye.holders.length > 0
       ? birdeye.holders
       : filterRealWhales(whales).slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 }));
+
+  if (filterRealWhales(holders).length === 0) {
+    const cascade = await fetchHolderCascade(address, sourceChain, { birdeyeMode: "off" });
+    if (cascade.holders.length) {
+      whales = cascade.holders;
+      holders = cascade.holders;
+      if (cascade.traders.length && trades.length < 3) {
+        for (const t of cascade.traders.slice(0, 6)) {
+          trades.push({
+            type: "swap",
+            side: "buy",
+            amountUsd: t.balance,
+            trader: t.address,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+    }
+  }
 
   const hasPaprika = Boolean(paprikaToken?.summary?.price_usd);
   const bs = birdeye.summary as {
@@ -101,11 +121,15 @@ export async function fetchMergedTokenDetection(
       birdeyeLive: mergedLive,
       dataSource: birdeyeLive
         ? ("birdeye" as const)
-        : hasPaprika
-          ? ("dexpaprika" as const)
-          : trades.length
-            ? ("dex" as const)
-            : ("unavailable" as const),
+        : filterRealWhales(holders).length > 0
+          ? hasPaprika
+            ? ("dexpaprika" as const)
+            : ("birdeye" as const)
+          : hasPaprika
+            ? ("dexpaprika" as const)
+            : trades.length
+              ? ("dex" as const)
+              : ("unavailable" as const),
       paprikaConnected: hasPaprika,
       priceUsd: bs.priceUsd ?? paprikaIntel?.priceUsd,
     },

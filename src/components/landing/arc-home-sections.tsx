@@ -32,7 +32,7 @@ const metrics = [
 
 export function ArcEcosystemHero() {
   return (
-    <section className="arc-home-hero-shell relative mx-auto max-w-[1680px] px-4 pb-10 sm:px-6">
+    <section className="arc-home-hero-shell relative mx-auto max-w-[1680px] px-4 pb-8 pt-2 sm:px-6 sm:pb-10 max-lg:pb-6">
       <div className="arc-home-hero-grid">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
@@ -54,18 +54,18 @@ export function ArcEcosystemHero() {
             <p className="arc-caption text-violet-300/85">MERIDIAN · Agent Intelligence OS</p>
           </div>
 
-          <h1 className="arc-display text-left text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+          <h1 className="arc-display text-left text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] max-lg:text-[2rem] max-lg:leading-[1.08]">
             <span className="block">Autonomous</span>
             <span className="arc-gradient-text block">market intelligence</span>
           </h1>
 
-          <p className="mt-5 max-w-xl text-left text-base leading-relaxed text-[var(--arc-text-muted)] sm:text-lg">
+          <p className="mt-4 max-w-xl text-left text-[15px] leading-relaxed text-[var(--arc-text-muted)] sm:mt-5 sm:text-lg">
             Watch live assets route through the AI portal — scanned, scored, and released as institutional-grade signals for NEXUS and PRISM.
           </p>
 
           <ArcDeployedBadge />
 
-          <ul className="arc-hero-bullets mt-6 max-w-lg space-y-2 text-left text-sm text-white/55">
+          <ul className="arc-hero-bullets mt-5 max-w-lg space-y-2.5 text-left text-sm leading-relaxed text-white/55 sm:mt-6">
             <li>BTC · ETH · SOL · USDC orbit the AI core in real time</li>
             <li>On-chain, social, and macro layers fused in one stack</li>
             <li>Explainable AI — every route has a thesis</li>
@@ -95,7 +95,7 @@ export function ArcEcosystemHero() {
         <ArcGlassPreview />
       </div>
 
-      <div className="relative z-10 mt-14 grid gap-4 sm:grid-cols-3">
+      <div className="relative z-10 mt-10 grid gap-3 sm:mt-14 sm:grid-cols-3 sm:gap-4">
         {metrics.map((m, i) => (
           <motion.div
             key={m.label}
@@ -132,17 +132,17 @@ export function ArcIntelligenceGrid() {
   ];
 
   return (
-    <section className="relative z-10 mx-auto max-w-[1680px] px-4 py-14 sm:px-6">
+    <section className="relative z-10 mx-auto max-w-[1680px] px-4 py-10 sm:px-6 sm:py-14">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="arc-caption mb-2 text-violet-300/70">Capabilities</p>
-          <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl lg:text-3xl">
             Intelligence infrastructure
           </h2>
         </div>
         <ArcIcon3d icon={ScanLine} theme="home" size="md" />
       </div>
-      <div className="arc-glass-card mt-8 divide-y divide-white/[0.06] overflow-hidden">
+      <div className="arc-glass-card mt-6 divide-y divide-white/[0.06] overflow-hidden sm:mt-8">
         {cells.map((c, i) => (
           <motion.div
             key={c.title}
@@ -171,9 +171,9 @@ export function ArcIntelligenceGrid() {
 
 export function ArcSystemsShowcase() {
   return (
-    <section className="relative z-10 mx-auto max-w-[1680px] px-4 pb-20 sm:px-6">
+    <section className="relative z-10 mx-auto max-w-[1680px] px-4 pb-16 sm:px-6 sm:pb-20 max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <div className="grid gap-6 lg:grid-cols-2">
-        <motion.div whileHover={{ y: -4 }} className="arc-panel relative overflow-hidden p-6 sm:p-8">
+        <motion.div whileHover={{ y: -4 }} className="arc-panel relative overflow-hidden p-5 sm:p-6 lg:p-8">
           <div className="arc-panel-stripe arc-panel-stripe-nexus absolute inset-x-0 top-0" />
           <Badge variant="nexus">NEXUS</Badge>
           <div className="relative mt-5 flex items-start gap-4">
@@ -192,7 +192,7 @@ export function ArcSystemsShowcase() {
           </Link>
         </motion.div>
 
-        <motion.div whileHover={{ y: -4 }} className="arc-panel relative overflow-hidden p-6 sm:p-8">
+        <motion.div whileHover={{ y: -4 }} className="arc-panel relative overflow-hidden p-5 sm:p-6 lg:p-8">
           <div className="arc-panel-stripe arc-panel-stripe-prism absolute inset-x-0 top-0" />
           <Badge variant="prism">PRISM</Badge>
           <div className="relative mt-5 flex items-start gap-4">
@@ -217,7 +217,7 @@ export function ArcSystemsShowcase() {
 
 export function ArcHomeFooter() {
   return (
-    <footer className="relative z-10 border-t border-white/[0.08] px-6 py-14">
+    <footer className="relative z-10 border-t border-white/[0.08] px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto flex max-w-[1680px] flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <ArcIcon3d icon={Sparkles} theme="home" size="md" />

@@ -750,6 +750,20 @@ export async function runAlphaScan(
     limit,
     ALPHA_MAX_LIVE_OVERLAP,
   );
+  if (tokens.length < Math.min(limit, 6)) {
+    const dexFallback = filterAlphaScanTokens(
+      mergeTrendingWithGecko(dexFeed, geckoFeed, limit * 2),
+    )
+      .sort((a, b) => b.volume24h - a.volume24h)
+      .slice(0, limit);
+    for (const t of dexFallback) {
+      const k = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
+      if (!tokens.some((x) => `${x.chainId}:${x.tokenAddress.toLowerCase()}` === k)) {
+        tokens.push(t);
+      }
+      if (tokens.length >= limit) break;
+    }
+  }
   if (tokens.length < Math.min(limit, 8)) {
     const gmgnOnly = filterAlphaScanTokens(mergedCandidates).slice(0, limit);
     const seen = new Set(tokens.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`));

@@ -1399,6 +1399,17 @@ html.arc-fancy-pointer select {
   padding-top: 1.5rem;
 }
 
+@media (max-width: 1023px) {
+  .arc-home-hero-shell {
+    min-height: auto;
+    padding-top: 0.75rem;
+  }
+
+  .arc-home-hero-visual {
+    min-height: min(320px, 42vh);
+  }
+}
+
 .arc-home-hero-grid {
   position: relative;
   z-index: 5;
@@ -2237,6 +2248,19 @@ html[data-arc-theme="nexus"] .nexus-column-head {
 [data-prism-page] .prism-scroll-panel {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+
+@media (max-width: 1023px) {
+  [data-prism-page] .prism-scroll-panel,
+  [data-prism-page] .prism-collapsible-body {
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: auto;
+  }
+
+  [data-prism-page] .prism-macro-strip {
+    margin-bottom: 1rem;
+  }
 }
 
 .prism-section-card {
