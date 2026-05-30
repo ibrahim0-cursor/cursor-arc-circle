@@ -15,6 +15,7 @@ import {
   type AutopilotInterval,
   type AutopilotLog,
 } from "@/lib/nexus-autopilot";
+import { readApiJson } from "@/lib/fetch-json";
 import { nexusGlassCta } from "@/lib/nexus-action-glass";
 import {
   Bot,
@@ -233,21 +234,33 @@ export function NexusAutopilotPanel({
         t.agent ?? null;
 
       if (!dcaBuy) {
-        const analyzeRes = await fetch("/api/nexus/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chainId: t.chainId,
-            tokenAddress: t.tokenAddress,
-            deep: false,
-            save: true,
-          }),
-        });
-        const analyzeJson = await analyzeRes.json();
-        agent = analyzeJson.agent ?? analyzeJson;
-        if (analyzeJson.security?.honeypotRisk) {
-          pushLog(`Security halt: ${analyzeJson.security.label}`, "error");
-          return;
+        if (t.agent?.action) {
+          agent = t.agent;
+        } else {
+          const analyzeRes = await fetch("/api/nexus/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chainId: t.chainId,
+              tokenAddress: t.tokenAddress,
+              quick: true,
+              deep: false,
+              save: false,
+            }),
+          });
+          const { ok, data: analyzeJson, error } = await readApiJson<{
+            agent?: typeof agent;
+            security?: { honeypotRisk?: boolean; label?: string };
+            error?: string;
+          }>(analyzeRes);
+          if (!ok) {
+            throw new Error(analyzeJson.error ?? error ?? "Analyze failed");
+          }
+          agent = analyzeJson.agent ?? null;
+          if (analyzeJson.security?.honeypotRisk) {
+            pushLog(`Security halt: ${analyzeJson.security.label}`, "error");
+            return;
+          }
         }
         if (agent?.whyAction) setLastReasoning(agent.whyAction);
         else if (agent?.reasoning) setLastReasoning(agent.reasoning);
@@ -267,18 +280,10 @@ export function NexusAutopilotPanel({
         pushLog("No signal — skipped", "error");
         return;
       } else {
-        if ((signal.confidence ?? 0) < cfg.minConfidence) {
-          pushLog(`Wait · ${signal.action} ${signal.confidence ?? 0}% (need ${cfg.minConfidence}%)`, "info");
-          return;
-        }
-        if (cfg.mode === "buy_only" && signal.action === "BUY") side = "buy";
-        else if (cfg.mode === "sell_only" && signal.action === "SELL") side = "sell";
-        else if (cfg.mode === "follow_agent") {
-          if (signal.action === "BUY") side = "buy";
-          if (signal.action === "SELL") side = "sell";
-        }
+        if (signal.action === "BUY") side = "buy";
+        else if (signal.action === "SELL") side = "sell";
         if (!side) {
-          pushLog(`Signal ${signal.action} — no trade`, "info");
+          pushLog(`AI ${signal.action} — skip (only BUY/SELL execute)`, "info");
           return;
         }
       }
@@ -312,7 +317,11 @@ export function NexusAutopilotPanel({
       const fee = await payArcFee("AUTOPILOT", `${t.tokenAddress}-${Date.now()}`);
 
       const portRes = await fetch(`/api/nexus/demo/portfolio?wallet=${address}&t=${Date.now()}`);
-      const portData = await portRes.json();
+      const { ok: portOk, data: portData, error: portErr } = await readApiJson<{
+        positions?: Array<{ tokenAddress: string; tokenAmount?: number }>;
+        error?: string;
+      }>(portRes);
+      if (!portOk) throw new Error(portData.error ?? portErr ?? "Portfolio load failed");
       const position = (portData.positions ?? []).find(
         (p: { tokenAddress: string; tokenAmount?: number }) =>
           p.tokenAddress.toLowerCase() === t.tokenAddress.toLowerCase(),
@@ -351,8 +360,12 @@ export function NexusAutopilotPanel({
           useAgentVault: side === "buy",
         }),
       });
-      const tradeData = await tradeRes.json();
-      if (!tradeRes.ok) throw new Error(tradeData.error ?? "Trade failed");
+      const { ok: tradeOk, data: tradeData, error: tradeErr } = await readApiJson<{
+        trade?: { usdcAmount?: number; tokenAmount?: number; symbol?: string };
+        agentBalanceUsdc?: number;
+        error?: string;
+      }>(tradeRes);
+      if (!tradeOk) throw new Error(tradeData.error ?? tradeErr ?? "Trade failed");
 
       await refreshBalance();
       const sigLabel = signal ? `${signal.action} ${signal.confidence}%` : "DCA schedule";
@@ -694,54 +707,35 @@ export function NexusAutopilotPanel({
           >
             <span className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-violet-300" />
-              Trade rules (AI mode & confidence)
+              Trade rules (AI BUY / SELL)
             </span>
             {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
 
           {advancedOpen && (
             <div className="space-y-2 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
-              <p className="text-[11px] text-white/55">
-                Minimum AI confidence to execute (recommended <strong className="text-white">55</strong>).
+              <p className="text-[11px] leading-relaxed text-white/65">
+                <strong className="text-violet-100">Follow AI only</strong> — executes when the desk
+                signal is <strong className="text-emerald-300">BUY</strong> or{" "}
+                <strong className="text-rose-300">SELL</strong>. <strong className="text-white">HOLD</strong>{" "}
+                and <strong className="text-white">WATCH</strong> skip (no confidence filter).
               </p>
-              <input
-                inputMode="numeric"
-                placeholder="55"
-                value={String(config.minConfidence)}
-                onChange={(e) =>
-                  persist({
-                    ...config,
-                    minConfidence: Math.min(95, Math.max(40, Number(e.target.value) || 55)),
-                  })
-                }
-                className="w-full min-h-[44px] rounded-xl border border-white/15 bg-black/30 px-3 text-white"
-              />
-              {config.minConfidence < 55 && (
-                <p className="text-[10px] text-amber-200/90">Below 55% — more trades, higher risk.</p>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                {(
-                  [
-                    { id: "follow_agent" as const, label: "Follow AI", icon: Sparkles },
-                    { id: "buy_only" as const, label: "Buy only", icon: TrendingUp },
-                    { id: "sell_only" as const, label: "Sell only", icon: TrendingDown },
-                  ] as const
-                ).map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => persist({ ...config, mode: id })}
-                    className={`flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold ${
-                      config.mode === id
-                        ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
-                        : "border-white/10 text-white/55"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <p className="text-[10px] text-white/45">
+                Use <strong className="text-white">Buy only</strong> below for scheduled DCA without
+                waiting for AI.
+              </p>
+              <button
+                type="button"
+                onClick={() => persist({ ...config, mode: "buy_only" })}
+                className={`flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border text-xs font-bold ${
+                  config.mode === "buy_only"
+                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                    : "border-white/10 text-white/55"
+                }`}
+              >
+                <TrendingUp className="h-4 w-4" />
+                Scheduled buy only (DCA)
+              </button>
             </div>
           )}
 

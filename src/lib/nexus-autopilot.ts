@@ -43,7 +43,8 @@ export type AutopilotConfig = {
   customTokenChain: string;
   customAmountUnit: "tokens" | "usdc";
   mode: "follow_agent" | "buy_only" | "sell_only";
-  minConfidence: number;
+  /** @deprecated Ignored — autopilot follows AI BUY/SELL only */
+  minConfidence?: number;
   tokenKey?: string;
 };
 
@@ -70,7 +71,6 @@ export function defaultAutopilot(): AutopilotConfig {
     customTokenChain: "base",
     customAmountUnit: "tokens",
     mode: "follow_agent",
-    minConfidence: 55,
   };
 }
 
@@ -80,7 +80,7 @@ export function loadAutopilot(): AutopilotConfig {
     if (!raw) return defaultAutopilot();
     const merged = { ...defaultAutopilot(), ...JSON.parse(raw) } as AutopilotConfig;
     if (!merged.scheduleMode) merged.scheduleMode = "recurring";
-    if (merged.minConfidence < 50 || merged.minConfidence > 95) merged.minConfidence = 55;
+    merged.mode = merged.mode ?? "follow_agent";
     return merged;
   } catch {
     return defaultAutopilot();

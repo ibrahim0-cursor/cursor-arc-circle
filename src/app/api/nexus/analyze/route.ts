@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { fetchTokenByAddress } from "@/lib/dexscreener";
 import { buildDecision, buildDeskAgentSignal } from "@/lib/nexus-agent";
 import { buildDeepTokenIntel } from "@/lib/deep-token-analysis";
+import { buildLocalTokenIntel } from "@/lib/token-intel-local";
 import { fetchExternalTokenSecurity } from "@/lib/external-token-security";
+import { scoreTokenSecurity } from "@/lib/token-security";
 import { buildResearchReport } from "@/lib/nexus-research";
 import { buildDossierGlance } from "@/lib/nexus-research-dossier";
 import { addNexusDecision } from "@/lib/storage";
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
       chainId: string;
       tokenAddress: string;
       deep?: boolean;
+      quick?: boolean;
       arcFeeTxHash?: string;
       save?: boolean;
     };
@@ -28,6 +31,20 @@ export async function POST(request: Request) {
     const token = await fetchTokenByAddress(body.chainId, body.tokenAddress);
     if (!token) {
       return NextResponse.json({ error: "Token not found on DexScreener" }, { status: 404 });
+    }
+
+    if (body.quick && !body.deep) {
+      const intel = buildLocalTokenIntel(token);
+      const agent = await buildDeskAgentSignal(token, intel);
+      const security = scoreTokenSecurity(token, intel);
+      return NextResponse.json({
+        token,
+        intel,
+        agent,
+        security,
+        mode: "autopilot-quick",
+        message: `AI signal ${agent.action} (${agent.confidence}%)`,
+      });
     }
 
     const bundle = await buildDeepTokenIntel(token);
