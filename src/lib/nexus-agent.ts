@@ -1014,6 +1014,8 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
 export type FeedQuickAnalyzeOptions = {
   birdeyeCap?: number;
   skipGmgnSecurity?: boolean;
+  /** Dex + local intel only — no holder/GoPlus/Birdeye (Vercel quick feed). */
+  dexOnly?: boolean;
 };
 
 /** Fast path: heuristic + security; Birdeye TA on top-volume slice */
@@ -1030,33 +1032,48 @@ export async function analyzeTrendingFeedQuick(
   const rankOf = new Map(
     sorted.map((t, i) => [`${t.chainId}:${t.tokenAddress.toLowerCase()}`, i]),
   );
-  const birdeyeCap = options?.birdeyeCap ?? 5;
-  const skipGmgn = options?.skipGmgnSecurity ?? false;
+  const birdeyeCap = options?.birdeyeCap ?? 3;
+  const skipGmgn = options?.skipGmgnSecurity ?? true;
+  const dexOnly = options?.dexOnly ?? false;
   return mapWithConcurrency(
     tokens,
     async (token) => {
       const rank = rankOf.get(`${token.chainId}:${token.tokenAddress.toLowerCase()}`) ?? 99;
-      const intel =
-        rank < birdeyeCap
+      const intel = dexOnly
+        ? (token.intel ?? buildLocalTokenIntel(token))
+        : rank < birdeyeCap
           ? await intelForFeedRank(token, rank)
           : (token.intel ?? buildLocalTokenIntel(token));
       const { scoreTokenSecurity } = await import("./token-security");
-      const security =
-        rank < 5 && !skipGmgn
+      const security = dexOnly
+        ? scoreTokenSecurity(token, intel)
+        : rank < 3 && !skipGmgn
           ? await feedTokenSecurity(token, intel, rank)
-          : rank < 5 && skipGmgn
-            ? await (
-                await import("./external-token-security")
-              ).fetchExternalTokenSecurity(token, intel)
+          : rank < 3
+            ? await Promise.race([
+                (await import("./external-token-security")).fetchExternalTokenSecurity(
+                  token,
+                  intel,
+                ),
+                new Promise<Awaited<ReturnType<typeof import("./token-security").scoreTokenSecurity>>>(
+                  (resolve) =>
+                    setTimeout(
+                      () => resolve(scoreTokenSecurity(token, intel)),
+                      2_500,
+                    ),
+                ),
+              ])
             : scoreTokenSecurity(token, intel);
       const scam = assessTokenScam(token, intel, security);
       let signal = heuristicDecision(token, intel, macro, { security, scam });
       signal = enforceSignalGate(token, intel, signal, { macro, security, scam });
       signal = finalizeFeedSignal(token, intel, signal, security);
-      signal = await applyFeedDeskNarrative(token, intel, signal, security, scam, macro);
+      if (!dexOnly) {
+        signal = await applyFeedDeskNarrative(token, intel, signal, security, scam, macro);
+      }
       return { token: { ...token, intel }, intel, signal, security };
     },
-    5,
+    dexOnly ? 10 : 4,
   );
 }
 

@@ -142,8 +142,9 @@ async function buildFeed(
 
   const analyzed = quick
     ? await analyzeTrendingFeedQuick(tokens, {
-        birdeyeCap: opts?.birdeyeCap ?? 5,
+        birdeyeCap: opts?.birdeyeCap ?? 0,
         skipGmgnSecurity: true,
+        dexOnly: opts?.birdeyeCap === 0,
       })
     : await analyzeTrendingFeed(tokens);
 
@@ -160,7 +161,7 @@ export async function GET(request: Request) {
     const quick = searchParams.get("quick") === "1";
     const limit = Math.min(
       Number(searchParams.get("limit") ?? STABLE_FEED_LIMIT),
-      STABLE_FEED_LIMIT,
+      quick ? 12 : STABLE_FEED_LIMIT,
     );
     const cacheKey = feedCacheKey(quick, limit);
     const ttl = quick ? FEED_QUICK_TTL_MS : FEED_FULL_TTL_MS;
@@ -203,7 +204,7 @@ export async function GET(request: Request) {
 
     try {
       const payload = await Promise.race([
-        buildFeed(quick, limit, quick ? { birdeyeCap: 3 } : undefined),
+        buildFeed(quick, limit, quick ? { birdeyeCap: 0 } : undefined),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("feed_vercel_budget")), FEED_VERCEL_BUDGET_MS),
         ),
@@ -235,7 +236,7 @@ export async function GET(request: Request) {
     const quick = searchParams.get("quick") === "1";
     const limit = Math.min(
       Number(searchParams.get("limit") ?? STABLE_FEED_LIMIT),
-      STABLE_FEED_LIMIT,
+      quick ? 12 : STABLE_FEED_LIMIT,
     );
     const stale = getStaleFeedCache(feedCacheKey(quick, limit));
     if (stale) {
