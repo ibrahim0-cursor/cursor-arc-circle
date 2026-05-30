@@ -52,7 +52,7 @@ export function tokenKey(t: { chainId: string; tokenAddress: string }): string {
   return `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
 }
 
-function symbolChainKey(t: { chainId: string; symbol: string }): string {
+export function symbolChainKey(t: { chainId: string; symbol: string }): string {
   return `${t.chainId}:${t.symbol.replace(/^\$/, "").trim().toUpperCase()}`;
 }
 
@@ -197,25 +197,38 @@ export function discoveryHunterLabel(
 }
 
 /** Alpha: pro desk — signals, multi-timeframe, liquidity discipline. */
+import { isAlphaGlitchOrSpam } from "./alpha-quality";
+
 export function scoreAlphaCandidate(t: TrendingToken): number {
-  if (isFeedExcluded(t)) return -1000;
+  if (isFeedExcluded(t) || isAlphaGlitchOrSpam(t)) return -1000;
 
   let score = scoreLiveFeedToken(t);
   const ch = t.change24h;
-  if (ch >= 15 && ch <= 200) score += 25;
-  if (ch >= 50) score += 12;
-  if (ch < -35) score -= 8;
+  if (ch >= 12 && ch <= 120) score += 28;
+  if (ch >= 25 && ch <= 85) score += 14;
+  if (ch > 180) score -= 35;
+  if (ch > 120) score -= 18;
+  if (ch < -35) score -= 12;
 
   const h1 = t.priceChange?.h1 ?? 0;
   const h6 = t.priceChange?.h6 ?? 0;
-  if (h1 > 8 && ch > 0) score += 10;
-  if (h6 > 15 && ch > 0) score += 8;
+  if (h1 > 6 && h1 < 45 && ch > 0) score += 12;
+  if (h6 > 10 && h6 < 60 && ch > 0) score += 8;
 
-  if (t.sourceTags?.some((s) => /signal|smart-money|KOL/i.test(s))) score += 20;
+  if (t.liquidityUsd >= 55_000 && t.liquidityUsd <= 5_000_000) score += 16;
+  if (t.liquidityUsd < 45_000) score -= 22;
+  if (t.volume24h >= 40_000) score += 10;
+
+  const bp = buyPressure(t);
+  if (bp >= 1.14) score += 18;
+  if (bp < 0.95) score -= 10;
+
+  if (t.sourceTags?.some((s) => /signal|smart-money|KOL/i.test(s))) score += 24;
   if (t.sourceTags?.some((s) => /GMGN trending|five-min|pump/i.test(s))) score += 14;
+  if (t.sourceTags?.some((s) => /GeckoTerminal/i.test(s))) score += 8;
 
   const mc = t.marketCap ?? t.fdv ?? 0;
-  if (mc >= 100_000 && mc <= 40_000_000 && t.liquidityUsd >= 50_000) score += 15;
+  if (mc >= 150_000 && mc <= 40_000_000 && t.liquidityUsd >= 50_000) score += 15;
 
   return score;
 }
@@ -270,8 +283,10 @@ export function curateAlphaCandidates<T extends TrendingToken>(
   liveKeys: Set<string>,
   limit: number,
   maxLiveOverlap = 0,
+  liveSymbolKeys?: Set<string>,
 ): T[] {
-  const ranked = [...tokens]
+  const deduped = dedupeFeedTokens(tokens.filter((t) => !isAlphaGlitchOrSpam(t)));
+  const ranked = [...deduped]
     .filter((t) => scoreAlphaCandidate(t) > 0)
     .sort((a, b) => scoreAlphaCandidate(b) - scoreAlphaCandidate(a));
 
@@ -279,7 +294,8 @@ export function curateAlphaCandidates<T extends TrendingToken>(
   let overlap = 0;
   for (const t of ranked) {
     const k = tokenKey(t);
-    const inLive = liveKeys.has(k);
+    const sym = symbolChainKey(t);
+    const inLive = liveKeys.has(k) || (liveSymbolKeys?.has(sym) ?? false);
     if (inLive && overlap >= maxLiveOverlap) continue;
     if (inLive) overlap++;
     out.push(t);
@@ -289,8 +305,10 @@ export function curateAlphaCandidates<T extends TrendingToken>(
   if (out.length < Math.min(limit, 6)) {
     for (const t of ranked) {
       const k = tokenKey(t);
+      const sym = symbolChainKey(t);
       if (out.some((x) => tokenKey(x) === k)) continue;
-      if (liveKeys.has(k) && maxLiveOverlap === 0) continue;
+      const inLive = liveKeys.has(k) || (liveSymbolKeys?.has(sym) ?? false);
+      if (inLive && maxLiveOverlap === 0) continue;
       out.push(t);
       if (out.length >= limit) break;
     }

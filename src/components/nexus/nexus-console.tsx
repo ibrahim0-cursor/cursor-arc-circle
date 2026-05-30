@@ -18,7 +18,7 @@ import type { AlphaOpportunity } from "@/lib/nexus-agent";
 import type { AlphaScanIntel } from "@/lib/alpha-scan-engine";
 import { STABLE_FEED_LIMIT, ALPHA_SCAN_LIMIT } from "@/lib/feed-config";
 import { ALPHA_SCAN_ERROR_TIP, ALPHA_SCAN_SUCCESS } from "@/lib/nexus-copy";
-import { tokenKey } from "@/lib/feed-curation";
+import { symbolChainKey, tokenKey } from "@/lib/feed-curation";
 import { NexusQuickSwap } from "@/components/nexus/nexus-quick-swap";
 import { filterTradableTokens, isStablecoin } from "@/lib/token-filters";
 import { NexusTokenChart } from "@/components/nexus/nexus-token-chart";
@@ -353,6 +353,7 @@ export function NexusConsole() {
           chainId: selectedToken?.chainId,
           tokenAddress: selectedToken?.tokenAddress,
           liveFeedKeys: feedTokens.map((t) => tokenKey(t)),
+          liveFeedSymbolKeys: feedTokens.map((t) => symbolChainKey(t)),
         }),
         signal: controller.signal,
       });

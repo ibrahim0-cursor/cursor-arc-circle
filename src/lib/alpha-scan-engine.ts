@@ -138,13 +138,18 @@ export async function buildAlphaScanUniverse(
     errors: [] as string[],
   };
 
-  const [gmgnDiscovery, gmgnMonitor] = await Promise.all([
+  const [gmgnDiscoverySol, gmgnDiscoveryBase, gmgnMonitor] = await Promise.all([
     withTimeout(
       fetchGmgnDiscoveryTokens("sol", { forceFull: false }).catch((e) => {
         errors.push(e instanceof Error ? e.message : "discovery feed unavailable");
         return emptyDiscovery;
       }),
-      20_000,
+      12_000,
+      emptyDiscovery,
+    ),
+    withTimeout(
+      fetchGmgnDiscoveryTokens("base", { forceFull: false }).catch(() => emptyDiscovery),
+      10_000,
       emptyDiscovery,
     ),
     withTimeout(
@@ -156,6 +161,12 @@ export async function buildAlphaScanUniverse(
       emptyMonitor,
     ),
   ]);
+
+  const gmgnDiscovery = {
+    tokens: [...gmgnDiscoverySol.tokens, ...gmgnDiscoveryBase.tokens],
+    sources: { ...gmgnDiscoverySol.sources, ...gmgnDiscoveryBase.sources },
+    errors: [...gmgnDiscoverySol.errors, ...gmgnDiscoveryBase.errors],
+  };
 
   errors.push(...gmgnDiscovery.errors, ...gmgnMonitor.errors);
 

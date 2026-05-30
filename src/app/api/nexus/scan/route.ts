@@ -35,6 +35,7 @@ async function handleAlphaScan(request: Request) {
     chainId?: string;
     tokenAddress?: string;
     liveFeedKeys?: string[];
+    liveFeedSymbolKeys?: string[];
   };
 
   try {
@@ -46,7 +47,8 @@ async function handleAlphaScan(request: Request) {
       focusToken = (await fetchTokenByAddress(body.chainId, body.tokenAddress)) ?? undefined;
     }
     const liveFeedKeys = body.liveFeedKeys ?? [];
-    const cacheKey = alphaScanCacheKey(liveFeedKeys);
+    const liveFeedSymbolKeys = body.liveFeedSymbolKeys ?? [];
+    const cacheKey = alphaScanCacheKey([...liveFeedKeys, ...liveFeedSymbolKeys]);
     const cached = getAlphaScanCache(cacheKey);
     if (cached) {
       return NextResponse.json({ ...cached, cached: true });
@@ -56,6 +58,7 @@ async function handleAlphaScan(request: Request) {
       preferredChain,
       focusToken,
       liveFeedKeys,
+      liveFeedSymbolKeys,
     });
     setAlphaScanCache(cacheKey, result as Record<string, unknown>);
     return NextResponse.json(result);

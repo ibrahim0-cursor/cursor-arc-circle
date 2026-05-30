@@ -214,5 +214,34 @@ export function filterTradableTokens<
 /** Server-side live feed guard — same rules as filterTradableTokens */
 export const filterLiveFeedTokens = filterTradableTokens;
 
-/** Alpha scan universe + ranked picks — same exclusion rules */
-export const filterAlphaScanTokens = filterTradableTokens;
+import { isAlphaGlitchOrSpam } from "./alpha-quality";
+
+/** Alpha scan — stables out + glitch/spam/ambiguous tickers */
+export function filterAlphaScanTokens<
+  T extends {
+    symbol: string;
+    name?: string;
+    tokenAddress?: string;
+    chainId?: string;
+    priceUsd?: number;
+    change24h?: number;
+    liquidityUsd?: number;
+    volume24h?: number;
+    marketCap?: number;
+    fdv?: number;
+  },
+>(tokens: T[]): T[] {
+  return filterTradableTokens(tokens).filter(
+    (t) =>
+      !isAlphaGlitchOrSpam({
+        symbol: t.symbol,
+        name: t.name ?? "",
+        priceUsd: t.priceUsd ?? 0,
+        change24h: t.change24h ?? 0,
+        liquidityUsd: (t as { liquidityUsd?: number }).liquidityUsd ?? 0,
+        volume24h: (t as { volume24h?: number }).volume24h ?? 0,
+        marketCap: (t as { marketCap?: number }).marketCap,
+        fdv: (t as { fdv?: number }).fdv,
+      }),
+  );
+}

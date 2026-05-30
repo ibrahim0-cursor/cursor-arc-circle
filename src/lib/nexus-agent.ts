@@ -527,21 +527,38 @@ export async function runNexusScan(limit = 15, preferredChain?: string, arcFeeTx
 /** Alpha scan — rank up to 20 opportunities (news + meme headlines + on-chain + AI) */
 export async function runAlphaScan(
   limit = 20,
-  opts?: { preferredChain?: string; focusToken?: TrendingToken; liveFeedKeys?: string[] },
+  opts?: {
+    preferredChain?: string;
+    focusToken?: TrendingToken;
+    liveFeedKeys?: string[];
+    liveFeedSymbolKeys?: string[];
+  },
 ) {
   const { filterAlphaScanTokens, filterTradableTokens, isStablecoin } = await import("./token-filters");
   const { fetchStableMarketFeed, fetchTokenByAddress, fetchTrendingMarketTokens } =
     await import("./dexscreener");
   const { fetchGeckoAlphaCandidates, mergeTrendingWithGecko } = await import("./geckoterminal");
-  const { curateAlphaCandidates, tokenKey } = await import("./feed-curation");
+  const {
+    curateAlphaCandidates,
+    dedupeFeedTokens,
+    scoreAlphaCandidate,
+    symbolChainKey,
+    tokenKey,
+  } = await import("./feed-curation");
   const { ALPHA_MAX_LIVE_OVERLAP } = await import("./feed-config");
   const { enrichTokensWithIcons } = await import("./token-icons");
 
   const { buildAlphaScanUniverse } = await import("./alpha-scan-engine");
   const liveKeys = new Set((opts?.liveFeedKeys ?? []).map((k) => k.toLowerCase()));
+  const liveSymbolKeys = new Set(
+    (opts?.liveFeedSymbolKeys ?? []).map((k) => k.toLowerCase()),
+  );
   if (liveKeys.size === 0) {
     const live = filterAlphaScanTokens(await fetchStableMarketFeed(15));
-    for (const t of live) liveKeys.add(tokenKey(t));
+    for (const t of live) {
+      liveKeys.add(tokenKey(t));
+      liveSymbolKeys.add(symbolChainKey(t));
+    }
   }
 
   const [dexFeed, geckoFeed] = await Promise.all([
@@ -564,31 +581,45 @@ export async function runAlphaScan(
     [],
     Math.min(limit * 2, 45),
   );
-  let tokens: TrendingToken[] = curateAlphaCandidates(
-    filterAlphaScanTokens(merged),
-    liveKeys,
-    limit,
-    ALPHA_MAX_LIVE_OVERLAP,
+  let tokens: TrendingToken[] = dedupeFeedTokens(
+    curateAlphaCandidates(
+      filterAlphaScanTokens(merged),
+      liveKeys,
+      limit,
+      ALPHA_MAX_LIVE_OVERLAP,
+      liveSymbolKeys,
+    ),
   );
   if (tokens.length < Math.min(limit, 6)) {
-    const dexFallback = filterAlphaScanTokens(
-      mergeTrendingWithGecko(dexFeed, geckoFeed, limit * 2),
+    const dexFallback = dedupeFeedTokens(
+      filterAlphaScanTokens(mergeTrendingWithGecko(dexFeed, geckoFeed, limit * 2)),
     )
-      .sort((a, b) => b.volume24h - a.volume24h)
+      .filter((t) => {
+        const k = tokenKey(t);
+        const sym = symbolChainKey(t);
+        return !liveKeys.has(k) && !liveSymbolKeys.has(sym);
+      })
+      .sort((a, b) => scoreAlphaCandidate(b) - scoreAlphaCandidate(a))
       .slice(0, limit);
     for (const t of dexFallback) {
-      const k = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
-      if (!tokens.some((x) => `${x.chainId}:${x.tokenAddress.toLowerCase()}` === k)) {
+      const k = tokenKey(t);
+      if (!tokens.some((x) => tokenKey(x) === k)) {
         tokens.push(t);
       }
       if (tokens.length >= limit) break;
     }
   }
   if (tokens.length < Math.min(limit, 8)) {
-    const gmgnOnly = filterAlphaScanTokens(mergedCandidates).slice(0, limit);
-    const seen = new Set(tokens.map((t) => `${t.chainId}:${t.tokenAddress.toLowerCase()}`));
+    const gmgnOnly = dedupeFeedTokens(filterAlphaScanTokens(mergedCandidates))
+      .filter((t) => {
+        const k = tokenKey(t);
+        const sym = symbolChainKey(t);
+        return !liveKeys.has(k) && !liveSymbolKeys.has(sym);
+      })
+      .slice(0, limit);
+    const seen = new Set(tokens.map((t) => tokenKey(t)));
     for (const t of gmgnOnly) {
-      const k = `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
+      const k = tokenKey(t);
       if (!seen.has(k)) {
         tokens.push(t);
         seen.add(k);
@@ -744,10 +775,16 @@ export async function runAlphaScan(
     throw new Error("Alpha scan found only stablecoins — no tradable alts. Retry shortly.");
   }
 
+  const { edgeFromReasoningFactors } = await import("./nexus-token-narrative");
   opportunities.sort((a, b) => {
-    const desk = (o: AlphaOpportunity) =>
-      (o.action === "BUY" ? 1200 : o.action === "HOLD" ? 0 : -400) + o.confidence * 2;
-    return desk(b) + b.alphaScore - (desk(a) + a.alphaScore) || b.opportunityScore - a.opportunityScore;
+    const rank = (o: AlphaOpportunity) => {
+      const edge = edgeFromReasoningFactors(o.reasoningFactors);
+      const buyBoost = o.action === "BUY" ? 1500 : o.action === "SELL" ? -500 : 0;
+      const hypePenalty = o.change24h > 200 ? -80 : o.change24h > 120 ? -30 : 0;
+      const liqBoost = (o.liquidityUsd ?? 0) >= 55_000 ? 25 : 0;
+      return buyBoost + edge * 4 + o.alphaScore + o.confidence + liqBoost + hypePenalty;
+    };
+    return rank(b) - rank(a) || b.opportunityScore - a.opportunityScore;
   });
   opportunities.forEach((row, i) => {
     row.rank = i + 1;
