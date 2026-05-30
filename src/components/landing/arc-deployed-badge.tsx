@@ -1,5 +1,5 @@
 import { getArcCounterAddress } from "@/lib/arc-counter-contract";
-import { arcExplorerAddress } from "@/lib/arc-chain";
+import { ARC_NODE_VERSION, arcExplorerAddress } from "@/lib/arc-chain";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 
@@ -14,7 +14,7 @@ export function ArcDeployedBadge() {
         className="gap-1.5 border-emerald-400/35 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-200"
       >
         <CheckCircle2 className="h-3.5 w-3.5" />
-        Deployed on Arc Testnet
+        Built on Arc Testnet ({ARC_NODE_VERSION})
       </Badge>
       {counter ? (
         <a

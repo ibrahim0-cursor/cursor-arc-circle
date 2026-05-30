@@ -7,11 +7,17 @@ Two production-grade AI agents for the **Agora Agents Hackathon** (Circle × Arc
 | **NEXUS** | Autonomous trading agent | DexScreener · OpenAI · Circle Wallets · Arc anchoring |
 | **PRISM** | Macro & geopolitical oracle | GDELT · NewsAPI · Claude · Arc anchoring |
 
+## Live
+
+- **Production:** https://trader-arc.vercel.app
+- **Arc Testnet:** chain `5042002` · Circle RPC `https://rpc.testnet.arc.network` · node **[v0.7.1](https://github.com/circlefin/arc-node/releases/tag/v0.7.1)**
+
 ## Live routes
 
 - `/` — Landing hub
 - `/nexus` — Trading agent console
 - `/prism` — Forecasting oracle
+- `/arc` — Counter deploy / increment (wallet on Arc testnet)
 
 ## Quick start
 
@@ -40,8 +46,10 @@ Without API keys, both agents still run in **heuristic demo mode** using live De
 
 - **Agentic sophistication** — autonomous BUY/SELL/HOLD and probability forecasts
 - **Circle usage** — sandbox wallet provisioning + USDC-native agent treasury
-- **Arc settlement** — decision payloads anchored on Arc testnet
+- **Arc settlement** — decision payloads anchored on Arc testnet (**v0.7.1**, Circle RPC for reviewable on-chain activity)
 - **Traction-ready UI** — premium glass interface built for demo video + live users
+
+**Circle grant referral pitch** (for Agora Discord `#circle-grant-referral-requests`): see [docs/CIRCLE-GRANT-REFERRAL.md](docs/CIRCLE-GRANT-REFERRAL.md)
 
 ## NEXUS v2 features
 
@@ -85,4 +93,4 @@ The app runs fully in **heuristic mode** using DexScreener, Birdeye, GDELT, and 
 - [ ] Live deployed URL
 - [ ] Report traction in submission form
 
-Built for Agora · Canteen × Circle · 2026
+Built for Agora · Canteen × Circle · 2026 · **Arc Testnet v0.7.1**

@@ -1,6 +1,9 @@
 import { defineChain } from "viem";
 
 export const ARC_TESTNET_ID = 5042002;
+/** Circle Arc node hard fork — https://github.com/circlefin/arc-node/releases/tag/v0.7.1 */
+export const ARC_NODE_VERSION = "v0.7.1";
+export const ARC_RPC_URL_DEFAULT = "https://rpc.testnet.arc.network";
 export const ARC_FEE_USD = 0.01;
 /** Per PRISM macro forecast (Arc testnet settlement) */
 export const PRISM_FORECAST_FEE_USD = 0.01;
@@ -15,7 +18,7 @@ export const arcTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://rpc.testnet.arc.network"],
+      http: [process.env.NEXT_PUBLIC_ARC_RPC_URL ?? ARC_RPC_URL_DEFAULT],
     },
   },
   blockExplorers: {
