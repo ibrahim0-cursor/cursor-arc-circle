@@ -1,8 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useConnect, useAccount, useBalance, useChainId, useDisconnect, useSwitchChain } from "wagmi";
 import { Wallet, AlertTriangle, LogOut, Plug } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  WalletConnectConsent,
+  hasWalletConnectConsent,
+  setWalletConnectConsent,
+} from "@/components/security/wallet-connect-consent";
 import { truncateHash } from "@/lib/utils";
 import { ARC_TESTNET_ID } from "@/lib/arc-chain";
 import { DEMO_TRADE_NETWORKS } from "@/lib/testnet-chains";
@@ -14,12 +20,21 @@ export function WalletConnectButton({ compact = false }: { compact?: boolean }) 
   const { disconnect } = useDisconnect();
   const { switchChainAsync } = useSwitchChain();
   const { data: balance } = useBalance({ address, chainId: ARC_TESTNET_ID });
+  const [consentOpen, setConsentOpen] = useState(false);
 
   const onArc = chainId === ARC_TESTNET_ID;
 
-  async function connectWallet() {
+  function doConnect() {
     const connector = connectors[0];
     if (connector) connect({ connector, chainId: ARC_TESTNET_ID });
+  }
+
+  async function connectWallet() {
+    if (!hasWalletConnectConsent()) {
+      setConsentOpen(true);
+      return;
+    }
+    doConnect();
   }
 
   async function switchToArc() {
@@ -86,15 +101,26 @@ export function WalletConnectButton({ compact = false }: { compact?: boolean }) 
   }
 
   return (
-    <Button
-      variant="nexus"
-      size={compact ? "sm" : "default"}
-      className="min-h-[44px] gap-2"
-      onClick={connectWallet}
-      disabled={isPending}
-    >
-      <Plug className="h-4 w-4" />
-      Connect Wallet
-    </Button>
+    <>
+      <WalletConnectConsent
+        open={consentOpen}
+        onCancel={() => setConsentOpen(false)}
+        onConfirm={() => {
+          setWalletConnectConsent();
+          setConsentOpen(false);
+          doConnect();
+        }}
+      />
+      <Button
+        variant="nexus"
+        size={compact ? "sm" : "default"}
+        className="min-h-[44px] gap-2"
+        onClick={connectWallet}
+        disabled={isPending}
+      >
+        <Plug className="h-4 w-4" />
+        Connect Wallet
+      </Button>
+    </>
   );
 }

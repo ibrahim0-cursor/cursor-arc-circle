@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { markPositionsToMarket } from "@/lib/demo-trading";
 import { fetchTokenByAddress } from "@/lib/dexscreener";
+import { normalizeEvmAddress } from "@/lib/evm-address";
 import { getDemoPositions, getDemoTrades } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +13,11 @@ async function livePrice(chainId: string, tokenAddress: string) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const wallet = searchParams.get("wallet");
+  const walletRaw = searchParams.get("wallet");
+  const wallet = walletRaw ? normalizeEvmAddress(walletRaw) : null;
 
   if (!wallet) {
-    return NextResponse.json({ error: "wallet query param required" }, { status: 400 });
+    return NextResponse.json({ error: "Valid wallet address required" }, { status: 400 });
   }
 
   const [rawPositions, trades] = await Promise.all([

@@ -1,10 +1,30 @@
 # Circle grant referral — `#circle-grant-referral-requests`
 
-Post in **#circle-grant-referral-requests** (not DMs). Copy the block below and adjust contact email / Counter address if yours differ.
+Post in **#circle-grant-referral-requests** (not DMs).
 
 ---
 
-## Discord form (copy everything below this line)
+## Short paste (mods read this — ~30 sec)
+
+```
+MERIDIAN — live Agora desk on Arc testnet (not a mockup)
+Ibrahim · ibrahim0-cursor · MERIDIAN = NEXUS (meme agent desk) + PRISM (macro oracle)
+
+Contact: abdullahlp114@gmail.com · X @velz_noct
+🌐 https://trader-arc.vercel.app · 📦 https://github.com/ibrahim0-cursor/cursor-arc-circle
+
+Why refer: Real USDC flows on Arc 5042002 via Circle RPC v0.7.1 — x402 APIs (/api/nexus/scan, dossier), Counter lab, holder intel cascade, wallet connect + fee txs you can tie to my GitHub.
+
+Verify: /nexus · /prism · /arc · testnet.arcscan after PRISM/NEXUS fee
+Stage: MVP testnet only · building post-hackathon · grant → agent vault + audit path
+
+Building in public on Arc. Refer MERIDIAN 🟢
+(Optional reply: fresh Arcscan tx from your wallet)
+```
+
+---
+
+## Full Discord form (copy if they want detail)
 
 **Company name**  
 Individual / solo builder — Ibrahim (GitHub: [ibrahim0-cursor](https://github.com/ibrahim0-cursor))
