@@ -29,6 +29,9 @@ export type AutopilotAmountMode = "percent" | "custom_usdc" | "custom_token";
 
 export type AutopilotScheduleMode = "recurring" | "once";
 
+/** When desk signal is HOLD/WATCH — user decides whether to still trade */
+export type AutopilotHoldAction = "skip" | "buy" | "sell";
+
 export type AutopilotConfig = {
   enabled: boolean;
   scheduleMode: AutopilotScheduleMode;
@@ -43,8 +46,8 @@ export type AutopilotConfig = {
   customTokenChain: string;
   customAmountUnit: "tokens" | "usdc";
   mode: "follow_agent" | "buy_only" | "sell_only";
-  /** @deprecated Ignored — autopilot follows AI BUY/SELL only */
-  minConfidence?: number;
+  /** If AI says HOLD — skip, or user override to buy/sell anyway */
+  holdAction: AutopilotHoldAction;
   tokenKey?: string;
 };
 
@@ -71,6 +74,7 @@ export function defaultAutopilot(): AutopilotConfig {
     customTokenChain: "base",
     customAmountUnit: "tokens",
     mode: "follow_agent",
+    holdAction: "skip",
   };
 }
 
@@ -81,6 +85,7 @@ export function loadAutopilot(): AutopilotConfig {
     const merged = { ...defaultAutopilot(), ...JSON.parse(raw) } as AutopilotConfig;
     if (!merged.scheduleMode) merged.scheduleMode = "recurring";
     merged.mode = merged.mode ?? "follow_agent";
+    if (!merged.holdAction) merged.holdAction = "skip";
     return merged;
   } catch {
     return defaultAutopilot();

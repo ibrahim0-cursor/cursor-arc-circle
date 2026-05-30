@@ -12,6 +12,7 @@ import {
   saveAutopilot,
   tokenKey,
   type AutopilotConfig,
+  type AutopilotHoldAction,
   type AutopilotInterval,
   type AutopilotLog,
 } from "@/lib/nexus-autopilot";
@@ -229,11 +230,10 @@ export function NexusAutopilotPanel({
 
     setRunning(true);
     try {
-      const dcaBuy = cfg.mode === "buy_only";
       let agent: { action?: string; confidence?: number; whyAction?: string; reasoning?: string } | null =
         t.agent ?? null;
 
-      if (!dcaBuy) {
+      if (cfg.mode === "follow_agent") {
         if (t.agent?.action) {
           agent = t.agent;
         } else {
@@ -266,26 +266,43 @@ export function NexusAutopilotPanel({
         else if (agent?.reasoning) setLastReasoning(agent.reasoning);
       }
 
-      const signal = agent;
+      const signal = cfg.mode === "follow_agent" ? agent : null;
 
       let side: "buy" | "sell" | null = null;
-      if (dcaBuy) {
+      let userOverride = false;
+      if (cfg.mode === "buy_only") {
         side = "buy";
         setLastReasoning(
           (prev) =>
             prev ??
-            `Scheduled DCA buy · ${cfg.scheduleMode === "once" ? "one-time" : cfg.interval} · $${cfg.amountMode === "custom_usdc" ? cfg.customUsdc : "pct"} USDC`,
+            `Your schedule · buy only · ${cfg.scheduleMode === "once" ? "one-time" : cfg.interval}`,
         );
+      } else if (cfg.mode === "sell_only") {
+        side = "sell";
+        setLastReasoning((prev) => prev ?? "Your schedule · sell only");
       } else if (!signal) {
         pushLog("No signal — skipped", "error");
         return;
-      } else {
-        if (signal.action === "BUY") side = "buy";
-        else if (signal.action === "SELL") side = "sell";
-        if (!side) {
-          pushLog(`AI ${signal.action} — skip (only BUY/SELL execute)`, "info");
-          return;
-        }
+      } else if (signal.action === "BUY") {
+        side = "buy";
+      } else if (signal.action === "SELL") {
+        side = "sell";
+      } else if (cfg.holdAction === "buy") {
+        side = "buy";
+        userOverride = true;
+      } else if (cfg.holdAction === "sell") {
+        side = "sell";
+        userOverride = true;
+      }
+      if (!side) {
+        pushLog(
+          `AI ${signal?.action ?? "HOLD"} — skipped (set "On HOLD" → Buy anyway / Sell anyway)`,
+          "info",
+        );
+        return;
+      }
+      if (userOverride && signal) {
+        pushLog(`Your choice · AI ${signal.action} · ${side.toUpperCase()} anyway`, "info");
       }
 
       let vaultBal = agentUsdcRef.current;
@@ -713,29 +730,71 @@ export function NexusAutopilotPanel({
           </button>
 
           {advancedOpen && (
-            <div className="space-y-2 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
+            <div className="space-y-3 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
               <p className="text-[11px] leading-relaxed text-white/65">
-                <strong className="text-violet-100">Follow AI only</strong> — executes when the desk
-                signal is <strong className="text-emerald-300">BUY</strong> or{" "}
-                <strong className="text-rose-300">SELL</strong>. <strong className="text-white">HOLD</strong>{" "}
-                and <strong className="text-white">WATCH</strong> skip (no confidence filter).
+                You pick the token in the desk. Autopilot follows AI <strong className="text-emerald-300">BUY</strong> /{" "}
+                <strong className="text-rose-300">SELL</strong>, or your override below when the desk says{" "}
+                <strong className="text-white">HOLD</strong>.
               </p>
-              <p className="text-[10px] text-white/45">
-                Use <strong className="text-white">Buy only</strong> below for scheduled DCA without
-                waiting for AI.
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                Run mode
               </p>
-              <button
-                type="button"
-                onClick={() => persist({ ...config, mode: "buy_only" })}
-                className={`flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border text-xs font-bold ${
-                  config.mode === "buy_only"
-                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
-                    : "border-white/10 text-white/55"
-                }`}
-              >
-                <TrendingUp className="h-4 w-4" />
-                Scheduled buy only (DCA)
-              </button>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { id: "follow_agent" as const, label: "Follow AI", icon: Sparkles },
+                    { id: "buy_only" as const, label: "Always buy", icon: TrendingUp },
+                    { id: "sell_only" as const, label: "Always sell", icon: TrendingDown },
+                  ] as const
+                ).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => persist({ ...config, mode: id })}
+                    className={`flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold ${
+                      config.mode === id
+                        ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
+                        : "border-white/10 text-white/55"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {config.mode === "follow_agent" && (
+                <>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                    When AI says HOLD — your choice
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { id: "skip" as AutopilotHoldAction, label: "Skip" },
+                        { id: "buy" as AutopilotHoldAction, label: "Buy anyway" },
+                        { id: "sell" as AutopilotHoldAction, label: "Sell anyway" },
+                      ] as const
+                    ).map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => persist({ ...config, holdAction: id })}
+                        className={`min-h-[40px] rounded-xl border px-2 text-[10px] font-bold ${
+                          config.holdAction === id
+                            ? id === "buy"
+                              ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                              : id === "sell"
+                                ? "border-rose-400/40 bg-rose-500/15 text-rose-100"
+                                : "border-white/20 bg-white/10 text-white"
+                            : "border-white/10 text-white/55"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
