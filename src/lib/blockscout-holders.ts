@@ -43,17 +43,24 @@ export async function fetchBlockscoutTopHolders(
 
     const json = (await res.json()) as {
       items?: BlockscoutHolderItem[];
+      holders?: BlockscoutHolderItem[];
     };
-    const items = json.items ?? [];
+    const items = json.items ?? json.holders ?? [];
     if (!items.length) return [];
 
+    const total = items.reduce((s, h) => s + Number(h.value ?? 0), 0);
+
     return items.slice(0, limit).map((h, i) => {
-      const address = h.address?.hash ?? "";
-      const pct = Number(h.share ?? h.percentage ?? 0);
+      const address = h.address?.hash ?? (h as { hash?: string }).hash ?? "";
+      let pct = Number(h.share ?? h.percentage ?? 0);
+      if (pct <= 0 && total > 0) {
+        pct = (Number(h.value ?? 0) / total) * 100;
+      }
+      if (pct > 0 && pct <= 1) pct *= 100;
       return {
         address,
         balance: Number(h.value ?? 0),
-        pct: pct > 0 && pct <= 1 ? pct * 100 : pct,
+        pct,
         label: i === 0 ? "Top holder" : i < 3 ? "Major holder" : "Whale",
       };
     }).filter((w) => w.address.length > 8);

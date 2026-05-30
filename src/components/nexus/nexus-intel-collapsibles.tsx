@@ -141,7 +141,7 @@ export function NexusIntelCollapsibles({
   const live = payload?.liveReasoning;
   const dossier = payload?.dossier;
   const technical = (payload?.technical ?? token.intel?.technical) as TechnicalSnapshot | undefined;
-  const taBlocks = dossier?.technical ?? [];
+  const taBlocks = dossier?.technical?.length ? dossier.technical : (payload?.dossier?.technical ?? []);
 
   const action = agent?.action ?? live?.action ?? "HOLD";
   const confidence = agent?.confidence ?? live?.confidence ?? 0;
@@ -206,16 +206,15 @@ export function NexusIntelCollapsibles({
       >
         {technical ? (
           <NexusTAContent technical={technical} priceUsd={token.priceUsd} />
-        ) : taBlocks.length > 0 ? null : loading ? (
+        ) : taBlocks.length > 0 ? (
+          <MultiTimeframeTa blocks={taBlocks} pattern={dossier?.pattern} />
+        ) : loading ? (
           <p className="flex items-center gap-2 text-xs text-white/55">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Computing RSI, MACD, and moving averages…
           </p>
         ) : (
           <p className="text-xs text-white/50">TA unavailable for this token.</p>
-        )}
-        {taBlocks.length > 0 && (
-          <MultiTimeframeTa blocks={taBlocks} pattern={dossier?.pattern} />
         )}
       </NexusCollapsible>
     </div>

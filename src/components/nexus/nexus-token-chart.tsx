@@ -10,6 +10,33 @@ import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { dexChartEmbedUrl } from "@/lib/dexscreener";
 import { cn } from "@/lib/utils";
 
+const PAIR_CACHE_KEY = "nexus-pair-v1";
+
+function readPairCache(chainId: string, tokenAddress: string): { pairAddress: string; url?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(`${PAIR_CACHE_KEY}:${chainId}:${tokenAddress.toLowerCase()}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; pairAddress: string; url?: string };
+    if (Date.now() - parsed.at > 300_000 || !parsed.pairAddress) return null;
+    return { pairAddress: parsed.pairAddress, url: parsed.url };
+  } catch {
+    return null;
+  }
+}
+
+function writePairCache(chainId: string, tokenAddress: string, pairAddress: string, url?: string) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(
+      `${PAIR_CACHE_KEY}:${chainId}:${tokenAddress.toLowerCase()}`,
+      JSON.stringify({ at: Date.now(), pairAddress, url }),
+    );
+  } catch {
+    /* quota */
+  }
+}
+
 export function useNexusChartPair({
   chainId,
   pairAddress,
@@ -19,28 +46,48 @@ export function useNexusChartPair({
   pairAddress?: string;
   tokenAddress?: string;
 }) {
-  const [resolvedPair, setResolvedPair] = useState(pairAddress ?? "");
-  const [dexUrl, setDexUrl] = useState<string | null>(null);
+  const initialPair =
+    pairAddress ||
+    (chainId && tokenAddress ? readPairCache(chainId, tokenAddress)?.pairAddress : "") ||
+    "";
+
+  const [resolvedPair, setResolvedPair] = useState(initialPair);
+  const [dexUrl, setDexUrl] = useState<string | null>(() =>
+    chainId && tokenAddress ? (readPairCache(chainId, tokenAddress)?.url ?? null) : null,
+  );
   const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
-    setResolvedPair(pairAddress ?? "");
-  }, [pairAddress]);
+    if (pairAddress) {
+      setResolvedPair(pairAddress);
+      return;
+    }
+    if (chainId && tokenAddress) {
+      const hit = readPairCache(chainId, tokenAddress);
+      if (hit?.pairAddress) {
+        setResolvedPair(hit.pairAddress);
+        if (hit.url) setDexUrl(hit.url);
+      }
+    }
+  }, [pairAddress, chainId, tokenAddress]);
 
   useEffect(() => {
     if (!chainId || !tokenAddress || resolvedPair) return;
     let cancelled = false;
     setResolving(true);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12_000);
+    const timer = setTimeout(() => controller.abort(), 8_000);
     fetch(
       `/api/nexus/pair?chainId=${encodeURIComponent(chainId)}&address=${encodeURIComponent(tokenAddress)}`,
-      { cache: "no-store", signal: controller.signal },
+      { cache: "force-cache", signal: controller.signal },
     )
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
-        if (data.pairAddress) setResolvedPair(data.pairAddress);
+        if (data.pairAddress) {
+          setResolvedPair(data.pairAddress);
+          writePairCache(chainId, tokenAddress, data.pairAddress, data.url);
+        }
         if (data.url) setDexUrl(data.url);
       })
       .catch(() => {

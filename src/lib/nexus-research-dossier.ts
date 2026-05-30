@@ -242,22 +242,38 @@ export function technicalSnapshotFromBlocks(
   };
 }
 
-export async function resolveMultiTimeframeTa(token: TrendingToken): Promise<TaTimeframeBlock[]> {
-  if (hasBirdeyeKey()) {
-    const [c15, c1h] = await Promise.all([
-      fetchBirdeyeOhlcv(token.tokenAddress, token.chainId, "15m", 24),
-      fetchBirdeyeOhlcv(token.tokenAddress, token.chainId, "1H", 48),
+async function resolveMultiTimeframeTaBirdeye(token: TrendingToken): Promise<TaTimeframeBlock[]> {
+  const [c15, c1h] = await Promise.all([
+    fetchBirdeyeOhlcv(token.tokenAddress, token.chainId, "15m", 24),
+    fetchBirdeyeOhlcv(token.tokenAddress, token.chainId, "1H", 48),
+  ]);
+  const closes15 = c15.map((c) => c.close).filter((c) => c > 0);
+  const closes1h = c1h.map((c) => c.close).filter((c) => c > 0);
+  const blocks: TaTimeframeBlock[] = [];
+  if (closes15.length >= 10) blocks.push(taBlockFromCloses(closes15, "15m", "birdeye_ohlcv"));
+  else blocks.push(taBlockFromDex(token, "15m"));
+  if (closes1h.length >= 10) blocks.push(taBlockFromCloses(closes1h, "1h", "birdeye_ohlcv"));
+  else blocks.push(taBlockFromDex(token, "1h"));
+  return blocks;
+}
+
+/** Dex TA immediately; Birdeye OHLCV only when time budget allows (feed dossier). */
+export async function resolveMultiTimeframeTa(
+  token: TrendingToken,
+  opts?: { maxMs?: number },
+): Promise<TaTimeframeBlock[]> {
+  const dexBlocks = [taBlockFromDex(token, "15m"), taBlockFromDex(token, "1h")];
+  if (!hasBirdeyeKey()) return dexBlocks;
+
+  const budget = opts?.maxMs ?? 12_000;
+  try {
+    return await Promise.race([
+      resolveMultiTimeframeTaBirdeye(token),
+      new Promise<TaTimeframeBlock[]>((resolve) => setTimeout(() => resolve(dexBlocks), budget)),
     ]);
-    const closes15 = c15.map((c) => c.close).filter((c) => c > 0);
-    const closes1h = c1h.map((c) => c.close).filter((c) => c > 0);
-    const blocks: TaTimeframeBlock[] = [];
-    if (closes15.length >= 10) blocks.push(taBlockFromCloses(closes15, "15m", "birdeye_ohlcv"));
-    else blocks.push(taBlockFromDex(token, "15m"));
-    if (closes1h.length >= 10) blocks.push(taBlockFromCloses(closes1h, "1h", "birdeye_ohlcv"));
-    else blocks.push(taBlockFromDex(token, "1h"));
-    return blocks;
+  } catch {
+    return dexBlocks;
   }
-  return [taBlockFromDex(token, "15m"), taBlockFromDex(token, "1h")];
 }
 
 function derivePattern(ta: TechnicalAnalysis | TaTimeframeBlock[], token: TrendingToken): {
@@ -584,9 +600,14 @@ export async function buildTokenDossierPayload(
     news?: CryptoNewsItem[];
     research?: NexusResearchReport;
     detection?: Awaited<ReturnType<typeof fetchMergedTokenDetection>>;
+    /** Feed path — skip slow copy-trade + 6551 probe */
+    light?: boolean;
+    holderCascade?: Awaited<ReturnType<typeof import("./holder-fallback").fetchHolderCascade>>;
+    technicalBlocks?: TaTimeframeBlock[];
   },
 ): Promise<TokenDossierPayload> {
   const tier = opts?.tier ?? "feed";
+  const light = opts?.light === true;
   const useGmgn = hasGmgnApiKey();
   const intel = opts?.intel ?? token.intel ?? {};
   const dataNotes: string[] = [];
@@ -610,9 +631,16 @@ export async function buildTokenDossierPayload(
       },
     );
 
-  const [detection, technicalBlocks, gmgnHolders, gmgnSmart] = await Promise.all([
+  const holderCascadePromise =
+    opts?.holderCascade ??
+    import("./holder-fallback").then(({ fetchHolderCascade }) =>
+      fetchHolderCascade(token.tokenAddress, token.chainId, { birdeyeMode: "off" }),
+    );
+
+  const [detection, technicalBlocks, gmgnHolders, gmgnSmart, holderCascade] = await Promise.all([
     detectionPromise,
-    resolveMultiTimeframeTa(token),
+    opts?.technicalBlocks ??
+      resolveMultiTimeframeTa(token, { maxMs: light ? 5_000 : 12_000 }),
     (async () => {
       if (!useGmgn) return [];
       const chain = dexChainIdToGmgn(token.chainId);
@@ -629,6 +657,7 @@ export async function buildTokenDossierPayload(
       if (!res.ok) return [];
       return parseGmgnHolderRows(res.data, "gmgn");
     })(),
+    holderCascadePromise,
   ]);
 
   let topHolders: HolderTableRow[] = gmgnHolders;
@@ -641,15 +670,9 @@ export async function buildTokenDossierPayload(
           : "birdeye";
     topHolders = holdersFromDetection(detection.holders, detection.whales, src);
   }
-  if (topHolders.length === 0) {
-    const { fetchHolderCascade } = await import("./holder-fallback");
-    const cascade = await fetchHolderCascade(token.tokenAddress, token.chainId, {
-      birdeyeMode: "off",
-    });
-    if (cascade.holders.length) {
-      topHolders = holdersFromDetection(cascade.holders, cascade.traders, cascade.source);
-      dataNotes.push(...cascade.notes);
-    }
+  if (topHolders.length === 0 && holderCascade.holders.length) {
+    topHolders = holdersFromDetection(holderCascade.holders, holderCascade.traders, holderCascade.source);
+    dataNotes.push(...holderCascade.notes);
   }
   if (topHolders.length === 0) {
     dataNotes.push(
@@ -679,6 +702,13 @@ export async function buildTokenDossierPayload(
       label: h.label ?? "Smart money",
       source: "gmgn" as const,
     }));
+  } else if (topTraders.length < 2 && holderCascade.traders.length) {
+    topTraders = tradersFromWhalesAndTrades(
+      holderCascade.traders,
+      [],
+      holderCascade.source === "gmgn" ? "gmgn" : "birdeye",
+    );
+    dataNotes.push("Top traders: DexPaprika pool flow / GMGN");
   } else if (topTraders.length < 2) {
     topTraders = [];
     dataNotes.push("Top traders: no live rows returned for this pair");
@@ -707,16 +737,33 @@ export async function buildTokenDossierPayload(
 
   const teamLinks: { label: string; href: string }[] = [];
 
-  const copyTradeResult = await buildProfitableCopyTradeWallets(
-    token.chainId,
-    token.tokenAddress,
-    6,
-  );
-  const copyTradeWallets: TokenResearchDossier["copyTradeWallets"] = copyTradeResult.wallets;
-  dataNotes.push(`Copy-trade: ${copyTradeResult.statusNote}`);
+  let copyTradeWallets: TokenResearchDossier["copyTradeWallets"] = [];
+  let copyTradeStatus = "Not loaded";
+  if (light) {
+    copyTradeStatus = "Skipped on fast feed dossier";
+    dataNotes.push("Copy-trade: skipped on fast feed dossier (open Alpha for full GMGN desk)");
+  } else {
+    const copyTradeResult = await buildProfitableCopyTradeWallets(
+      token.chainId,
+      token.tokenAddress,
+      6,
+    );
+    copyTradeWallets = copyTradeResult.wallets;
+    copyTradeStatus = copyTradeResult.statusNote;
+    dataNotes.push(`Copy-trade: ${copyTradeResult.statusNote}`);
+  }
+
   const openNewsCount =
     opts?.community?.items?.filter((i) => i.kind === "opennews").length ?? 0;
-  if (hasOpenNewsToken()) {
+  if (light) {
+    if (hasOpenNewsToken()) {
+      dataNotes.push(
+        openNewsCount > 0
+          ? `6551 OpenNews: ${openNewsCount} headline${openNewsCount > 1 ? "s" : ""} for ${token.symbol}`
+          : "6551: configured — run Alpha Scan for full news pass",
+      );
+    }
+  } else if (hasOpenNewsToken()) {
     const probe = await probeOpenNews();
     if (!probe.ok && is6551TokenRotated(probe.error)) {
       dataNotes.push(`6551: ${probe.error ?? "token rotated — update API_KEY_6551 on Vercel and redeploy"}`);
@@ -785,7 +832,7 @@ export async function buildTokenDossierPayload(
             : "low",
     },
     copyTradeWallets,
-    copyTradeStatus: copyTradeResult.statusNote,
+    copyTradeStatus,
     technical: technicalBlocks,
     pattern,
     socialNews: buildSocialNews(token.symbol, token.name, opts?.community, opts?.news),

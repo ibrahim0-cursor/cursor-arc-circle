@@ -86,37 +86,23 @@ export async function fetchHolderCascade(
   const notes: string[] = [];
   const mode = opts?.birdeyeMode ?? (isBirdeyeUsable() ? "lite" : "off");
 
-  if (mode !== "off" && isBirdeyeUsable()) {
-    const whales = await fetchBirdeyeWhales(tokenAddress, chainId, 12);
-    if (whales.length) {
-      return {
-        holders: whales.slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 })),
-        traders: whales.filter((w) => /trader/i.test(w.label ?? "")),
-        source: "birdeye",
-        notes: ["Top holders: Birdeye"],
-      };
-    }
-    notes.push("Birdeye empty or rate-limited");
-  }
-
   const gmgnChain = dexChainIdToGmgn(chainId);
-  if (hasGmgnApiKey() && gmgnChain) {
-    const res = await gmgnTopHolders(gmgnChain, tokenAddress, 12);
-    if (res.ok) {
-      const rows = parseGmgnRows(res.data);
-      if (rows.length) {
-        return {
-          holders: rows.map((w, i) => ({ ...w, rank: i + 1 })),
-          traders: [],
-          source: "gmgn",
-          notes: ["Top holders: GMGN OpenAPI"],
-        };
-      }
-    }
-    notes.push("GMGN holders empty for this pair");
-  }
 
-  const [blockscout, moralis, paprikaTxs] = await Promise.all([
+  const birdeyePromise =
+    mode !== "off" && isBirdeyeUsable()
+      ? fetchBirdeyeWhales(tokenAddress, chainId, 12)
+      : Promise.resolve([] as TokenWhale[]);
+
+  const gmgnPromise =
+    hasGmgnApiKey() && gmgnChain
+      ? gmgnTopHolders(gmgnChain, tokenAddress, 12).then((res) =>
+          res.ok ? parseGmgnRows(res.data) : [],
+        )
+      : Promise.resolve([] as TokenWhale[]);
+
+  const [birdeyeWhales, gmgnRows, blockscout, moralis, paprikaTxs] = await Promise.all([
+    birdeyePromise,
+    gmgnPromise,
     fetchBlockscoutTopHolders(chainId, tokenAddress, 12),
     fetchMoralisTopHolders(chainId, tokenAddress, 12),
     (async () => {
@@ -127,6 +113,26 @@ export async function fetchHolderCascade(
       return fetchDexPaprikaPoolTxs(chainId, poolId, 20);
     })(),
   ]);
+
+  if (birdeyeWhales.length) {
+    return {
+      holders: birdeyeWhales.slice(0, 12).map((w, i) => ({ ...w, rank: i + 1 })),
+      traders: birdeyeWhales.filter((w) => /trader/i.test(w.label ?? "")),
+      source: "birdeye",
+      notes: ["Top holders: Birdeye"],
+    };
+  }
+  if (birdeyeWhales.length === 0 && mode !== "off") notes.push("Birdeye empty or rate-limited");
+
+  if (gmgnRows.length) {
+    return {
+      holders: gmgnRows.map((w, i) => ({ ...w, rank: i + 1 })),
+      traders: [],
+      source: "gmgn",
+      notes: ["Top holders: GMGN OpenAPI"],
+    };
+  }
+  if (hasGmgnApiKey() && gmgnChain) notes.push("GMGN holders empty for this pair");
 
   if (blockscout.length) {
     return {
