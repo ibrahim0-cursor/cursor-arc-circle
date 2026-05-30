@@ -66,23 +66,29 @@ export async function fetchLiveDiscoveryFeed(
   const sources: Record<string, number> = {};
   const pools: TrendingToken[] = [];
 
-  const [dexDiscovery, dexLatest, geckoBase, geckoArb] = await Promise.all([
-    fetchStableMarketFeed(limit * 2),
-    fetchTrendingMarketTokens(limit, { stable: false, discovery: true }),
-    fetchGeckoTrendingForNetwork("base", 1),
-    fetchGeckoTrendingForNetwork("arbitrum", 1),
-  ]);
-  sources.dexStable = dexDiscovery.length;
-  sources.dexRotate = dexLatest.length;
-  sources.gecko = geckoBase.length + geckoArb.length;
-  pools.push(...dexDiscovery, ...dexLatest, ...geckoBase, ...geckoArb);
+  if (options?.quick) {
+    const dexLatest = await fetchTrendingMarketTokens(limit, { stable: true, discovery: true });
+    sources.dex = dexLatest.length;
+    pools.push(...dexLatest);
+  } else {
+    const [dexDiscovery, dexLatest, geckoBase, geckoArb] = await Promise.all([
+      fetchStableMarketFeed(limit * 2),
+      fetchTrendingMarketTokens(limit, { stable: false, discovery: true }),
+      fetchGeckoTrendingForNetwork("base", 1),
+      fetchGeckoTrendingForNetwork("arbitrum", 1),
+    ]);
+    sources.dexStable = dexDiscovery.length;
+    sources.dexRotate = dexLatest.length;
+    sources.gecko = geckoBase.length + geckoArb.length;
+    pools.push(...dexDiscovery, ...dexLatest, ...geckoBase, ...geckoArb);
+  }
 
   let gmgnErrors: string[] | undefined;
   let gmgnFromCache: boolean | undefined;
   let gmgnSkillsRefreshed: string[] | undefined;
 
-  const gmgnBudgetMs = options?.quick ? 6_000 : 20_000;
-  if (hasGmgnApiKey()) {
+  const gmgnBudgetMs = options?.quick ? 0 : 20_000;
+  if (!options?.quick && hasGmgnApiKey()) {
     try {
       const gmgn = await Promise.race([
         fetchGmgnDiscoveryTokens("sol", { forceFull: false }),

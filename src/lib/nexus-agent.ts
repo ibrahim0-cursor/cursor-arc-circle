@@ -956,14 +956,29 @@ async function intelForFeedRank(token: TrendingToken, rank: number): Promise<Tok
   const plan = getBirdeyePlan("feed", rank);
   let intel = base;
 
-  if (rank < 10) {
-    const cascade = await fetchHolderCascade(token.chainId, token.tokenAddress, {
-      birdeyeMode: rank < 4 ? plan.detection : "off",
-    });
+  if (rank < 4) {
+    const cascade = await Promise.race([
+      fetchHolderCascade(token.chainId, token.tokenAddress, {
+        birdeyeMode: rank < 2 ? plan.detection : "off",
+      }),
+      new Promise<Awaited<ReturnType<typeof fetchHolderCascade>>>((resolve) =>
+        setTimeout(
+          () => resolve({ holders: [], traders: [], source: "birdeye", notes: ["holder budget"] }),
+          4_500,
+        ),
+      ),
+    ]);
     if (cascade.holders.length) {
       intel = enrichIntelFromHolders(intel, cascade.holders);
     }
-    const goplus = await fetchGoPlusTokenSecurity(token.chainId, token.tokenAddress);
+  }
+  if (rank < 2) {
+    const goplus = await Promise.race([
+      fetchGoPlusTokenSecurity(token.chainId, token.tokenAddress),
+      new Promise<Awaited<ReturnType<typeof fetchGoPlusTokenSecurity>>>((resolve) =>
+        setTimeout(() => resolve({ ok: false, flags: [] }), 3_500),
+      ),
+    ]);
     if (goplus.holderCount && goplus.holderCount > 0) {
       intel = { ...intel, holderCount: goplus.holderCount };
     }
@@ -1025,11 +1040,15 @@ export async function analyzeTrendingFeedQuick(
         rank < birdeyeCap
           ? await intelForFeedRank(token, rank)
           : (token.intel ?? buildLocalTokenIntel(token));
-      const security = skipGmgn
-        ? await (
-            await import("./external-token-security")
-          ).fetchExternalTokenSecurity(token, intel)
-        : await feedTokenSecurity(token, intel, rank);
+      const { scoreTokenSecurity } = await import("./token-security");
+      const security =
+        rank < 5 && !skipGmgn
+          ? await feedTokenSecurity(token, intel, rank)
+          : rank < 5 && skipGmgn
+            ? await (
+                await import("./external-token-security")
+              ).fetchExternalTokenSecurity(token, intel)
+            : scoreTokenSecurity(token, intel);
       const scam = assessTokenScam(token, intel, security);
       let signal = heuristicDecision(token, intel, macro, { security, scam });
       signal = enforceSignalGate(token, intel, signal, { macro, security, scam });

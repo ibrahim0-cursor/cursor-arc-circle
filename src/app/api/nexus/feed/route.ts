@@ -113,6 +113,7 @@ function feedResponse(payload: Record<string, unknown>, quick: boolean, cached: 
 }
 
 const QUICK_BUILD_BUDGET_MS = 22_000;
+const FEED_VERCEL_BUDGET_MS = 52_000;
 
 async function buildFeed(
   quick: boolean,
@@ -200,9 +201,35 @@ export async function GET(request: Request) {
       }
     }
 
-    const payload = await buildFeed(quick, limit);
-    setFeedCache(cacheKey, payload);
-    return feedResponse(payload, quick, false);
+    try {
+      const payload = await Promise.race([
+        buildFeed(quick, limit, quick ? { birdeyeCap: 3 } : undefined),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("feed_vercel_budget")), FEED_VERCEL_BUDGET_MS),
+        ),
+      ]);
+      setFeedCache(cacheKey, payload);
+      return feedResponse(payload, quick, false);
+    } catch (buildErr) {
+      const staleFallback = getStaleFeedCache(cacheKey);
+      if (staleFallback) {
+        return feedResponse(
+          { ...staleFallback, stale: true, refreshNote: "Serving cache — live rebuild timed out" },
+          quick,
+          true,
+        );
+      }
+      if (quick) {
+        const payload = await buildFeed(true, limit, { birdeyeCap: 0 });
+        setFeedCache(cacheKey, payload);
+        return feedResponse(
+          { ...payload, refreshNote: "Dex-first quick feed" },
+          quick,
+          false,
+        );
+      }
+      throw buildErr;
+    }
   } catch (error) {
     const { searchParams } = new URL(request.url);
     const quick = searchParams.get("quick") === "1";
