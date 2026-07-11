@@ -12,7 +12,6 @@ import { useToast } from "@/components/ui/toast-provider";
 import { useBnbSettlement } from "@/hooks/use-bnb-settlement";
 import { useBnbSpotUsd } from "@/hooks/use-bnb-spot-usd";
 import { useSwapTokenQuotes } from "@/hooks/use-swap-token-quotes";
-import { buildBscTestnetTradeTokens } from "@/lib/testnet-onchain";
 import { useOnChainTokenBalance } from "@/hooks/use-onchain-token-balance";
 import {
   quoteNativeForToken,
