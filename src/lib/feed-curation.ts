@@ -3,9 +3,6 @@
  */
 
 import type { TrendingToken } from "./dexscreener";
-import { isStablecoin } from "./token-filters";
-import type { ScamAssessment } from "./scam-detection";
-import type { TokenSecurityReport } from "./token-security";
 
 const BLUE_CHIP_SYMBOLS = new Set([
   "weth",
