@@ -2,20 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  AlertTriangle,
-  Bot,
-  CheckCircle2,
-  Crosshair,
-  Fish,
-  Loader2,
-  Radar,
-  Sparkles,
-  Target,
-  UserX,
-  Users,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, Bot, CheckCircle2, Crosshair, Fish, Loader2, Radar, Sparkles, Target, UserX, Users } from "lucide-react";
 import { formatCompact, formatUsd, truncateHash } from "@/lib/utils";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { WalletScoreChip } from "@/components/nexus/nexus-wallet-score";
