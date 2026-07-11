@@ -1,15 +1,5 @@
 "use client";
-
-import {
-  AlertTriangle,
-  BarChart3,
-  BookOpen,
-  ExternalLink,
-  Loader2,
-  Newspaper,
-  Shield,
-  Wallet,
-} from "lucide-react";
+import { AlertTriangle, BookOpen, ExternalLink, Loader2, Newspaper, Shield, Wallet } from "lucide-react";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusHolderTables } from "@/components/nexus/nexus-holder-table";
 import { truncateHash } from "@/lib/utils";
