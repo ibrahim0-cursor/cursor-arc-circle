@@ -1,5 +1,4 @@
 
-  liquidityUsd?: number;
   pairAddress?: string | null;
 }): boolean {
   const price = token.priceUsd ?? 0;
