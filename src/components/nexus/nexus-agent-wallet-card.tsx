@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copy, ExternalLink, Loader2, RefreshCw, Wallet } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useToast } from "@/components/ui/toast-provider";
