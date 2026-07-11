@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { AlertCircle, CheckCircle2, Info, X, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, X, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ToastInput = {
