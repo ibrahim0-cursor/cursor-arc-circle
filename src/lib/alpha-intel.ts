@@ -6,7 +6,6 @@
 import type { TrendingToken } from "./dexscreener";
 import type { TokenIntel } from "./storage";
 import type { AgentSignal } from "./storage";
-import type { TokenSocialIntel } from "./social-intel";
 import type { CommunityPulse } from "./community-pulse";
 import type { CryptoNewsItem } from "./crypto-news";
 import { assessTokenScam } from "./scam-detection";

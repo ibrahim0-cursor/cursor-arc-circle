@@ -3,26 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { useAgentWallet } from "@/hooks/use-agent-wallet";
-import {
-  AutopilotAmountMode,
-  AUTOPILOT_INTERVALS,
-  autopilotIntervalMs,
-  autopilotOnceDelayMs,
-  autopilotScheduleSummary,
-  clampFuturesLeverage,
-  effectiveMaxTrades,
-  estimateRequiredUsdc,
-  minVaultUsdcForAutopilot,
-  onceScheduleLabel,
-  loadAutopilot,
-  saveAutopilot,
-  tokenKey,
-  type AutopilotConfig,
-  type AutopilotHoldAction,
-  type AutopilotInterval,
-  type AutopilotLog,
-  type AutopilotVenue,
-} from "@/lib/nexus-autopilot";
+import { AutopilotAmountMode, AUTOPILOT_INTERVALS, autopilotIntervalMs, autopilotOnceDelayMs, autopilotScheduleSummary, clampFuturesLeverage, effectiveMaxTrades, minVaultUsdcForAutopilot, onceScheduleLabel, loadAutopilot, saveAutopilot, tokenKey, type AutopilotConfig, type AutopilotInterval, type AutopilotLog, type AutopilotVenue } from "@/lib/nexus-autopilot";
 import type { AutopilotDeskCycle } from "@/lib/autopilot-desk-engine";
 import { AutopilotDeskPreview } from "@/components/nexus/autopilot-desk-preview";
 import {

@@ -7,7 +7,7 @@ import {
   toStructuredOutput,
 } from "../../bnb-hack/engine/nexus-gate.mjs";
 import { composeSkillVerdict } from "../../bnb-hack/engine/meridian-skills.mjs";
-import { fetchGateSnapshot, fetchGateSnapshotsBatch, fetchGlobalMacro } from "../../bnb-hack/live/cmc-fetch.mjs";
+import { fetchGateSnapshot, fetchGlobalMacro } from "../../bnb-hack/live/cmc-fetch.mjs";
 import { fetchKeyInfo } from "../../bnb-hack/live/cmc-fetch.mjs";
 import { runHistoricalBacktest } from "../../bnb-hack/live/run-backtest.mjs";
 import { convictionScore, routeBscCapital } from "../../bnb-hack/live/gate-router.mjs";

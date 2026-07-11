@@ -1,6 +1,5 @@
 "use client";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { ArrowDownUp, ChevronDown, ExternalLink, Loader2, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";

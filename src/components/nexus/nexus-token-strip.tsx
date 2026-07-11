@@ -2,7 +2,6 @@
 
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 import { NexusTokenAvatar } from "@/components/nexus/nexus-token-avatar";
-import { Layers } from "lucide-react";
 import { cn, formatUsd } from "@/lib/utils";
 
 export function NexusTokenStrip({

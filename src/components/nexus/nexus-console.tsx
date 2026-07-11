@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { LineChart, Radio, Sparkles } from "lucide-react";
+import { LineChart, Radio } from "lucide-react";
 import { BSC_CHAIN_LABEL } from "@/lib/bsc-chain";
-import { nexusActionGlass } from "@/lib/nexus-action-glass";
 import { NEXUS_TRADE_ICONS } from "@/lib/nexus-trade-icons";
 import { ArcBackground } from "@/components/layout/arc-background";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
-import { ArcPanel } from "@/components/ui/arc-panel";
 import { NexusCollapsible } from "@/components/nexus/nexus-collapsible";
 import { NexusAlphaHero } from "@/components/nexus/nexus-alpha-hero";
 import { CommunityPulsePanel } from "@/components/shared/community-pulse-panel";
@@ -16,7 +14,7 @@ import type { CommunityPulse } from "@/lib/community-pulse";
 import { NexusAlphaList } from "@/components/nexus/nexus-alpha-list";
 import type { AlphaOpportunity } from "@/lib/nexus-agent";
 import type { AlphaScanIntel } from "@/lib/alpha-scan-engine";
-import { STABLE_FEED_LIMIT, ALPHA_SCAN_LIMIT } from "@/lib/feed-config";
+import { STABLE_FEED_LIMIT } from "@/lib/feed-config";
 import { ALPHA_SCAN_ERROR_TIP, ALPHA_SCAN_SUCCESS } from "@/lib/nexus-copy";
 import { symbolChainKey, tokenKey } from "@/lib/feed-curation";
 import { NexusQuickSwap } from "@/components/nexus/nexus-quick-swap";

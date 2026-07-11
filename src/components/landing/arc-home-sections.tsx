@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, LineChart, Radio, Sparkles, Zap } from "lucide-react";
+import { ArrowUpRight, LineChart, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { ArcLivePulseCard } from "@/components/landing/arc-live-pulse-card";

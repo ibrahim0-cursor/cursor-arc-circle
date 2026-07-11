@@ -1,6 +1,5 @@
 "use client";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { Coins, ExternalLink, Loader2 } from "lucide-react";
 import { NexusAutopilotPanel } from "@/components/nexus/nexus-autopilot-panel";
@@ -27,9 +26,9 @@ import {
   loadGateExecutionIntent,
   type GateExecutionIntent,
 } from "@/lib/gate-execution-intent";
-import { bscExplorerAddress, bscExplorerTx } from "@/lib/bsc-chain";
+import { bscExplorerTx } from "@/lib/bsc-chain";
 import { BSC_CHAIN_ID, BSC_CHAIN_LABEL } from "@/lib/bsc-chain";
-import { formatPct, formatTokenPrice, truncateHash } from "@/lib/utils";
+import { formatTokenPrice, truncateHash } from "@/lib/utils";
 import { appendMeridianActivity } from "@/lib/meridian-activity-log";
 import type { NexusDecision } from "@/lib/storage";
 

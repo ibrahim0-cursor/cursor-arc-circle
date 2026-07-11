@@ -1,7 +1,6 @@
 "use client";
 
 import { usePositionRoute } from "@/hooks/use-position-route";
-import { useConstitution } from "@/contexts/nexus-constitution-context";
 import { NexusDirectionDesk } from "@/components/nexus/nexus-direction-desk";
 import type { TrendingMarketToken } from "@/components/nexus/nexus-trending-feed";
 
