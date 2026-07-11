@@ -1,0 +1,3379 @@
+{
+  "scanId": "scan_IYDbN5DAdcIY",
+  "repo": {
+    "owner": "velz-cmd",
+    "name": "Meridian",
+    "branch": "main",
+    "url": "https://github.com/velz-cmd/Meridian",
+    "commitSha": "e779e0d72e8b662eb53f37bc0c3af631bb33c0aa"
+  },
+  "mode": "live",
+  "summary": {
+    "totalFindings": 40,
+    "duplicateClusters": 0,
+    "unusedFiles": 0,
+    "unusedDependencies": 4,
+    "unusedExports": 0,
+    "orphanPatterns": 0,
+    "slopSignals": 0,
+    "reviewRequired": 19,
+    "safeCandidates": 21,
+    "actionableFixes": 40,
+    "detectedFindings": 40,
+    "doNotTouch": 0
+  },
+  "duplicates": [],
+  "unused": {
+    "files": [],
+    "dependencies": [
+      {
+        "id": "fnd_37zlxFL9zG",
+        "severity": "medium",
+        "action": "review_first",
+        "sourceMode": "native",
+        "type": "unused_dependency",
+        "title": "Unused dependency",
+        "files": [
+          "package.json"
+        ],
+        "packageName": "@x402/core",
+        "confidence": 0.84,
+        "reason": "Package is listed in package.json but no usage was found.",
+        "source": "knip",
+        "confidenceReason": "Package name not referenced in scanned import graph.",
+        "evidence": {
+          "summary": "Moderate evidence — review before applying automatic changes.",
+          "signals": [
+            "package=@x402/core",
+            "declaredIn=package.json",
+            "analyzer=knip",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_from_dependencies",
+            "evidenceGrade=moderate",
+            "classificationState=corroborated",
+            "classificationLabel=unused_dependency_suspected",
+            "autoFixAllowed=false",
+            "decisionReason=Moderate evidence — review before applying automatic changes."
+          ]
+        },
+        "evidenceGrade": "moderate",
+        "classificationState": "corroborated",
+        "classificationLabel": "unused_dependency_suspected",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "knip",
+              "summary": "Unused dependency candidate",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "moderate",
+          "classificationState": "corroborated",
+          "classificationLabel": "unused_dependency_suspected",
+          "decisionReason": "Moderate evidence — review before applying automatic changes.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused dependency",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_dyJukKJMhi",
+        "severity": "medium",
+        "action": "review_first",
+        "sourceMode": "native",
+        "type": "unused_dependency",
+        "title": "Unused dependency",
+        "files": [
+          "package.json"
+        ],
+        "packageName": "@x402/evm",
+        "confidence": 0.84,
+        "reason": "Package is listed in package.json but no usage was found.",
+        "source": "knip",
+        "confidenceReason": "Package name not referenced in scanned import graph.",
+        "evidence": {
+          "summary": "Moderate evidence — review before applying automatic changes.",
+          "signals": [
+            "package=@x402/evm",
+            "declaredIn=package.json",
+            "analyzer=knip",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_from_dependencies",
+            "evidenceGrade=moderate",
+            "classificationState=corroborated",
+            "classificationLabel=unused_dependency_suspected",
+            "autoFixAllowed=false",
+            "decisionReason=Moderate evidence — review before applying automatic changes."
+          ]
+        },
+        "evidenceGrade": "moderate",
+        "classificationState": "corroborated",
+        "classificationLabel": "unused_dependency_suspected",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "knip",
+              "summary": "Unused dependency candidate",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "moderate",
+          "classificationState": "corroborated",
+          "classificationLabel": "unused_dependency_suspected",
+          "decisionReason": "Moderate evidence — review before applying automatic changes.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused dependency",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_0FKX2NtPFk",
+        "severity": "medium",
+        "action": "review_first",
+        "sourceMode": "native",
+        "type": "unused_dependency",
+        "title": "Unused dependency",
+        "files": [
+          "package.json"
+        ],
+        "packageName": "date-fns",
+        "confidence": 0.84,
+        "reason": "Package is listed in package.json but no usage was found.",
+        "source": "knip",
+        "confidenceReason": "Package name not referenced in scanned import graph.",
+        "evidence": {
+          "summary": "Moderate evidence — review before applying automatic changes.",
+          "signals": [
+            "package=date-fns",
+            "declaredIn=package.json",
+            "analyzer=knip",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_from_dependencies",
+            "evidenceGrade=moderate",
+            "classificationState=corroborated",
+            "classificationLabel=unused_dependency_suspected",
+            "autoFixAllowed=false",
+            "decisionReason=Moderate evidence — review before applying automatic changes."
+          ]
+        },
+        "evidenceGrade": "moderate",
+        "classificationState": "corroborated",
+        "classificationLabel": "unused_dependency_suspected",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "knip",
+              "summary": "Unused dependency candidate",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "moderate",
+          "classificationState": "corroborated",
+          "classificationLabel": "unused_dependency_suspected",
+          "decisionReason": "Moderate evidence — review before applying automatic changes.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused dependency",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_umuxbDzMVP",
+        "severity": "medium",
+        "action": "review_first",
+        "sourceMode": "native",
+        "type": "unused_dependency",
+        "title": "Unused dependency",
+        "files": [
+          "package.json"
+        ],
+        "packageName": "zod",
+        "confidence": 0.84,
+        "reason": "Package is listed in package.json but no usage was found.",
+        "source": "knip",
+        "confidenceReason": "Package name not referenced in scanned import graph.",
+        "evidence": {
+          "summary": "Moderate evidence — review before applying automatic changes.",
+          "signals": [
+            "package=zod",
+            "declaredIn=package.json",
+            "analyzer=knip",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_from_dependencies",
+            "evidenceGrade=moderate",
+            "classificationState=corroborated",
+            "classificationLabel=unused_dependency_suspected",
+            "autoFixAllowed=false",
+            "decisionReason=Moderate evidence — review before applying automatic changes."
+          ]
+        },
+        "evidenceGrade": "moderate",
+        "classificationState": "corroborated",
+        "classificationLabel": "unused_dependency_suspected",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "knip",
+              "summary": "Unused dependency candidate",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "moderate",
+          "classificationState": "corroborated",
+          "classificationLabel": "unused_dependency_suspected",
+          "decisionReason": "Moderate evidence — review before applying automatic changes.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused dependency",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      }
+    ],
+    "exports": [
+      {
+        "id": "fnd_kTAKerLgrW",
+        "type": "unused_import",
+        "title": "Unused import: MarketPulse",
+        "files": [
+          "src/components/gate/gate-overview-tab.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"MarketPulse\" is not used in src/components/gate/gate-overview-tab.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=MarketPulse",
+            "importLine=import type { MarketPulse } from \"@/lib/market-pulse\";",
+            "line=16",
+            "importKind=named",
+            "importSource=@/lib/market-pulse",
+            "originalFileHash=9b6ed8f9ffa0c6cf",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: MarketPulse",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_1Dwub1-Hx2",
+        "type": "unused_import",
+        "title": "Unused import: useCallback",
+        "files": [
+          "src/components/nexus/nexus-ab-swap.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"useCallback\" is not used in src/components/nexus/nexus-ab-swap.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=useCallback",
+            "importLine=import { useCallback, useEffect, useMemo, useState } from \"react\";",
+            "line=3",
+            "importKind=named",
+            "importSource=react",
+            "originalFileHash=55a2046999020123",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: useCallback",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_7R0vmxQ6UN",
+        "type": "unused_import",
+        "title": "Unused import: buildBscTestnetTradeTokens",
+        "files": [
+          "src/components/nexus/nexus-quick-swap.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"buildBscTestnetTradeTokens\" is not used in src/components/nexus/nexus-quick-swap.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=buildBscTestnetTradeTokens",
+            "importLine=import { buildBscTestnetTradeTokens } from \"@/lib/testnet-onchain\";",
+            "line=15",
+            "importKind=named",
+            "importSource=@/lib/testnet-onchain",
+            "originalFileHash=f4f65bb40e145882",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: buildBscTestnetTradeTokens",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_CbnTmm8IlC",
+        "type": "unused_import",
+        "title": "Unused import: estimateRequiredUsdc",
+        "files": [
+          "src/components/nexus/nexus-autopilot-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"estimateRequiredUsdc\" is not used in src/components/nexus/nexus-autopilot-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=estimateRequiredUsdc",
+            "importLine=import {\n  AutopilotAmountMode,\n  AUTOPILOT_INTERVALS,\n  autopilotIntervalMs,\n  autopilotOnceDelayMs,\n  autopilotScheduleSummary,\n  clampFuturesLeverage,\n  effectiveMaxTrades,\n  estimateRequiredUsdc,\n  minVaultUsdcForAutopilot,\n  onceScheduleLabel,\n  loadAutopilot,\n  saveAutopilot,\n  tokenKey,\n  type AutopilotConfig,\n  type AutopilotHoldAction,\n  type AutopilotInterval,\n  type AutopilotLog,\n  type AutopilotVenue,\n} from \"@/lib/nexus-autopilot\";",
+            "line=6",
+            "importKind=named",
+            "importSource=@/lib/nexus-autopilot",
+            "originalFileHash=bc352fdb6f5c399b",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: estimateRequiredUsdc",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_xmren5hAUW",
+        "type": "unused_import",
+        "title": "Unused import: AutopilotHoldAction",
+        "files": [
+          "src/components/nexus/nexus-autopilot-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"AutopilotHoldAction\" is not used in src/components/nexus/nexus-autopilot-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=AutopilotHoldAction",
+            "importLine=import {\n  AutopilotAmountMode,\n  AUTOPILOT_INTERVALS,\n  autopilotIntervalMs,\n  autopilotOnceDelayMs,\n  autopilotScheduleSummary,\n  clampFuturesLeverage,\n  effectiveMaxTrades,\n  estimateRequiredUsdc,\n  minVaultUsdcForAutopilot,\n  onceScheduleLabel,\n  loadAutopilot,\n  saveAutopilot,\n  tokenKey,\n  type AutopilotConfig,\n  type AutopilotHoldAction,\n  type AutopilotInterval,\n  type AutopilotLog,\n  type AutopilotVenue,\n} from \"@/lib/nexus-autopilot\";",
+            "line=6",
+            "importKind=named",
+            "importSource=@/lib/nexus-autopilot",
+            "originalFileHash=bc352fdb6f5c399b",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: AutopilotHoldAction",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_HxIoYqAHNj",
+        "type": "unused_import",
+        "title": "Unused import: Sparkles",
+        "files": [
+          "src/components/nexus/nexus-console.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"Sparkles\" is not used in src/components/nexus/nexus-console.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=Sparkles",
+            "importLine=import { LineChart, Radio, Sparkles } from \"lucide-react\";",
+            "line=5",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=8b4db3a8f22b271f",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: Sparkles",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_IJBAODGTuk",
+        "type": "unused_import",
+        "title": "Unused import: nexusActionGlass",
+        "files": [
+          "src/components/nexus/nexus-console.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"nexusActionGlass\" is not used in src/components/nexus/nexus-console.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=nexusActionGlass",
+            "importLine=import { nexusActionGlass } from \"@/lib/nexus-action-glass\";",
+            "line=7",
+            "importKind=named",
+            "importSource=@/lib/nexus-action-glass",
+            "originalFileHash=8b4db3a8f22b271f",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: nexusActionGlass",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_czoOphgJ2n",
+        "type": "unused_import",
+        "title": "Unused import: ArcPanel",
+        "files": [
+          "src/components/nexus/nexus-console.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"ArcPanel\" is not used in src/components/nexus/nexus-console.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=ArcPanel",
+            "importLine=import { ArcPanel } from \"@/components/ui/arc-panel\";",
+            "line=11",
+            "importKind=named",
+            "importSource=@/components/ui/arc-panel",
+            "originalFileHash=8b4db3a8f22b271f",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: ArcPanel",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_1e3tKUlKlI",
+        "type": "unused_import",
+        "title": "Unused import: ALPHA_SCAN_LIMIT",
+        "files": [
+          "src/components/nexus/nexus-console.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"ALPHA_SCAN_LIMIT\" is not used in src/components/nexus/nexus-console.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=ALPHA_SCAN_LIMIT",
+            "importLine=import { STABLE_FEED_LIMIT, ALPHA_SCAN_LIMIT } from \"@/lib/feed-config\";",
+            "line=19",
+            "importKind=named",
+            "importSource=@/lib/feed-config",
+            "originalFileHash=8b4db3a8f22b271f",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: ALPHA_SCAN_LIMIT",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_yDLt78fGjc",
+        "type": "unused_import",
+        "title": "Unused import: mergeGmgnIntoSecurityReport",
+        "files": [
+          "src/lib/alpha-desk-scan.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"mergeGmgnIntoSecurityReport\" is not used in src/lib/alpha-desk-scan.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=mergeGmgnIntoSecurityReport",
+            "importLine=import { mergeGmgnIntoSecurityReport } from \"./gmgn-enrichment\";",
+            "line=12",
+            "importKind=named",
+            "importSource=./gmgn-enrichment",
+            "originalFileHash=fd45d03eb8672f15",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: mergeGmgnIntoSecurityReport",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/nexus-agent.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_C2ZjgIedQo",
+        "type": "unused_import",
+        "title": "Unused import: assessTokenScam",
+        "files": [
+          "src/lib/alpha-desk-scan.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"assessTokenScam\" is not used in src/lib/alpha-desk-scan.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=assessTokenScam",
+            "importLine=import { assessTokenScam } from \"./scam-detection\";",
+            "line=16",
+            "importKind=named",
+            "importSource=./scam-detection",
+            "originalFileHash=fd45d03eb8672f15",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: assessTokenScam",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/nexus-agent.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_OzHGvB9muv",
+        "type": "unused_import",
+        "title": "Unused import: MacroRegime",
+        "files": [
+          "src/lib/alpha-desk-scan.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"MacroRegime\" is not used in src/lib/alpha-desk-scan.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=MacroRegime",
+            "importLine=import type { MacroRegime } from \"./macro-regime\";",
+            "line=17",
+            "importKind=named",
+            "importSource=./macro-regime",
+            "originalFileHash=fd45d03eb8672f15",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: MacroRegime",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/nexus-agent.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_7mAVcjY5qs",
+        "type": "unused_import",
+        "title": "Unused import: fetchCryptoNewsHeadlines",
+        "files": [
+          "src/lib/nexus-agent.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"fetchCryptoNewsHeadlines\" is not used in src/lib/nexus-agent.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=fetchCryptoNewsHeadlines",
+            "importLine=import { fetchCryptoNewsHeadlines } from \"./crypto-news\";",
+            "line=3",
+            "importKind=named",
+            "importSource=./crypto-news",
+            "originalFileHash=1c4ec964a1c3a380",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: fetchCryptoNewsHeadlines",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_cIe2atL7Uv",
+        "type": "unused_import",
+        "title": "Unused import: pickCommunityBuzz",
+        "files": [
+          "src/lib/nexus-agent.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"pickCommunityBuzz\" is not used in src/lib/nexus-agent.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=pickCommunityBuzz",
+            "importLine=import { pickCommunityBuzz } from \"./community-pulse\";",
+            "line=4",
+            "importKind=named",
+            "importSource=./community-pulse",
+            "originalFileHash=1c4ec964a1c3a380",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: pickCommunityBuzz",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_yKYeLuL4Qe",
+        "type": "unused_import",
+        "title": "Unused import: usePremiumSocialApis",
+        "files": [
+          "src/lib/nexus-agent.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"usePremiumSocialApis\" is not used in src/lib/nexus-agent.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=usePremiumSocialApis",
+            "importLine=import { usePremiumSocialApis } from \"./social-config\";",
+            "line=5",
+            "importKind=named",
+            "importSource=./social-config",
+            "originalFileHash=1c4ec964a1c3a380",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: usePremiumSocialApis",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_N5Bz7JHu7B",
+        "type": "unused_import",
+        "title": "Unused import: macroRegimeGuidance",
+        "files": [
+          "src/lib/nexus-agent.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"macroRegimeGuidance\" is not used in src/lib/nexus-agent.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=macroRegimeGuidance",
+            "importLine=import { getMacroRegime, macroRegimeGuidance, type MacroRegime } from \"./macro-regime\";",
+            "line=20",
+            "importKind=named",
+            "importSource=./macro-regime",
+            "originalFileHash=1c4ec964a1c3a380",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: macroRegimeGuidance",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_NpN1BOSG8p",
+        "type": "unused_import",
+        "title": "Unused import: hasBirdeyeKey",
+        "files": [
+          "src/lib/nexus-agent.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"hasBirdeyeKey\" is not used in src/lib/nexus-agent.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=hasBirdeyeKey",
+            "importLine=import { hasBirdeyeKey } from \"./birdeye-client\";",
+            "line=21",
+            "importKind=named",
+            "importSource=./birdeye-client",
+            "originalFileHash=1c4ec964a1c3a380",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: hasBirdeyeKey",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_IHnN_lBtsp",
+        "type": "unused_import",
+        "title": "Unused import: fetchGateSnapshotsBatch",
+        "files": [
+          "src/lib/gate-handler.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"fetchGateSnapshotsBatch\" is not used in src/lib/gate-handler.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=fetchGateSnapshotsBatch",
+            "importLine=import { fetchGateSnapshot, fetchGateSnapshotsBatch, fetchGlobalMacro } from \"../../bnb-hack/live/cmc-fetch.mjs\";",
+            "line=10",
+            "importKind=named",
+            "importSource=../../bnb-hack/live/cmc-fetch.mjs",
+            "originalFileHash=84cf29805a126bff",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: fetchGateSnapshotsBatch",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_j5uaWTNotz",
+        "type": "unused_import",
+        "title": "Unused import: isStablecoin",
+        "files": [
+          "src/lib/feed-curation.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"isStablecoin\" is not used in src/lib/feed-curation.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=isStablecoin",
+            "importLine=import { isStablecoin } from \"./token-filters\";",
+            "line=6",
+            "importKind=named",
+            "importSource=./token-filters",
+            "originalFileHash=9ccc490c4ff69745",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: isStablecoin",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/dexscreener.ts, src/lib/nexus-agent.ts, src/app/api/nexus/feed/route.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_J5Y_nThkgz",
+        "type": "unused_import",
+        "title": "Unused import: ScamAssessment",
+        "files": [
+          "src/lib/feed-curation.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"ScamAssessment\" is not used in src/lib/feed-curation.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=ScamAssessment",
+            "importLine=import type { ScamAssessment } from \"./scam-detection\";",
+            "line=7",
+            "importKind=named",
+            "importSource=./scam-detection",
+            "originalFileHash=9ccc490c4ff69745",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: ScamAssessment",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/dexscreener.ts, src/lib/nexus-agent.ts, src/app/api/nexus/feed/route.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_e0uVLa_s45",
+        "type": "unused_import",
+        "title": "Unused import: TokenSecurityReport",
+        "files": [
+          "src/lib/feed-curation.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"TokenSecurityReport\" is not used in src/lib/feed-curation.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=TokenSecurityReport",
+            "importLine=import type { TokenSecurityReport } from \"./token-security\";",
+            "line=8",
+            "importKind=named",
+            "importSource=./token-security",
+            "originalFileHash=9ccc490c4ff69745",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: TokenSecurityReport",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/dexscreener.ts, src/lib/nexus-agent.ts, src/app/api/nexus/feed/route.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_vj8qu4YDOS",
+        "type": "unused_import",
+        "title": "Unused import: useEffect",
+        "files": [
+          "src/components/nexus/nexus-agent-wallet-card.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"useEffect\" is not used in src/components/nexus/nexus-agent-wallet-card.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=useEffect",
+            "importLine=import { useEffect, useState } from \"react\";",
+            "line=3",
+            "importKind=named",
+            "importSource=react",
+            "originalFileHash=d1f6f2cd0423a7f4",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: useEffect",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_QqchU3sXXR",
+        "type": "unused_import",
+        "title": "Unused import: Sparkles",
+        "files": [
+          "src/components/nexus/nexus-scan-actions.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"Sparkles\" is not used in src/components/nexus/nexus-scan-actions.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=Sparkles",
+            "importLine=import { Loader2, Sparkles } from \"lucide-react\";",
+            "line=3",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=8a3359467a0c75e4",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: Sparkles",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_OAq-euE4cv",
+        "type": "unused_import",
+        "title": "Unused import: useCallback",
+        "files": [
+          "src/components/nexus/nexus-demo-trade-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"useCallback\" is not used in src/components/nexus/nexus-demo-trade-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=useCallback",
+            "importLine=import { useCallback, useEffect, useMemo, useState } from \"react\";",
+            "line=3",
+            "importKind=named",
+            "importSource=react",
+            "originalFileHash=0bb27fafe16e47ad",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: useCallback",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_ZS-4NuOLAQ",
+        "type": "unused_import",
+        "title": "Unused import: bscExplorerAddress",
+        "files": [
+          "src/components/nexus/nexus-demo-trade-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"bscExplorerAddress\" is not used in src/components/nexus/nexus-demo-trade-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=bscExplorerAddress",
+            "importLine=import { bscExplorerAddress, bscExplorerTx } from \"@/lib/bsc-chain\";",
+            "line=30",
+            "importKind=named",
+            "importSource=@/lib/bsc-chain",
+            "originalFileHash=0bb27fafe16e47ad",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: bscExplorerAddress",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_IRDZdV98PZ",
+        "type": "unused_import",
+        "title": "Unused import: formatPct",
+        "files": [
+          "src/components/nexus/nexus-demo-trade-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"formatPct\" is not used in src/components/nexus/nexus-demo-trade-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=formatPct",
+            "importLine=import { formatPct, formatTokenPrice, truncateHash } from \"@/lib/utils\";",
+            "line=32",
+            "importKind=named",
+            "importSource=@/lib/utils",
+            "originalFileHash=0bb27fafe16e47ad",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: formatPct",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_UXauma9yOb",
+        "type": "unused_import",
+        "title": "Unused import: truncateHash",
+        "files": [
+          "src/components/nexus/nexus-demo-trade-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"truncateHash\" is not used in src/components/nexus/nexus-demo-trade-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=truncateHash",
+            "importLine=import { formatPct, formatTokenPrice, truncateHash } from \"@/lib/utils\";",
+            "line=32",
+            "importKind=named",
+            "importSource=@/lib/utils",
+            "originalFileHash=0bb27fafe16e47ad",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: truncateHash",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_6jeUn2QL_G",
+        "type": "unused_import",
+        "title": "Unused import: BarChart3",
+        "files": [
+          "src/components/nexus/nexus-research-dossier.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"BarChart3\" is not used in src/components/nexus/nexus-research-dossier.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=BarChart3",
+            "importLine=import {\n  AlertTriangle,\n  BarChart3,\n  BookOpen,\n  ExternalLink,\n  Loader2,\n  Newspaper,\n  Shield,\n  Wallet,\n} from \"lucide-react\";",
+            "line=3",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=d0fb7a9b9349a5a8",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: BarChart3",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_L1ZmfxG9FH",
+        "type": "unused_import",
+        "title": "Unused import: Radio",
+        "files": [
+          "src/components/landing/arc-home-sections.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"Radio\" is not used in src/components/landing/arc-home-sections.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=Radio",
+            "importLine=import { ArrowUpRight, LineChart, Radio, Sparkles, Zap } from \"lucide-react\";",
+            "line=5",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=4b126e696d19d7da",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: Radio",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_X--z-n3A6W",
+        "type": "unused_import",
+        "title": "Unused import: useConstitution",
+        "files": [
+          "src/components/nexus/nexus-direction-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"useConstitution\" is not used in src/components/nexus/nexus-direction-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=useConstitution",
+            "importLine=import { useConstitution } from \"@/contexts/nexus-constitution-context\";",
+            "line=4",
+            "importKind=named",
+            "importSource=@/contexts/nexus-constitution-context",
+            "originalFileHash=380f8acbeb357d2b",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: useConstitution",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_R1pt6arvAI",
+        "type": "unused_import",
+        "title": "Unused import: Zap",
+        "files": [
+          "src/components/nexus/nexus-token-detect-panel.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"Zap\" is not used in src/components/nexus/nexus-token-detect-panel.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=Zap",
+            "importLine=import {\n  AlertTriangle,\n  Bot,\n  CheckCircle2,\n  Crosshair,\n  Fish,\n  Loader2,\n  Radar,\n  Sparkles,\n  Target,\n  UserX,\n  Users,\n  Zap,\n} from \"lucide-react\";",
+            "line=5",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=0399ba6f898da7bb",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: Zap",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd__8QkpAWmg1",
+        "type": "unused_import",
+        "title": "Unused import: Layers",
+        "files": [
+          "src/components/nexus/nexus-token-strip.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"Layers\" is not used in src/components/nexus/nexus-token-strip.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=Layers",
+            "importLine=import { Layers } from \"lucide-react\";",
+            "line=5",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=1b731fed8e715aec",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: Layers",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_Z-UyHHPmGM",
+        "type": "unused_import",
+        "title": "Unused import: Info",
+        "files": [
+          "src/components/ui/toast-provider.tsx"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"Info\" is not used in src/components/ui/toast-provider.tsx.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=Info",
+            "importLine=import { AlertCircle, CheckCircle2, Info, X, XCircle } from \"lucide-react\";",
+            "line=11",
+            "importKind=named",
+            "importSource=lucide-react",
+            "originalFileHash=6a712396233ab983",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: Info",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/components/nexus/nexus-demo-trade-panel.tsx",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_JPl6CuWwAZ",
+        "type": "unused_import",
+        "title": "Unused import: useState",
+        "files": [
+          "src/hooks/use-testnet-holdings.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"useState\" is not used in src/hooks/use-testnet-holdings.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=useState",
+            "importLine=import { useCallback, useEffect, useMemo, useState } from \"react\";",
+            "line=3",
+            "importKind=named",
+            "importSource=react",
+            "originalFileHash=d158965504906fdf",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: useState",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd__s-TIC1HwY",
+        "type": "unused_import",
+        "title": "Unused import: TokenSocialIntel",
+        "files": [
+          "src/lib/alpha-intel.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "review_first",
+        "reason": "Import for \"TokenSocialIntel\" is not used in src/lib/alpha-intel.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "signals": [
+            "symbol=TokenSocialIntel",
+            "importLine=import type { TokenSocialIntel } from \"./social-intel\";",
+            "line=9",
+            "importKind=named",
+            "importSource=./social-intel",
+            "originalFileHash=0aac8d7e517b2a3a",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=contradictory",
+            "classificationState=insufficient_evidence",
+            "classificationLabel=review_required",
+            "autoFixAllowed=false",
+            "decisionReason=Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+            "counterEvidence=1",
+            "unresolvedRisks=counter_evidence_present"
+          ]
+        },
+        "evidenceGrade": "weak",
+        "classificationState": "insufficient_evidence",
+        "classificationLabel": "review_required",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: TokenSocialIntel",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [
+            {
+              "channel": "counter",
+              "source": "dynamic_import_scan",
+              "summary": "Possible dynamic import/reference in: src/lib/nexus-agent.ts",
+              "strength": "contradicting"
+            }
+          ],
+          "unresolvedRisks": [
+            "counter_evidence_present"
+          ],
+          "grade": "contradictory",
+          "classificationState": "insufficient_evidence",
+          "classificationLabel": "review_required",
+          "decisionReason": "Counter-evidence found (route, export, script, config, or dynamic reference). Review required.",
+          "autoFixAllowed": false
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      },
+      {
+        "id": "fnd_DJhsqbCfvk",
+        "type": "unused_import",
+        "title": "Unused import: TrendingToken",
+        "files": [
+          "src/lib/token-quote.ts"
+        ],
+        "confidence": 0.88,
+        "confidenceReason": "Import symbol not referenced in module body; side-effect imports excluded.",
+        "severity": "low",
+        "action": "safe_candidate",
+        "reason": "Import for \"TrendingToken\" is not used in src/lib/token-quote.ts.",
+        "source": "repodiet_import",
+        "sourceMode": "native",
+        "evidence": {
+          "summary": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "signals": [
+            "symbol=TrendingToken",
+            "importLine=import type { TrendingToken } from \"./dexscreener\";",
+            "line=1",
+            "importKind=named",
+            "importSource=./dexscreener",
+            "originalFileHash=8bf80b21cbeff493",
+            "parserEvidence=repodiet_import_analyzer",
+            "preflight=actionable_candidate",
+            "classification=actionable_candidate",
+            "strategyId=remove_unused_named_specifier",
+            "evidenceGrade=strong",
+            "classificationState=supported",
+            "classificationLabel=unused_import_confirmed",
+            "autoFixAllowed=true",
+            "decisionReason=Strong corroborated evidence with transformer preflight — eligible for deterministic repair."
+          ]
+        },
+        "evidenceGrade": "strong",
+        "classificationState": "supported",
+        "classificationLabel": "unused_import_confirmed",
+        "protected": false,
+        "evidenceBundle": {
+          "analyzerEvidence": [
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "RepoDiet import analyzer evidence",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_import",
+              "summary": "Unused import symbol: TrendingToken",
+              "strength": "supporting"
+            },
+            {
+              "channel": "analyzer",
+              "source": "repodiet_preflight",
+              "summary": "Transformer preflight passed for exact source snapshot.",
+              "strength": "supporting"
+            }
+          ],
+          "graphEvidence": [],
+          "frameworkEvidence": [],
+          "configurationEvidence": [],
+          "scriptEvidence": [],
+          "runtimeEvidence": [],
+          "gitEvidence": [],
+          "counterEvidence": [],
+          "unresolvedRisks": [],
+          "grade": "strong",
+          "classificationState": "supported",
+          "classificationLabel": "unused_import_confirmed",
+          "decisionReason": "Strong corroborated evidence with transformer preflight — eligible for deterministic repair.",
+          "autoFixAllowed": true
+        },
+        "lifecycleState": "supported",
+        "supportedTransformer": "Remove unused import",
+        "suggestedAction": "Eligible for deterministic cleanup"
+      }
+    ]
+  },
+  "orphans": [],
+  "slopSignals": [],
+  "riskBuckets": {
+    "safeDelete": [
+      "fnd_kTAKerLgrW",
+      "fnd_1Dwub1-Hx2",
+      "fnd_7R0vmxQ6UN",
+      "fnd_HxIoYqAHNj",
+      "fnd_IJBAODGTuk",
+      "fnd_czoOphgJ2n",
+      "fnd_1e3tKUlKlI",
+      "fnd_IHnN_lBtsp",
+      "fnd_vj8qu4YDOS",
+      "fnd_QqchU3sXXR",
+      "fnd_OAq-euE4cv",
+      "fnd_ZS-4NuOLAQ",
+      "fnd_IRDZdV98PZ",
+      "fnd_UXauma9yOb",
+      "fnd_6jeUn2QL_G",
+      "fnd_L1ZmfxG9FH",
+      "fnd_X--z-n3A6W",
+      "fnd_R1pt6arvAI",
+      "fnd__8QkpAWmg1",
+      "fnd_JPl6CuWwAZ",
+      "fnd_DJhsqbCfvk"
+    ],
+    "reviewFirst": [
+      "fnd_37zlxFL9zG",
+      "fnd_dyJukKJMhi",
+      "fnd_0FKX2NtPFk",
+      "fnd_umuxbDzMVP",
+      "fnd_CbnTmm8IlC",
+      "fnd_xmren5hAUW",
+      "fnd_yDLt78fGjc",
+      "fnd_C2ZjgIedQo",
+      "fnd_OzHGvB9muv",
+      "fnd_7mAVcjY5qs",
+      "fnd_cIe2atL7Uv",
+      "fnd_yKYeLuL4Qe",
+      "fnd_N5Bz7JHu7B",
+      "fnd_NpN1BOSG8p",
+      "fnd_j5uaWTNotz",
+      "fnd_J5Y_nThkgz",
+      "fnd_e0uVLa_s45",
+      "fnd_Z-UyHHPmGM",
+      "fnd__s-TIC1HwY"
+    ],
+    "doNotTouch": []
+  },
+  "artifacts": {
+    "findingsJson": true
+  },
+  "rawToolReports": {
+    "knip": {
+      "status": "ok",
+      "source": "knip",
+      "sourceMode": "native",
+      "version": "6.25.0",
+      "durationMs": 2165,
+      "command": "node node_modules/knip/bin/knip.js --reporter json --no-progress",
+      "exitCode": 0
+    },
+    "jscpd": {
+      "status": "ok",
+      "source": "jscpd",
+      "sourceMode": "native",
+      "durationMs": 415,
+      "command": "node node_modules/jscpd/run-jscpd.js",
+      "exitCode": 0
+    },
+    "madge": {
+      "status": "ok",
+      "source": "madge",
+      "sourceMode": "native",
+      "durationMs": 6263,
+      "command": "node scripts/madge-scan.mjs",
+      "exitCode": 0
+    }
+  },
+  "diagnostics": {
+    "fallbackFindings": [],
+    "excludedCounts": {
+      "duplicates": 0,
+      "unusedFiles": 0,
+      "unusedDependencies": 0,
+      "unusedExports": 0,
+      "orphans": 0
+    },
+    "analyzerErrors": {}
+  },
+  "analyzerStates": {
+    "knip": {
+      "status": "available",
+      "tool": "knip",
+      "version": "6.25.0",
+      "command": "node node_modules/knip/bin/knip.js --reporter json --no-progress",
+      "exitCode": 0,
+      "durationMs": 2165
+    },
+    "jscpd": {
+      "status": "available",
+      "tool": "jscpd",
+      "command": "node node_modules/jscpd/run-jscpd.js",
+      "exitCode": 0,
+      "durationMs": 415
+    },
+    "madge": {
+      "status": "available",
+      "tool": "madge",
+      "command": "node scripts/madge-scan.mjs",
+      "exitCode": 0,
+      "durationMs": 6263
+    },
+    "heuristics": {
+      "status": "available",
+      "tool": "repodiet_heuristics",
+      "durationMs": 0
+    }
+  },
+  "repositoryModel": {
+    "projects": [
+      {
+        "packageName": "cursor-arc-circle",
+        "projectRoot": ".",
+        "framework": "nextjs",
+        "runtimeTarget": "mixed",
+        "workspaceMember": false,
+        "role": "primary"
+      }
+    ],
+    "workspaces": [],
+    "monorepoTool": null,
+    "primaryProjectRoot": ".",
+    "excludedProjectRoots": [
+      "contracts"
+    ]
+  }
+}
