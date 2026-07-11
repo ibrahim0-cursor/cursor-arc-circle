@@ -1,6 +1,5 @@
 "use client";
-
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ArcIcon3d } from "@/components/ui/arc-icon-3d";
 import { cn } from "@/lib/utils";
