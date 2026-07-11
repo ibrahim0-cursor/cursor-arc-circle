@@ -1,8 +1,5 @@
 import { randomUUID } from "crypto";
 import { getAiClient, getAiModel } from "./ai-client";
-import { fetchCryptoNewsHeadlines } from "./crypto-news";
-import { pickCommunityBuzz } from "./community-pulse";
-import { usePremiumSocialApis } from "./social-config";
 import { fetchTrendingMarketTokens, fetchSwappableTokens, type TrendingToken } from "./dexscreener";
 import { buildDeepTokenIntel } from "./deep-token-analysis";
 import { buildLocalTokenIntel } from "./token-intel-local";
@@ -17,8 +14,7 @@ import {
   NEXUS_SIGNAL_GATE_PROMPT,
 } from "./signal-gate";
 import { fetchTokenByAddress } from "./dexscreener";
-import { getMacroRegime, macroRegimeGuidance, type MacroRegime } from "./macro-regime";
-import { hasBirdeyeKey } from "./birdeye-client";
+import { getMacroRegime, type MacroRegime } from "./macro-regime";
 import { resolveTokenTechnical, technicalToIntel } from "./market-ta";
 import type { TokenSocialIntel } from "./social-intel";
 import { formatTokenPrice } from "./utils";
