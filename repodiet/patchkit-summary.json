@@ -1,6 +1,6 @@
 {
-  "id": "patchkit_fMwhdl5aXpLU",
-  "generatedAt": "2026-07-11T11:08:51.069Z",
+  "id": "patchkit_CiFyexBrB43k",
+  "generatedAt": "2026-07-11T11:18:55.942Z",
   "repo": {
     "owner": "velz-cmd",
     "name": "Meridian",
@@ -12,18 +12,18 @@
     "safeDeleteCandidates": 0,
     "supportedFixesDetected": 40,
     "transformerCompatible": 40,
-    "dryRunPassed": 4,
+    "dryRunPassed": 1,
     "detectedSignals": 40,
-    "eligibleFindings": 4,
-    "attemptedTransformations": 4,
-    "noopTransformations": 1,
+    "eligibleFindings": 1,
+    "attemptedTransformations": 1,
+    "noopTransformations": 0,
     "failedTransformations": 0,
     "notAttempted": 0,
-    "generatedChanges": 3,
-    "validatedChanges": 2,
-    "verifiedChanges": 2,
-    "retainedFixAttempts": 3,
-    "filesEdited": 2,
+    "generatedChanges": 1,
+    "validatedChanges": 1,
+    "verifiedChanges": 1,
+    "retainedFixAttempts": 1,
+    "filesEdited": 1,
     "filesDeleted": 0,
     "filesAdded": 0,
     "rawReviewFindings": 19,
@@ -36,25 +36,24 @@
     "patchValidationStatus": "passed",
     "deletedPaths": [],
     "changedPaths": [
-      "src/lib/feed-curation.ts",
       "src/lib/token-quote.ts"
     ],
     "blockerBreakdown": {
-      "transform_noop": 37
+      "transform_noop": 39
     },
-    "blockerSummary": "2 file change(s) validated and ready for cleanup PR (3 fix attempt(s) retained, 1 no-op).",
+    "blockerSummary": "1 file change(s) validated and ready for cleanup PR (1 fix attempt(s) retained).",
     "proofLadder": {
       "detected": 40,
-      "eligible": 4,
-      "attempted": 4,
-      "generated": 3,
-      "validated": 2,
-      "verified": 2,
+      "eligible": 1,
+      "attempted": 1,
+      "generated": 1,
+      "validated": 1,
+      "verified": 1,
       "delivered": 0,
-      "noop": 1,
+      "noop": 0,
       "failed": 0,
       "notAttempted": 0,
-      "rejectedForSafety": 36
+      "rejectedForSafety": 39
     }
   },
   "countSemantics": {
