@@ -13,7 +13,6 @@ import type { GateSkillsPayload } from "@/components/gate/gate-skill-stack";
 import type { GateJudgeConsensus } from "@/lib/gate-consensus-payload";
 import type { MeridianIntelligencePayload } from "@/lib/meridian-intelligence-types";
 import type { GateBenchmarkFull, GateRoutePayload } from "@/lib/gate-route-types";
-import type { MarketPulse } from "@/lib/market-pulse";
 import type { PositionRoute } from "@/lib/position-router";
 import { GATE_SYMBOL_LABELS } from "@/lib/gate-constants";
 import { formatGatePrice, formatSignedPct } from "@/lib/gate-format";
