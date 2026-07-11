@@ -4,46 +4,7 @@
 
 import type { TrendingToken } from "./dexscreener";
 
-const BLUE_CHIP_SYMBOLS = new Set([
-  "weth",
-  "eth",
-  "ether",
-  "wbtc",
-  "btc",
-  "cbbtc",
-  "sol",
-  "wsol",
-  "arb",
-  "bnb",
-  "matic",
-  "pol",
-  "link",
-  "uni",
-  "aave",
-  "dai",
-  "usdc",
-  "usdt",
-  "op",
-  "avax",
-  "doge",
-  "xrp",
-  "ada",
-  "trx",
-  "ton",
-  "pepe",
-  "shib",
-]);
-
 const BLUE_CHIP_NAME_HINTS = [
-  "wrapped ether",
-  "wrapped bitcoin",
-  "coinbase wrapped",
-  "ethereum",
-  "solana",
-  "arbitrum",
-  "chainlink",
-  "uniswap",
-];
 
 export function tokenKey(t: { chainId: string; tokenAddress: string }): string {
   return `${t.chainId}:${t.tokenAddress.toLowerCase()}`;
