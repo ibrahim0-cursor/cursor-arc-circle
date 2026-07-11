@@ -1,4 +1,3 @@
-import type { TrendingToken } from "./dexscreener";
 
 /** Dex-backed quote is usable for agent copy (avoids $0.00 / empty-pool guidance). */
 export function isTokenQuoteReliable(token: {
