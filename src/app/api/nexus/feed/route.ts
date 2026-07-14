@@ -57,6 +57,19 @@ import type { AgentSignal } from "@/lib/storage";
 import type { TokenIntel } from "@/lib/storage";
 import type { TokenSecurityReport } from "@/lib/token-security";
 
+
+function discoverySecurityRisk(
+  security: TokenSecurityReport | null | undefined,
+): Pick<TokenSecurityReport, "honeypotRisk" | "scamRisk" | "label" | "scamLabel"> | undefined {
+  if (!security) return undefined;
+  return {
+    honeypotRisk: security.honeypotRisk,
+    label: security.label,
+    scamRisk: security.scamRisk ?? false,
+    scamLabel: security.scamLabel,
+  };
+}
+
 type FeedAnalysisRow = {
   token: TrendingToken;
   intel: TokenIntel | Record<string, unknown>;
@@ -85,7 +98,7 @@ function buildFeedPayload(
       ...trendingToDemoToken(token),
       discoveryTag: gateRow
         ? token.discoveryTag
-        : discoveryHunterLabel(token, { security: security ?? undefined, scam }),
+        : discoveryHunterLabel(token, { security: discoverySecurityRisk(security), scam }),
       sourceTags: token.sourceTags,
       intel,
       agent: signal
