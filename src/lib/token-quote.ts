@@ -1,4 +1,7 @@
 
+/** Dex-backed quote is usable for agent copy (avoids $0.00 / empty-pool guidance). */
+export function isTokenQuoteReliable(token: {
+  priceUsd?: number;
   liquidityUsd?: number;
   pairAddress?: string | null;
 }): boolean {
