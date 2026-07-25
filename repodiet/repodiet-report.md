@@ -11,13 +11,14 @@
 ## Summary
 
 - Duplicate clusters: 0
-- Unused files: 0
-- Unused dependencies: 4
+- Unused files: 5
+- Unused dependencies: 0
 - Orphan patterns: 0
 - AI-slop signals: 0
 - Safe candidates: 0
-- Raw review findings: 19
-- Unique review items: 21
+
+- Raw review findings: 0
+- Unique review items: 0
 - Do not touch protected items: 0
 
 ## Count semantics
@@ -28,10 +29,11 @@
 
 ## Key findings
 
-- **unused_dependency** (review_first) `@x402/core` — Package is listed in package.json but no usage was found.
-- **unused_dependency** (review_first) `@x402/evm` — Package is listed in package.json but no usage was found.
-- **unused_dependency** (review_first) `date-fns` — Package is listed in package.json but no usage was found.
-- **unused_dependency** (review_first) `zod` — Package is listed in package.json but no usage was found.
+- **unused_file** (safe_candidate) `scripts/sync-vercel-env.mjs` — File is not referenced by import graph or framework entry points.
+- **unused_file** (safe_candidate) `scripts/test-birdeye-delayed.mjs` — File is not referenced by import graph or framework entry points.
+- **unused_file** (safe_candidate) `scripts/test-birdeye.mjs` — File is not referenced by import graph or framework entry points.
+- **unused_file** (safe_candidate) `scripts/test-detect-flow.mjs` — File is not referenced by import graph or framework entry points.
+- **unused_file** (safe_candidate) `scripts/test-keys.mjs` — File is not referenced by import graph or framework entry points.
 
 ## Patch policy
 
